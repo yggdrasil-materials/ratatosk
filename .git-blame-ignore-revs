@@ -1,0 +1,4 @@
+# This file contains commits for which the blame should be ignored
+# When adding entries please include metdata in the following format as a comment preceeding the commit(s)
+#
+# YYYY-MM-DD @<github_username> <REASON>
