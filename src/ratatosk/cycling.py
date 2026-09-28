@@ -58,24 +58,39 @@ import numpy as np
 from .compat import trapezoid
 import pandas as pd
 import matplotlib.pyplot as plt
-import matplotlib.colors as mcolors            # noqa: F401  (used by ported code)
-import matplotlib.ticker as mticker            # noqa: F401  (used by ported code)
+import matplotlib.colors as mcolors  # noqa: F401  (used by ported code)
+import matplotlib.ticker as mticker  # noqa: F401  (used by ported code)
 
-try:                                            # Cell 6 only
+try:  # Cell 6 only
     import seaborn as sns
-except ImportError:                             # pragma: no cover
+except ImportError:  # pragma: no cover
     sns = None
 
-from .plots import (_get_display_name, _force_integer_cycles,
-                    _charge_label, _discharge_label)
+from .plots import (
+    _get_display_name,
+    _force_integer_cycles,
+    _charge_label,
+    _discharge_label,
+)
+
 # Imported as a MODULE, not as values. `from .plots import
 # figure_width_inches` binds the number at import time, so
 # `plots.set_figure_size()` moved the dQ/dV figures and left every cycling
 # figure at the old size — and the flattened notebook, having one namespace,
 # did the opposite. Two builds, two different sets of figures.
-from .style import (rule, heading, section, entry, verdict, bullet,
-                    image_format, saved, nice_axis_limit)
+from .style import (
+    rule,
+    heading,
+    section,
+    entry,
+    verdict,
+    bullet,
+    image_format,
+    saved,
+    nice_axis_limit,
+)
 from . import plots as _plots
+
 # NOT ALIASED. `flatten.strip()` deletes every relative import, so in the flat
 # notebook the name has to be the one the defining module used: an aliased
 # import leaves the alias defined nowhere, and the build's free-name check
@@ -83,14 +98,26 @@ from . import plots as _plots
 # the late-relative-import bug the build now refuses outright.
 from .detect import formation_end
 
-__all__ = ["voltage_profiles", "cycling_summary", "voltage_profiles_key",
-           "cycle_life", "comparative_capacity", "capacity_retention",
-           "fade_rate", "power_and_energy", "average_discharge_voltage",
-           "energy_efficiency", "rate_capability",
-           "rate_protocol", "annotate_rate_protocol",
-           "rate_recovery", "describe_rate", "format_crate",
-           "snap_crate",
-           "rate_phrase"]
+__all__ = [
+    "voltage_profiles",
+    "cycling_summary",
+    "voltage_profiles_key",
+    "cycle_life",
+    "comparative_capacity",
+    "capacity_retention",
+    "fade_rate",
+    "power_and_energy",
+    "average_discharge_voltage",
+    "energy_efficiency",
+    "rate_capability",
+    "rate_protocol",
+    "annotate_rate_protocol",
+    "rate_recovery",
+    "describe_rate",
+    "format_crate",
+    "snap_crate",
+    "rate_phrase",
+]
 
 # Okabe-Ito, colourblind-safe. IMPORTED, not restated — `plots` is the one
 # home for the run's categorical palette, the same arrangement as the
@@ -104,7 +131,7 @@ MULTI_DATASET_MARKERS = _plots.CATEGORICAL_MARKERS
 # PORTED FROM 1.8.7 CELLS 5-13 — do not edit; the figures are the regression
 # =============================================================================
 
-LABEL_MODE = 'auto'
+LABEL_MODE = "auto"
 COMMON_XAXIS_SCALE = True
 XAXIS_PADDING_FRACTION = 0.08
 AUTO_OVERLAP_THRESHOLD = 0.5
@@ -131,10 +158,10 @@ OVERRIDE_KEY_CYCLES = None
 # meaning two different things. See plots.COLOUR_CHARGE for the convention.
 COLOUR_CHARGE = _plots.COLOUR_CHARGE
 COLOUR_DISCHARGE = _plots.COLOUR_DISCHARGE
-COLOUR_EFFICIENCY = '#000000'  # black
-MARKER_CHARGE = 's'       # square
-MARKER_DISCHARGE = 'o'    # circle
-MARKER_EFFICIENCY = 'v'   # triangle down
+COLOUR_EFFICIENCY = "#000000"  # black
+MARKER_CHARGE = "s"  # square
+MARKER_DISCHARGE = "o"  # circle
+MARKER_EFFICIENCY = "v"  # triangle down
 COMMON_YAXIS_CAPACITY = True
 # Hold the efficiency panel to a common floor and ceiling (40-105%, widened
 # to fit the data) rather than letting it autoscale per cell. Read in
@@ -147,16 +174,18 @@ CE_START_CYCLE = 2
 MARKERS = MULTI_DATASET_MARKERS
 YAXIS_PADDING = 0.08
 VISUAL_OUTLIER_FILTER = True
-FADE_REFERENCE_CYCLE = RETENTION_REFERENCE_CYCLE  # from Cell 9; change there to affect both
+FADE_REFERENCE_CYCLE = (
+    RETENTION_REFERENCE_CYCLE  # from Cell 9; change there to affect both
+)
 ROLLING_WINDOW = 100
 VOLTAGE_YMIN = None  # e.g., 2.8
 VOLTAGE_YMAX = None  # e.g., 3.8
 VOLTAGE_YAXIS_PADDING = 0.02  # V above/below data range
 DRIFT_REFERENCE_CYCLE = 2
-MARKERS_EE = 'D'   # diamond for energy efficiency
-MARKERS_CE = 'o'   # circle for coulombic efficiency
-COLOUR_EE = '#D55E00'   # vermillion
-COLOUR_CE = '#0072B2'   # blue
+MARKERS_EE = "D"  # diamond for energy efficiency
+MARKERS_CE = "o"  # circle for coulombic efficiency
+COLOUR_EE = "#D55E00"  # vermillion
+COLOUR_CE = "#0072B2"  # blue
 EE_START_CYCLE = 2
 CURRENT_GROUPING_TOLERANCE = 0.05
 MIN_CYCLES_PER_RATE = 2
@@ -178,11 +207,25 @@ RATE_RECOVERY_MIN_REFERENCE = 2
 # of two) that a 10% window cannot merge two rates an experimenter meant to
 # distinguish.
 RATE_LABEL_SNAP = 0.10
-_CONVENTIONAL_RATES = (1/100., 1/50., 1/20., 1/10., 1/5., 1/4., 1/3., 1/2.,
-                       1.0, 2.0, 3.0, 5.0, 10.0, 20.0)
+_CONVENTIONAL_RATES = (
+    1 / 100.0,
+    1 / 50.0,
+    1 / 20.0,
+    1 / 10.0,
+    1 / 5.0,
+    1 / 4.0,
+    1 / 3.0,
+    1 / 2.0,
+    1.0,
+    2.0,
+    3.0,
+    5.0,
+    10.0,
+    20.0,
+)
 
-BAR_COLOUR = '#0072B2'
-RECOVERY_COLOUR = '#009E73'
+BAR_COLOUR = "#0072B2"
+RECOVERY_COLOUR = "#009E73"
 
 
 # One definition of "this cycle's capacity is implausibly low for a figure".
@@ -240,18 +283,18 @@ def _caption_window(params, df=None):
     and put it in `user_parameters`; this prefers it and falls back to the
     record only when it is absent.
     """
-    lo = (params or {}).get('voltage_lower_V')
-    hi = (params or {}).get('voltage_upper_V')
+    lo = (params or {}).get("voltage_lower_V")
+    hi = (params or {}).get("voltage_upper_V")
     try:
         lo, hi = float(lo), float(hi)
         if np.isfinite(lo) and np.isfinite(hi) and hi > lo:
             return lo, hi
-    except (TypeError, ValueError):
+    except TypeError, ValueError:
         pass
-    if df is not None and 'Voltage' in getattr(df, 'columns', ()):
-        v = pd.to_numeric(df['Voltage'], errors='coerce')
+    if df is not None and "Voltage" in getattr(df, "columns", ()):
+        v = pd.to_numeric(df["Voltage"], errors="coerce")
         return float(v.min()), float(v.max())
-    return float('nan'), float('nan')
+    return float("nan"), float("nan")
 
 
 def _caption_window_all(user_parameters, fallback=None):
@@ -266,10 +309,11 @@ def _caption_window_all(user_parameters, fallback=None):
     for p in (user_parameters or {}).values():
         lo, hi = _caption_window(p)
         if np.isfinite(lo) and np.isfinite(hi):
-            los.append(lo); his.append(hi)
+            los.append(lo)
+            his.append(hi)
     if los:
         return min(los), max(his)
-    return fallback if fallback else (float('nan'), float('nan'))
+    return fallback if fallback else (float("nan"), float("nan"))
 
 
 def _has_tables(all_cycle_tables):
@@ -284,7 +328,6 @@ def _has_tables(all_cycle_tables):
     return isinstance(all_cycle_tables, dict)
 
 
-
 def _run_image_format(user_parameters):
     """The format for a figure that spans every dataset.
 
@@ -293,7 +336,7 @@ def _run_image_format(user_parameters):
     is the operator's to resolve.
     """
     fmts = {image_format(p) for p in (user_parameters or {}).values()}
-    return fmts.pop() if len(fmts) == 1 else 'png'
+    return fmts.pop() if len(fmts) == 1 else "png"
 
 
 def _get_endpoints(df_charge, df_discharge, unique_cycles, key_cycles):
@@ -309,22 +352,28 @@ def _get_endpoints(df_charge, df_discharge, unique_cycles, key_cycles):
     for cycle in key_cycles:
         if cycle not in unique_cycles:
             continue
-        dc = df_discharge[df_discharge['Cycle'] == cycle]
+        dc = df_discharge[df_discharge["Cycle"] == cycle]
         if not dc.empty:
-            max_row = dc.loc[dc['Discharge_Capacity'].idxmax()]
-            endpoints.append({
-                'cycle': cycle, 'step': 'Discharge',
-                'capacity': max_row['Discharge_Capacity'],
-                'voltage': max_row['Voltage']
-            })
-        cc = df_charge[df_charge['Cycle'] == cycle]
+            max_row = dc.loc[dc["Discharge_Capacity"].idxmax()]
+            endpoints.append(
+                {
+                    "cycle": cycle,
+                    "step": "Discharge",
+                    "capacity": max_row["Discharge_Capacity"],
+                    "voltage": max_row["Voltage"],
+                }
+            )
+        cc = df_charge[df_charge["Cycle"] == cycle]
         if not cc.empty:
-            max_row = cc.loc[cc['Charge_Capacity'].idxmax()]
-            endpoints.append({
-                'cycle': cycle, 'step': 'Charge',
-                'capacity': max_row['Charge_Capacity'],
-                'voltage': max_row['Voltage']
-            })
+            max_row = cc.loc[cc["Charge_Capacity"].idxmax()]
+            endpoints.append(
+                {
+                    "cycle": cycle,
+                    "step": "Charge",
+                    "capacity": max_row["Charge_Capacity"],
+                    "voltage": max_row["Voltage"],
+                }
+            )
     return endpoints
 
 
@@ -339,21 +388,21 @@ def delivered_capacity(frame):
     """
     need = ("Cycle", "Step", "Charge_Capacity", "Discharge_Capacity")
     if not all(c in frame.columns for c in need):
-        return pd.DataFrame(columns=["Cycle", "Charge_mAh_g",
-                                     "Discharge_mAh_g"])
+        return pd.DataFrame(columns=["Cycle", "Charge_mAh_g", "Discharge_mAh_g"])
     d = frame.dropna(subset=["Cycle", "Step"])
     d = d[d["Charge_Capacity"].notna() | d["Discharge_Capacity"].notna()]
     dch = d[d["Step"] == "Discharge"].groupby("Cycle")["Discharge_Capacity"]
     chg = d[d["Step"] == "Charge"].groupby("Cycle")["Charge_Capacity"]
-    out = pd.DataFrame({
-        "Discharge_mAh_g": dch.max() - dch.min(),
-        "Charge_mAh_g": chg.max() - chg.min(),
-    })
+    out = pd.DataFrame(
+        {
+            "Discharge_mAh_g": dch.max() - dch.min(),
+            "Charge_mAh_g": chg.max() - chg.min(),
+        }
+    )
     out.index.name = "Cycle"
     out = out.reset_index()
     if len(out):
-        out["Cycle"] = pd.to_numeric(out["Cycle"],
-                                     errors="coerce").astype("Int64")
+        out["Cycle"] = pd.to_numeric(out["Cycle"], errors="coerce").astype("Int64")
         out = out.dropna(subset=["Cycle"])
         out["Cycle"] = out["Cycle"].astype(int)
     return out
@@ -395,8 +444,12 @@ def mean_discharge_voltage(frame):
         span = float(q[-1] - q[0])
         if not np.isfinite(span) or span <= 0:
             continue
-        rows.append({"Cycle": int(cyc),
-                     "Avg_Discharge_Voltage_V": float(trapezoid(v, q) / span)})
+        rows.append(
+            {
+                "Cycle": int(cyc),
+                "Avg_Discharge_Voltage_V": float(trapezoid(v, q) / span),
+            }
+        )
     return pd.DataFrame(rows)
 
 
@@ -409,6 +462,7 @@ def _honours_verbose(fn):
     Rather than thread a flag through 227 call sites, the output is captured
     at the boundary, which is exactly the promise the signature was making.
     """
+
     @functools.wraps(fn)
     def wrapper(*args, **kw):
         if kw.get("verbose", True):
@@ -416,6 +470,7 @@ def _honours_verbose(fn):
         buf = _io.StringIO()
         with contextlib.redirect_stdout(buf):
             return fn(*args, **kw)
+
     return wrapper
 
 
@@ -428,7 +483,7 @@ def rate_block_labels(cycles, params):
     of the block it belongs to, and a rate-TRANSITION cycle (in no block) gets
     its own label, so it is never pooled with either neighbour.
     """
-    proto = ((params or {}).get("rate_protocol") or {})
+    proto = (params or {}).get("rate_protocol") or {}
     if not proto.get("is_variable"):
         return None
     blocks = proto.get("blocks") or []
@@ -438,7 +493,7 @@ def rate_block_labels(cycles, params):
     for c in cycles:
         try:
             ci = int(c)
-        except (TypeError, ValueError):
+        except TypeError, ValueError:
             out.append(("bad", c))
             continue
         lab = None
@@ -450,8 +505,7 @@ def rate_block_labels(cycles, params):
     return out
 
 
-def _flag_visual_outliers(caps, threshold=VISUAL_OUTLIER_FRACTION,
-                          groups=None):
+def _flag_visual_outliers(caps, threshold=VISUAL_OUTLIER_FRACTION, groups=None):
     """
     Flag cycles whose delivered capacity is <threshold of the running
     median of previous non-outlier, non-NaN cycles AT THE SAME RATE.
@@ -537,8 +591,15 @@ def _flag_visual_outliers(caps, threshold=VISUAL_OUTLIER_FRACTION,
 
 
 @_honours_verbose
-def voltage_profiles(electrochemical_data, user_parameters, *, save_location=None,
-        all_cycle_tables=None, file_format='png', verbose=True):
+def voltage_profiles(
+    electrochemical_data,
+    user_parameters,
+    *,
+    save_location=None,
+    all_cycle_tables=None,
+    file_format="png",
+    verbose=True,
+):
     """
     Voltage vs specific capacity, every cycle.
 
@@ -558,7 +619,7 @@ def voltage_profiles(electrochemical_data, user_parameters, *, save_location=Non
         if len(endpoints) < 2:
             return 0.0
 
-        caps = [e['capacity'] for e in endpoints]
+        caps = [e["capacity"] for e in endpoints]
         cap_range = max(caps) - min(caps) if len(caps) > 1 else max(caps)
         cap_tol = max(cap_range * cap_tol_frac, 2.0)
 
@@ -567,8 +628,10 @@ def voltage_profiles(electrochemical_data, user_parameters, *, save_location=Non
             for j, other in enumerate(endpoints):
                 if i == j:
                     continue
-                if (abs(ep['capacity'] - other['capacity']) < cap_tol and
-                    abs(ep['voltage'] - other['voltage']) < volt_tol):
+                if (
+                    abs(ep["capacity"] - other["capacity"]) < cap_tol
+                    and abs(ep["voltage"] - other["voltage"]) < volt_tol
+                ):
                     n_overlapping += 1
                     break  # only count each endpoint once
 
@@ -580,7 +643,7 @@ def voltage_profiles(electrochemical_data, user_parameters, *, save_location=Non
             return
 
         # Group endpoints by proximity to determine horizontal stagger
-        caps = [e['capacity'] for e in endpoints]
+        caps = [e["capacity"] for e in endpoints]
         cap_range = max(caps) - min(caps) if len(caps) > 1 else max(caps)
         cap_tol = max(cap_range * 0.03, 2.0)
         volt_tol = 0.05
@@ -588,11 +651,10 @@ def voltage_profiles(electrochemical_data, user_parameters, *, save_location=Non
         placed = []
 
         # Process in reverse cycle order (later cycles get priority placement)
-        sorted_endpoints = sorted(endpoints, key=lambda e: e['cycle'],
-                                   reverse=True)
+        sorted_endpoints = sorted(endpoints, key=lambda e: e["cycle"], reverse=True)
 
         for ep in sorted_endpoints:
-            cycle_idx = list(unique_cycles).index(ep['cycle'])
+            cycle_idx = list(unique_cycles).index(ep["cycle"])
             colour = palette[cycle_idx]
 
             # Determine offset
@@ -601,41 +663,45 @@ def voltage_profiles(electrochemical_data, user_parameters, *, save_location=Non
 
             # Stagger if this endpoint is close to an already-placed one
             for px, py in placed:
-                if (abs(ep['capacity'] - px) < cap_tol and
-                    abs(ep['voltage'] - py) < volt_tol):
+                if (
+                    abs(ep["capacity"] - px) < cap_tol
+                    and abs(ep["voltage"] - py) < volt_tol
+                ):
                     # Shift further right
                     x_offset += 12
                     break
 
             # Discharge endpoints: label to the right
             # Charge endpoints: label to the left
-            if ep['step'] == 'Charge':
+            if ep["step"] == "Charge":
                 x_offset = -x_offset
 
             # Adjust vertical alignment based on position
-            va = 'center'
+            va = "center"
 
             ax.annotate(
-                str(int(ep['cycle'])),
-                xy=(ep['capacity'], ep['voltage']),
+                str(int(ep["cycle"])),
+                xy=(ep["capacity"], ep["voltage"]),
                 xytext=(x_offset, y_offset),
-                textcoords='offset points',
-                ha='center', va=va,
-                fontsize=8, fontweight='bold',
-                color=colour, alpha=0.9
+                textcoords="offset points",
+                ha="center",
+                va=va,
+                fontsize=8,
+                fontweight="bold",
+                color=colour,
+                alpha=0.9,
             )
-            placed.append((ep['capacity'], ep['voltage']))
+            placed.append((ep["capacity"], ep["voltage"]))
 
     def _add_colourbar(fig, ax, unique_cycles, colour_palette):
         """Add a colourbar mapping cycle number to colour."""
         cmap = plt.get_cmap(colour_palette)
-        norm = mcolors.Normalize(vmin=min(unique_cycles),
-                                  vmax=max(unique_cycles))
+        norm = mcolors.Normalize(vmin=min(unique_cycles), vmax=max(unique_cycles))
         sm = plt.cm.ScalarMappable(cmap=cmap, norm=norm)
         sm.set_array([])
 
         cbar = fig.colorbar(sm, ax=ax, pad=0.02, aspect=30)
-        cbar.set_label('Cycle number', fontsize=13)
+        cbar.set_label("Cycle number", fontsize=13)
         cbar.ax.tick_params(labelsize=11)
 
     # The two nested copies of `_discharge_label`/`_charge_label` that used
@@ -650,9 +716,9 @@ def voltage_profiles(electrochemical_data, user_parameters, *, save_location=Non
 
     if COMMON_XAXIS_SCALE:
         for name, df in electrochemical_data.items():
-            for col in ['Charge_Capacity', 'Discharge_Capacity']:
+            for col in ["Charge_Capacity", "Discharge_Capacity"]:
                 if col in df.columns:
-                    col_max = pd.to_numeric(df[col], errors='coerce').max()
+                    col_max = pd.to_numeric(df[col], errors="coerce").max()
                     if pd.notna(col_max):
                         global_max_capacity = max(global_max_capacity, col_max)
 
@@ -661,22 +727,25 @@ def voltage_profiles(electrochemical_data, user_parameters, *, save_location=Non
         # comparing three cells across a frame that ends at 143 has to work
         # out whether the curve stopping at 136 means anything. It ends at
         # 150 now, with a gridline every 25.
-        global_max_capacity, global_xaxis_step = nice_axis_limit(
-            global_max_capacity)
+        global_max_capacity, global_xaxis_step = nice_axis_limit(global_max_capacity)
 
         if global_max_capacity > 0:
-            print(entry("common x-axis", f"{global_max_capacity:.0f} mAh/g",
-                        f"ticks every {global_xaxis_step:g}"
-                        if global_xaxis_step else ""))
+            print(
+                entry(
+                    "common x-axis",
+                    f"{global_max_capacity:.0f} mAh/g",
+                    f"ticks every {global_xaxis_step:g}" if global_xaxis_step else "",
+                )
+            )
 
     for name, df in electrochemical_data.items():
         params = user_parameters.get(name, {})
         composition = _get_display_name(name, params, user_parameters)
         print(rule(composition))
-        charge_rate_c = params.get('charge_rate_c', 'Unknown')
-        colour_palette = params.get('colour_palette', 'viridis_r')
-        key_cycles = params.get('key_cycles', [])
-        is_anode = params.get('anode_labels_swapped', False)
+        charge_rate_c = params.get("charge_rate_c", "Unknown")
+        colour_palette = params.get("colour_palette", "viridis_r")
+        key_cycles = params.get("key_cycles", [])
+        is_anode = params.get("anode_labels_swapped", False)
         dch_label = _discharge_label(params)
         chg_label = _charge_label(params)
 
@@ -684,34 +753,38 @@ def voltage_profiles(electrochemical_data, user_parameters, *, save_location=Non
         # Robust dropna (v1.8): require Voltage, Cycle, Step, and at
         # least one capacity column. Some cycler firmware versions fill
         # only the active capacity column per row.
-        df_cleaned = df_work.dropna(subset=['Voltage', 'Cycle', 'Step'])
+        df_cleaned = df_work.dropna(subset=["Voltage", "Cycle", "Step"])
         df_cleaned = df_cleaned[
-            df_cleaned['Charge_Capacity'].notna() |
-            df_cleaned['Discharge_Capacity'].notna()
+            df_cleaned["Charge_Capacity"].notna()
+            | df_cleaned["Discharge_Capacity"].notna()
         ].copy()
 
         if df_cleaned.empty:
             print(verdict("caution", f"no valid data for {name}"))
             continue
 
-        df_discharge = df_cleaned[df_cleaned['Step'] == 'Discharge']
-        df_charge = df_cleaned[df_cleaned['Step'] == 'Charge']
+        df_discharge = df_cleaned[df_cleaned["Step"] == "Discharge"]
+        df_charge = df_cleaned[df_cleaned["Step"] == "Charge"]
 
-        unique_cycles = sorted(df_cleaned['Cycle'].unique())
+        unique_cycles = sorted(df_cleaned["Cycle"].unique())
         # `voltage_profiles` accepts `all_cycle_tables` and, until 1.9.0.4,
         # never read it — so the half-cycle the export was taken during was
         # drawn as a profile that stops in mid-air, and counted in the
         # caption. Dropped here rather than dimmed: a voltage profile that
         # ends nowhere reads as a cell that failed.
-        _skip = _unusable_cycles(all_cycle_tables.get(name)) \
-            if isinstance(all_cycle_tables, dict) else set()
+        _skip = (
+            _unusable_cycles(all_cycle_tables.get(name))
+            if isinstance(all_cycle_tables, dict)
+            else set()
+        )
         if _skip:
             _before = len(unique_cycles)
-            unique_cycles = [c for c in unique_cycles
-                             if int(c) not in _skip]
+            unique_cycles = [c for c in unique_cycles if int(c) not in _skip]
             if len(unique_cycles) < _before:
-                print(f"  Cycle(s) {', '.join(str(c) for c in sorted(_skip))} "
-                      f"omitted: not a finished measurement")
+                print(
+                    f"  Cycle(s) {', '.join(str(c) for c in sorted(_skip))} "
+                    f"omitted: not a finished measurement"
+                )
         num_cycles = len(unique_cycles)
 
         palette = sns.color_palette(colour_palette, n_colors=num_cycles)
@@ -724,37 +797,46 @@ def voltage_profiles(electrochemical_data, user_parameters, *, save_location=Non
         for i, cycle in enumerate(unique_cycles):
             colour = palette[i]
 
-            dc = df_discharge[df_discharge['Cycle'] == cycle]
+            dc = df_discharge[df_discharge["Cycle"] == cycle]
             if not dc.empty:
-                dc_sorted = dc.sort_values('Discharge_Capacity')
-                ax.plot(dc_sorted['Discharge_Capacity'],
-                       dc_sorted['Voltage'],
-                       color=colour, linestyle='-', linewidth=1.0)
+                dc_sorted = dc.sort_values("Discharge_Capacity")
+                ax.plot(
+                    dc_sorted["Discharge_Capacity"],
+                    dc_sorted["Voltage"],
+                    color=colour,
+                    linestyle="-",
+                    linewidth=1.0,
+                )
 
-            cc = df_charge[df_charge['Cycle'] == cycle]
+            cc = df_charge[df_charge["Cycle"] == cycle]
             if not cc.empty:
-                cc_sorted = cc.sort_values('Charge_Capacity')
-                ax.plot(cc_sorted['Charge_Capacity'],
-                       cc_sorted['Voltage'],
-                       color=colour, linestyle='--', linewidth=1.0)
+                cc_sorted = cc.sort_values("Charge_Capacity")
+                ax.plot(
+                    cc_sorted["Charge_Capacity"],
+                    cc_sorted["Voltage"],
+                    color=colour,
+                    linestyle="--",
+                    linewidth=1.0,
+                )
 
         # --- Labelling mode selection ---
-        endpoints = _get_endpoints(df_charge, df_discharge,
-                                    unique_cycles, key_cycles)
+        endpoints = _get_endpoints(df_charge, df_discharge, unique_cycles, key_cycles)
 
-        if LABEL_MODE == 'auto':
+        if LABEL_MODE == "auto":
             overlap_frac = _check_overlap(endpoints)
             use_colourbar = overlap_frac > AUTO_OVERLAP_THRESHOLD
-            mode_used = 'colourbar' if use_colourbar else 'annotations'
-            print(f"  Label mode: auto → {mode_used} "
-                  f"({overlap_frac*100:.0f}% overlap, "
-                  f"threshold {AUTO_OVERLAP_THRESHOLD*100:.0f}%)")
-        elif LABEL_MODE == 'colourbar':
+            mode_used = "colourbar" if use_colourbar else "annotations"
+            print(
+                f"  Label mode: auto → {mode_used} "
+                f"({overlap_frac * 100:.0f}% overlap, "
+                f"threshold {AUTO_OVERLAP_THRESHOLD * 100:.0f}%)"
+            )
+        elif LABEL_MODE == "colourbar":
             use_colourbar = True
-            mode_used = 'colourbar'
+            mode_used = "colourbar"
         else:
             use_colourbar = False
-            mode_used = 'annotations'
+            mode_used = "annotations"
 
         if use_colourbar:
             _add_colourbar(fig, ax, unique_cycles, colour_palette)
@@ -762,10 +844,17 @@ def voltage_profiles(electrochemical_data, user_parameters, *, save_location=Non
             _add_annotations(ax, endpoints, unique_cycles, palette)
 
         # --- Formatting ---
-        ax.set_xlabel('Specific Capacity / mAh g$^{-1}$', fontsize=16)
-        ax.set_ylabel('Voltage / V', fontsize=16)
-        ax.tick_params(axis='both', labelcolor='black', labelsize=14,
-                       width=1, direction='in', top=True, right=True)
+        ax.set_xlabel("Specific Capacity / mAh g$^{-1}$", fontsize=16)
+        ax.set_ylabel("Voltage / V", fontsize=16)
+        ax.tick_params(
+            axis="both",
+            labelcolor="black",
+            labelsize=14,
+            width=1,
+            direction="in",
+            top=True,
+            right=True,
+        )
 
         if COMMON_XAXIS_SCALE and global_max_capacity > 0:
             ax.set_xlim(left=0, right=global_max_capacity)
@@ -774,8 +863,7 @@ def voltage_profiles(electrochemical_data, user_parameters, *, save_location=Non
             # 0/20/40/.../140 and leaves the last gridline 10 short of the
             # frame; the step that produced the limit does not.
             if global_xaxis_step:
-                ax.xaxis.set_major_locator(
-                    mticker.MultipleLocator(global_xaxis_step))
+                ax.xaxis.set_major_locator(mticker.MultipleLocator(global_xaxis_step))
         else:
             ax.set_xlim(left=0)
             ax.set_xlim(right=ax.get_xlim()[1] * (1 + XAXIS_PADDING_FRACTION))
@@ -784,10 +872,10 @@ def voltage_profiles(electrochemical_data, user_parameters, *, save_location=Non
 
         # --- Save ---
         if save_location:
-            file_format = params.get('file_format', 'png')
+            file_format = params.get("file_format", "png")
             filename = f"{name}_full_voltage_profile.{file_format}"
             filepath = os.path.join(save_location, filename)
-            fig.savefig(filepath, dpi=300, bbox_inches='tight')
+            fig.savefig(filepath, dpi=300, bbox_inches="tight")
             saved(filepath)
 
         # --- Figure caption (v1.8: anode-aware) ---
@@ -825,7 +913,7 @@ def _unusable(ct):
     if ct is None or not len(ct):
         return pd.Series(dtype=bool)
     bad = pd.Series(False, index=ct.index)
-    for col in ('Incomplete', 'Partial_Final'):
+    for col in ("Incomplete", "Partial_Final"):
         if col in ct.columns:
             bad = bad | ct[col].fillna(False).astype(bool)
     return bad
@@ -836,25 +924,36 @@ def _unusable_cycles(ct):
     rebuild their y-values from the raw records and can only be told which
     cycles to drop."""
     bad = _unusable(ct)
-    if ct is None or not len(bad) or 'Cycle' not in ct.columns:
+    if ct is None or not len(bad) or "Cycle" not in ct.columns:
         return set()
-    return set(pd.to_numeric(ct.loc[bad, 'Cycle'],
-                             errors='coerce').dropna().astype(int).tolist())
+    return set(
+        pd.to_numeric(ct.loc[bad, "Cycle"], errors="coerce")
+        .dropna()
+        .astype(int)
+        .tolist()
+    )
 
 
 def _ct_with_flag(ct, value_col):
     """`ct[['Cycle', value_col, 'Incomplete']]` with the partial-final cycle
     folded into the flag, so a caller's existing `~df['Incomplete']` mask
     excludes it too."""
-    out = ct[['Cycle', value_col]].copy()
-    out['Incomplete'] = _unusable(ct).values
+    out = ct[["Cycle", value_col]].copy()
+    out["Incomplete"] = _unusable(ct).values
     return out
 
 
 @_honours_verbose
-def cycling_summary(electrochemical_data, user_parameters, *, save_location=None,
-        all_cycle_tables=None, file_format='png', verbose=True,
-        in_progress=None):
+def cycling_summary(
+    electrochemical_data,
+    user_parameters,
+    *,
+    save_location=None,
+    all_cycle_tables=None,
+    file_format="png",
+    verbose=True,
+    in_progress=None,
+):
     """
     Per-cycle capacity, coulombic efficiency and the incomplete-cycle flags every later plot reads.
 
@@ -927,19 +1026,24 @@ def cycling_summary(electrochemical_data, user_parameters, *, save_location=None
     for name, df in electrochemical_data.items():
         params = user_parameters.get(name, {})
         composition = _get_display_name(name, params, user_parameters)
-        charge_rate_c = params.get('charge_rate_c', 'Unknown')
-        is_anode = params.get('anode_labels_swapped', False)
+        charge_rate_c = params.get("charge_rate_c", "Unknown")
+        is_anode = params.get("anode_labels_swapped", False)
         dch_label = _discharge_label(params)
         chg_label = _charge_label(params)
 
         print()
         print(heading(composition))
         if is_anode:
-            print(entry("half-cell", "anode",
-                        f"{dch_label.lower()} is the useful capacity"))
+            print(
+                entry(
+                    "half-cell", "anode", f"{dch_label.lower()} is the useful capacity"
+                )
+            )
 
-        if not all(col in df.columns for col in ['Cycle', 'Step',
-                    'Discharge_Capacity', 'Charge_Capacity']):
+        if not all(
+            col in df.columns
+            for col in ["Cycle", "Step", "Discharge_Capacity", "Charge_Capacity"]
+        ):
             print(verdict("caution", "missing required columns, skipping."))
             continue
 
@@ -948,15 +1052,15 @@ def cycling_summary(electrochemical_data, user_parameters, *, save_location=None
 
         # CE = discharge / charge (correct for both electrode types
         # after Cell 4b normalisation)
-        cycle_df['CE_%'] = coulombic_efficiency(
-            cycle_df['Discharge_mAh_g'], cycle_df['Charge_mAh_g']).values
+        cycle_df["CE_%"] = coulombic_efficiency(
+            cycle_df["Discharge_mAh_g"], cycle_df["Charge_mAh_g"]
+        ).values
 
         # --- Detect incomplete cycles (v1.7.1: protocol-level only) ---
         incomplete_flags = _detect_incomplete_cycles(
-            cycle_df['Discharge_mAh_g'].tolist(),
-            cycle_df['Charge_mAh_g'].tolist()
+            cycle_df["Discharge_mAh_g"].tolist(), cycle_df["Charge_mAh_g"].tolist()
         )
-        cycle_df['Incomplete'] = incomplete_flags
+        cycle_df["Incomplete"] = incomplete_flags
 
         # --- Half-cycle still running when the export was written (1.9.0) ---
         # A cycler export is routinely taken while the cell is STILL
@@ -983,32 +1087,47 @@ def cycling_summary(electrochemical_data, user_parameters, *, save_location=None
         # more cycles. A cycle is excluded from the headline metrics here
         # when the half-cycle those metrics are computed FROM is the one
         # still running; the completed half of the same cycle is kept.
-        cycle_df['Partial_Final'] = False
+        cycle_df["Partial_Final"] = False
         _in_prog = set((in_progress or {}).get(name, ()) or ())
         _pf_note = None
         for _pf_cyc, _pf_step in sorted(_in_prog):
-            _row = cycle_df['Cycle'] == _pf_cyc
+            _row = cycle_df["Cycle"] == _pf_cyc
             if not _row.any():
                 continue
             # The headline metrics are built on the discharge half. If the
             # CHARGE half is the unfinished one, the discharge of that cycle
             # has not started, and `Incomplete` already covers it.
-            _dch = float(pd.to_numeric(
-                cycle_df.loc[_row, 'Discharge_mAh_g'], errors='coerce').iloc[0]
-            ) if _row.any() else np.nan
-            cycle_df.loc[_row, 'Partial_Final'] = True
+            _dch = (
+                float(
+                    pd.to_numeric(
+                        cycle_df.loc[_row, "Discharge_mAh_g"], errors="coerce"
+                    ).iloc[0]
+                )
+                if _row.any()
+                else np.nan
+            )
+            cycle_df.loc[_row, "Partial_Final"] = True
             _pf_note = (_pf_cyc, _pf_step, _dch)
-            print(verdict("caution", f"cycle {_pf_cyc} {_pf_step} was "
-                                     f"still running when this file was "
-                                     f"exported"))
-            print(bullet("It never reached the cut-off voltage every other "
-                         "half-cycle going the same way reaches. Not a "
-                         "measurement yet: excluded from the headline metrics "
-                         "below, still plotted, and complete in the next "
-                         "export."))
+            print(
+                verdict(
+                    "caution",
+                    f"cycle {_pf_cyc} {_pf_step} was "
+                    f"still running when this file was "
+                    f"exported",
+                )
+            )
+            print(
+                bullet(
+                    "It never reached the cut-off voltage every other "
+                    "half-cycle going the same way reaches. Not a "
+                    "measurement yet: excluded from the headline metrics "
+                    "below, still plotted, and complete in the next "
+                    "export."
+                )
+            )
 
         n_incomplete = sum(incomplete_flags)
-        incomplete_cycles = cycle_df[cycle_df['Incomplete']]['Cycle'].tolist()
+        incomplete_cycles = cycle_df[cycle_df["Incomplete"]]["Cycle"].tolist()
         # THE TWO REASONS, kept apart. `Incomplete` is protocol-level;
         # `Partial_Final` is the export catching a half-cycle mid-flight.
         # `complete_df` below has always excluded both, but every line that
@@ -1017,38 +1136,37 @@ def cycling_summary(electrochemical_data, user_parameters, *, save_location=None
         # that claimed nothing had been dropped, and a caption that said
         # nothing at all.
         _partial_cycles = cycle_df.loc[
-            cycle_df['Partial_Final'].fillna(False).astype(bool),
-            'Cycle'].tolist()
+            cycle_df["Partial_Final"].fillna(False).astype(bool), "Cycle"
+        ].tolist()
         _excluded_mask = _unusable(cycle_df)
         n_excluded = int(_excluded_mask.sum())
-        excluded_cycles = cycle_df.loc[_excluded_mask, 'Cycle'].tolist()
+        excluded_cycles = cycle_df.loc[_excluded_mask, "Cycle"].tolist()
         # No print here. The verdict above already named the cycle and said
         # it was excluded from the headline metrics; this said it again in
         # weaker words, and the table below marks the row INCOMPL anyway.
 
         # --- Capacity retention vs reference cycle ---
         ref_row = cycle_df[
-            (cycle_df['Cycle'] == RETENTION_REFERENCE_CYCLE) &
-            (~cycle_df['Incomplete'])
+            (cycle_df["Cycle"] == RETENTION_REFERENCE_CYCLE) & (~cycle_df["Incomplete"])
         ]
         if not ref_row.empty:
-            ref_cap = ref_row['Discharge_mAh_g'].iloc[0]
+            ref_cap = ref_row["Discharge_mAh_g"].iloc[0]
         else:
-            complete = cycle_df[~cycle_df['Incomplete']]
+            complete = cycle_df[~cycle_df["Incomplete"]]
             if not complete.empty:
-                ref_cap = complete['Discharge_mAh_g'].iloc[0]
-                print(f"  Note: reference cycle {RETENTION_REFERENCE_CYCLE} "
-                      f"not found, using cycle "
-                      f"{int(complete['Cycle'].iloc[0])}")
+                ref_cap = complete["Discharge_mAh_g"].iloc[0]
+                print(
+                    f"  Note: reference cycle {RETENTION_REFERENCE_CYCLE} "
+                    f"not found, using cycle "
+                    f"{int(complete['Cycle'].iloc[0])}"
+                )
             else:
                 ref_cap = np.nan
 
         if pd.notna(ref_cap) and ref_cap > 0:
-            cycle_df['Retention_%'] = (
-                cycle_df['Discharge_mAh_g'] / ref_cap * 100
-            )
+            cycle_df["Retention_%"] = cycle_df["Discharge_mAh_g"] / ref_cap * 100
         else:
-            cycle_df['Retention_%'] = np.nan
+            cycle_df["Retention_%"] = np.nan
 
         # --- v1.8: Cell health diagnostics ---
         # Detect progressive parasitic current, voltage anomalies, and
@@ -1056,8 +1174,9 @@ def cycling_summary(electrochemical_data, user_parameters, *, save_location=None
         # every downstream cell can access them.
 
         # 1. Charge excess per cycle (Q_chg - Q_dchg)
-        cycle_df['Charge_Excess_mAh_g'] = (
-            cycle_df['Charge_mAh_g'] - cycle_df['Discharge_mAh_g'])
+        cycle_df["Charge_Excess_mAh_g"] = (
+            cycle_df["Charge_mAh_g"] - cycle_df["Discharge_mAh_g"]
+        )
 
         # 2. Progressive parasitic current detection
         # Start from cycle 4 to avoid formation-period false positives.
@@ -1065,52 +1184,72 @@ def cycling_summary(electrochemical_data, user_parameters, *, save_location=None
         # that looks like a declining trend but is normal stabilisation.
         _DIAG_START_CYCLE = 4
         _diag_df = cycle_df[
-            (~cycle_df['Incomplete']) & (~cycle_df['Partial_Final'])
-            & (cycle_df['Cycle'] >= _DIAG_START_CYCLE)
+            (~cycle_df["Incomplete"])
+            & (~cycle_df["Partial_Final"])
+            & (cycle_df["Cycle"] >= _DIAG_START_CYCLE)
         ].copy()
 
-        _cell_flags = []      # list of (severity, message) tuples
+        _cell_flags = []  # list of (severity, message) tuples
 
         if len(_diag_df) >= 4:
             # CE trend: linear fit to CE vs cycle
-            _ce_vals = _diag_df['CE_%'].dropna()
+            _ce_vals = _diag_df["CE_%"].dropna()
             if len(_ce_vals) >= 4:
                 _ce_slope, _ce_intercept = np.polyfit(
-                    _diag_df.loc[_ce_vals.index, 'Cycle'], _ce_vals, 1)
+                    _diag_df.loc[_ce_vals.index, "Cycle"], _ce_vals, 1
+                )
 
                 # Check for monotonic decline over last N cycles
                 _last_n = min(5, len(_ce_vals))
                 _recent_ce = _ce_vals.tail(_last_n)
                 _n_declining = sum(
-                    _recent_ce.iloc[i] < _recent_ce.iloc[i-1]
-                    for i in range(1, len(_recent_ce)))
+                    _recent_ce.iloc[i] < _recent_ce.iloc[i - 1]
+                    for i in range(1, len(_recent_ce))
+                )
                 _monotonic = _n_declining >= _last_n - 1  # allow 1 exception
 
                 if _ce_slope < -0.5 and _monotonic:
-                    _cell_flags.append(('CRITICAL',
-                        f'CE declining monotonically at '
-                        f'{_ce_slope:.2f}%/cycle — progressive '
-                        f'parasitic current'))
+                    _cell_flags.append(
+                        (
+                            "CRITICAL",
+                            f"CE declining monotonically at "
+                            f"{_ce_slope:.2f}%/cycle — progressive "
+                            f"parasitic current",
+                        )
+                    )
                 elif _ce_slope < -0.3:
-                    _cell_flags.append(('WARNING',
-                        f'CE trend negative ({_ce_slope:.2f}%/cycle) — '
-                        f'possible parasitic current developing'))
+                    _cell_flags.append(
+                        (
+                            "WARNING",
+                            f"CE trend negative ({_ce_slope:.2f}%/cycle) — "
+                            f"possible parasitic current developing",
+                        )
+                    )
 
             # Charge excess trend: is delta_Q growing?
-            _excess = _diag_df['Charge_Excess_mAh_g'].dropna()
+            _excess = _diag_df["Charge_Excess_mAh_g"].dropna()
             if len(_excess) >= 4:
                 _ex_slope, _ = np.polyfit(
-                    _diag_df.loc[_excess.index, 'Cycle'], _excess, 1)
+                    _diag_df.loc[_excess.index, "Cycle"], _excess, 1
+                )
                 if _ex_slope > 0.3:
-                    _cell_flags.append(('CRITICAL',
-                        f'Charge excess growing at '
-                        f'{_ex_slope:.2f} mAh/g/cycle — charge consumed '
-                        f'by side reaction'))
+                    _cell_flags.append(
+                        (
+                            "CRITICAL",
+                            f"Charge excess growing at "
+                            f"{_ex_slope:.2f} mAh/g/cycle — charge consumed "
+                            f"by side reaction",
+                        )
+                    )
                 elif _ex_slope > 0.1:
-                    _cell_flags.append(('WARNING',
-                        f'Charge excess trend positive '
-                        f'({_ex_slope:.2f} mAh/g/cycle) — monitor for '
-                        f'parasitic activity'))
+                    _cell_flags.append(
+                        (
+                            "WARNING",
+                            f"Charge excess trend positive "
+                            f"({_ex_slope:.2f} mAh/g/cycle) — monitor for "
+                            f"parasitic activity",
+                        )
+                    )
 
         # 3. Voltage anomaly on final data points
         # 4. Final cycle with zero or near-zero discharge
@@ -1125,53 +1264,69 @@ def cycling_summary(electrochemical_data, user_parameters, *, save_location=None
         # discharge, was told "charged 123.4 mAh/g but delivered 0.4 mAh/g
         # on discharge — cell died. This cell has failed. Data after the
         # failure point is not meaningful." Both flags gate both checks.
-        _last_cycle = int(cycle_df['Cycle'].max())
-        _last_row = cycle_df[cycle_df['Cycle'] == _last_cycle]
-        _last_incomplete = bool(_last_row['Incomplete'].iloc[0]) or bool(
-            _last_row['Partial_Final'].iloc[0]
-            if 'Partial_Final' in _last_row else False)
+        _last_cycle = int(cycle_df["Cycle"].max())
+        _last_row = cycle_df[cycle_df["Cycle"] == _last_cycle]
+        _last_incomplete = bool(_last_row["Incomplete"].iloc[0]) or bool(
+            _last_row["Partial_Final"].iloc[0]
+            if "Partial_Final" in _last_row
+            else False
+        )
 
         if not _last_incomplete:
             # 3. Check if the last recorded step has voltage going the wrong way
-            _last_cycle_data = df[df['Cycle'] == _last_cycle]
-            if not _last_cycle_data.empty and 'Step' in _last_cycle_data.columns:
-                _last_dchg = _last_cycle_data[
-                    _last_cycle_data['Step'] == 'Discharge']
+            _last_cycle_data = df[df["Cycle"] == _last_cycle]
+            if not _last_cycle_data.empty and "Step" in _last_cycle_data.columns:
+                _last_dchg = _last_cycle_data[_last_cycle_data["Step"] == "Discharge"]
                 if not _last_dchg.empty and len(_last_dchg) <= 3:
                     # Discharge step with <=3 data points = aborted
                     _v_start = pd.to_numeric(
-                        _last_dchg['Voltage'].iloc[0], errors='coerce')
+                        _last_dchg["Voltage"].iloc[0], errors="coerce"
+                    )
                     _v_prev_step = None
-                    _last_chg = _last_cycle_data[
-                        _last_cycle_data['Step'] == 'Charge']
+                    _last_chg = _last_cycle_data[_last_cycle_data["Step"] == "Charge"]
                     if not _last_chg.empty:
                         _v_prev_step = pd.to_numeric(
-                            _last_chg['Voltage'].iloc[-1], errors='coerce')
+                            _last_chg["Voltage"].iloc[-1], errors="coerce"
+                        )
 
-                    if (_v_prev_step is not None and pd.notna(_v_start)
-                            and pd.notna(_v_prev_step)
-                            and _v_start > _v_prev_step + 0.1):
-                        _cell_flags.append(('FAILURE',
-                            f'Cycle {_last_cycle}: voltage spiked '
-                            f'{_v_start:.3f} V on discharge start '
-                            f'(> {_v_prev_step:.3f} V end-of-charge) — '
-                            f'open circuit / contact failure'))
+                    if (
+                        _v_prev_step is not None
+                        and pd.notna(_v_start)
+                        and pd.notna(_v_prev_step)
+                        and _v_start > _v_prev_step + 0.1
+                    ):
+                        _cell_flags.append(
+                            (
+                                "FAILURE",
+                                f"Cycle {_last_cycle}: voltage spiked "
+                                f"{_v_start:.3f} V on discharge start "
+                                f"(> {_v_prev_step:.3f} V end-of-charge) — "
+                                f"open circuit / contact failure",
+                            )
+                        )
 
             # 4. Final cycle with zero or near-zero discharge
-            _last_row = cycle_df[cycle_df['Cycle'] == _last_cycle]
+            _last_row = cycle_df[cycle_df["Cycle"] == _last_cycle]
             if not _last_row.empty:
-                _last_dchg_cap = _last_row['Discharge_mAh_g'].iloc[0]
-                _last_chg_cap = _last_row['Charge_mAh_g'].iloc[0]
-                if (pd.notna(_last_chg_cap) and _last_chg_cap > 0
-                        and (pd.isna(_last_dchg_cap) or _last_dchg_cap < 1.0)):
-                    _cell_flags.append(('FAILURE',
-                        f'Cycle {_last_cycle}: charged '
-                        f'{_last_chg_cap:.1f} mAh/g but delivered '
-                        f'{"0" if pd.isna(_last_dchg_cap) else f"{_last_dchg_cap:.1f}"} '
-                        f'mAh/g on discharge — cell died'))
+                _last_dchg_cap = _last_row["Discharge_mAh_g"].iloc[0]
+                _last_chg_cap = _last_row["Charge_mAh_g"].iloc[0]
+                if (
+                    pd.notna(_last_chg_cap)
+                    and _last_chg_cap > 0
+                    and (pd.isna(_last_dchg_cap) or _last_dchg_cap < 1.0)
+                ):
+                    _cell_flags.append(
+                        (
+                            "FAILURE",
+                            f"Cycle {_last_cycle}: charged "
+                            f"{_last_chg_cap:.1f} mAh/g but delivered "
+                            f"{'0' if pd.isna(_last_dchg_cap) else f'{_last_dchg_cap:.1f}'} "
+                            f"mAh/g on discharge — cell died",
+                        )
+                    )
 
         # Store flags in cycle_df metadata (accessible downstream)
-        cycle_df.attrs['cell_health_flags'] = _cell_flags
+        cycle_df.attrs["cell_health_flags"] = _cell_flags
 
         all_cycle_tables[name] = cycle_df
 
@@ -1179,16 +1334,18 @@ def cycling_summary(electrochemical_data, user_parameters, *, save_location=None
         # Status is 10 wide because the words are now words. The rule under
         # the header is measured from the header rather than hard-coded at
         # 56, which had not matched the columns since the CE field changed.
-        _hdr = (f"  {'Cycle':>5}  {chg_label:>10}  {dch_label:>10}  "
-                f"{'CE':>7}  {'Retention':>9}  {'Status':>10}")
+        _hdr = (
+            f"  {'Cycle':>5}  {chg_label:>10}  {dch_label:>10}  "
+            f"{'CE':>7}  {'Retention':>9}  {'Status':>10}"
+        )
         print("\n" + _hdr)
-        print(f"  {'':>5}  {'mAh/g':>10}  {'mAh/g':>10}  "
-              f"{'%':>7}  {'%':>9}  {'':>10}")
+        print(f"  {'':>5}  {'mAh/g':>10}  {'mAh/g':>10}  {'%':>7}  {'%':>9}  {'':>10}")
         print(f"  {'-' * (len(_hdr) - 2)}")
 
         for _, row in cycle_df.iterrows():
-            def _f(val, fmt='.1f'):
-                return f'{val:{fmt}}' if pd.notna(val) else '--'
+
+            def _f(val, fmt=".1f"):
+                return f"{val:{fmt}}" if pd.notna(val) else "--"
 
             # Until 1.9.0.23 this read `Incomplete` alone. Cells A and C,
             # whose CHARGE half was the unfinished one, printed INCOMPL;
@@ -1197,31 +1354,37 @@ def cycling_summary(electrochemical_data, user_parameters, *, save_location=None
             # CE 52.4%, retention 51.8% with nothing to say those were half
             # of a measurement still being taken. The one row in the run
             # that most needed a marker was the only one without one.
-            if row['Incomplete']:
-                status = 'Incomplete'
-            elif bool(row.get('Partial_Final', False)):
-                status = 'Running'
+            if row["Incomplete"]:
+                status = "Incomplete"
+            elif bool(row.get("Partial_Final", False)):
+                status = "Running"
             else:
-                status = ''
+                status = ""
 
-            print(f"  {int(row['Cycle']):>5}  "
-                  f"{_f(row['Charge_mAh_g']):>10}  "
-                  f"{_f(row['Discharge_mAh_g']):>10}  "
-                  f"{_f(row['CE_%']):>7}  "
-                  f"{_f(row['Retention_%']):>9}  "
-                  f"{status:>8}")
+            print(
+                f"  {int(row['Cycle']):>5}  "
+                f"{_f(row['Charge_mAh_g']):>10}  "
+                f"{_f(row['Discharge_mAh_g']):>10}  "
+                f"{_f(row['CE_%']):>7}  "
+                f"{_f(row['Retention_%']):>9}  "
+                f"{status:>8}"
+            )
 
         # --- Headline metrics (complete cycles only) ---
         # Headline metrics only. The full `cycle_df` — partial cycle and
         # all — is what goes into every figure and the exported CSV.
-        complete_df = cycle_df[~cycle_df['Incomplete']
-                               & ~cycle_df['Partial_Final']]
+        complete_df = cycle_df[~cycle_df["Incomplete"] & ~cycle_df["Partial_Final"]]
 
-        print("\n" + section(
-            f"  Headline metrics (excluding cycle"
-            f"{'s' if n_excluded != 1 else ''} "
-            f"{', '.join(str(int(c)) for c in excluded_cycles)})"
-            if n_excluded > 0 else "  Headline metrics"))
+        print(
+            "\n"
+            + section(
+                f"  Headline metrics (excluding cycle"
+                f"{'s' if n_excluded != 1 else ''} "
+                f"{', '.join(str(int(c)) for c in excluded_cycles)})"
+                if n_excluded > 0
+                else "  Headline metrics"
+            )
+        )
 
         # First-cycle irreversible loss (v1.8: anode-aware text)
         # After Cell 4b swap:
@@ -1231,35 +1394,42 @@ def cycling_summary(electrochemical_data, user_parameters, *, save_location=None
         #            irrev = charge - discharge (positive = normal)
         # In both cases, charge > discharge on cycle 1 means irreversible
         # capacity consumed during first insertion.
-        c1 = cycle_df[cycle_df['Cycle'] == 1]
-        if not c1.empty and not c1['Incomplete'].iloc[0]:
-            q_chg_1 = c1['Charge_mAh_g'].iloc[0]
-            q_dchg_1 = c1['Discharge_mAh_g'].iloc[0]
+        c1 = cycle_df[cycle_df["Cycle"] == 1]
+        if not c1.empty and not c1["Incomplete"].iloc[0]:
+            q_chg_1 = c1["Charge_mAh_g"].iloc[0]
+            q_dchg_1 = c1["Discharge_mAh_g"].iloc[0]
             if pd.notna(q_chg_1) and pd.notna(q_dchg_1) and q_chg_1 > 0:
                 irrev_loss = q_chg_1 - q_dchg_1
                 irrev_pct = irrev_loss / q_chg_1 * 100
                 if irrev_loss >= 0:
                     if is_anode:
-                        print(f"    1st cycle irreversible loss: "
-                              f"{irrev_loss:.1f} mAh/g ({irrev_pct:.1f}%)")
-                        print(f"    ({chg_label}: {q_chg_1:.1f} mAh/g, "
-                              f"{dch_label}: {q_dchg_1:.1f} mAh/g)")
+                        print(
+                            f"    1st cycle irreversible loss: "
+                            f"{irrev_loss:.1f} mAh/g ({irrev_pct:.1f}%)"
+                        )
+                        print(
+                            f"    ({chg_label}: {q_chg_1:.1f} mAh/g, "
+                            f"{dch_label}: {q_dchg_1:.1f} mAh/g)"
+                        )
                     else:
-                        print(f"    1st cycle irreversible loss: "
-                              f"{irrev_loss:.1f} mAh/g ({irrev_pct:.1f}%)")
+                        print(
+                            f"    1st cycle irreversible loss: "
+                            f"{irrev_loss:.1f} mAh/g ({irrev_pct:.1f}%)"
+                        )
                 else:
-                    print(f"    1st cycle excess {dch_label.lower()}: "
-                          f"{-irrev_loss:.1f} mAh/g ({-irrev_pct:.1f}% "
-                          f"more {dch_label.lower()} than "
-                          f"{chg_label.lower()})")
-                print(f"    1st cycle CE: "
-                      f"{q_dchg_1/q_chg_1*100:.1f}%")
+                    print(
+                        f"    1st cycle excess {dch_label.lower()}: "
+                        f"{-irrev_loss:.1f} mAh/g ({-irrev_pct:.1f}% "
+                        f"more {dch_label.lower()} than "
+                        f"{chg_label.lower()})"
+                    )
+                print(f"    1st cycle CE: {q_dchg_1 / q_chg_1 * 100:.1f}%")
 
         # Retention: last complete cycle vs reference
         if pd.notna(ref_cap) and not complete_df.empty:
             last_complete = complete_df.iloc[-1]
-            last_cap = last_complete['Discharge_mAh_g']
-            last_cycle = int(last_complete['Cycle'])
+            last_cap = last_complete["Discharge_mAh_g"]
+            last_cycle = int(last_complete["Cycle"])
 
             if pd.notna(last_cap):
                 # RETENTION AGAINST BOTH CYCLE 1 AND THE REFERENCE.
@@ -1270,85 +1440,95 @@ def cycling_summary(electrochemical_data, user_parameters, *, save_location=None
                 # usually needs both, so reporting only one made the other a
                 # calculation the reader had to do from the table.
                 for _ref in sorted({1, RETENTION_REFERENCE_CYCLE}):
-                    _row = complete_df[complete_df['Cycle'] == _ref]
+                    _row = complete_df[complete_df["Cycle"] == _ref]
                     if _row.empty:
                         continue
-                    _cap = _row.iloc[0]['Discharge_mAh_g']
+                    _cap = _row.iloc[0]["Discharge_mAh_g"]
                     if pd.isna(_cap) or not _cap:
                         continue
-                    print(f"    Cycle {_ref} {dch_label.lower()}: "
-                          f"{_cap:.1f} mAh/g")
-                print(f"    Cycle {last_cycle} "
-                      f"{dch_label.lower()}: {last_cap:.1f} mAh/g")
+                    print(f"    Cycle {_ref} {dch_label.lower()}: {_cap:.1f} mAh/g")
+                print(
+                    f"    Cycle {last_cycle} {dch_label.lower()}: {last_cap:.1f} mAh/g"
+                )
                 for _ref in sorted({1, RETENTION_REFERENCE_CYCLE}):
-                    _row = complete_df[complete_df['Cycle'] == _ref]
+                    _row = complete_df[complete_df["Cycle"] == _ref]
                     if _row.empty:
                         continue
-                    _cap = _row.iloc[0]['Discharge_mAh_g']
+                    _cap = _row.iloc[0]["Discharge_mAh_g"]
                     if pd.isna(_cap) or not _cap:
                         continue
-                    _note = ("  [includes the first-cycle irreversible loss]"
-                             if _ref == 1 else "")
-                    print(f"    Retention (cycle {last_cycle} vs {_ref}): "
-                          f"{100 * last_cap / _cap:.1f}%{_note}")
+                    _note = (
+                        "  [includes the first-cycle irreversible loss]"
+                        if _ref == 1
+                        else ""
+                    )
+                    print(
+                        f"    Retention (cycle {last_cycle} vs {_ref}): "
+                        f"{100 * last_cap / _cap:.1f}%{_note}"
+                    )
 
         # WHERE DOES FORMATION END? Measured from this table's own CE, not
         # assumed. See FADE_RATE_FROM_MEASURED_FORMATION.
         _fade_start = int(FADE_RATE_START_CYCLE)
-        _fade_why = (f"the {FADE_RATE_START_CYCLE} in `FADE_RATE_START_CYCLE`, "
-                     f"not a measurement")
+        _fade_why = (
+            f"the {FADE_RATE_START_CYCLE} in `FADE_RATE_START_CYCLE`, not a measurement"
+        )
         if FADE_RATE_FROM_MEASURED_FORMATION and not complete_df.empty:
-            _ce_series = {int(r['Cycle']): float(r['CE_%'])
-                          for _, r in complete_df.iterrows()
-                          if pd.notna(r.get('CE_%'))}
+            _ce_series = {
+                int(r["Cycle"]): float(r["CE_%"])
+                for _, r in complete_df.iterrows()
+                if pd.notna(r.get("CE_%"))
+            }
             _fe, _fe_why = formation_end(_ce_series)
             if _fe is not None:
                 _fade_start, _fade_why = int(_fe), _fe_why
             else:
-                _fade_why = (f"{_fe_why}; falling back to cycle "
-                             f"{FADE_RATE_START_CYCLE}")
+                _fade_why = f"{_fe_why}; falling back to cycle {FADE_RATE_START_CYCLE}"
 
         # Average CE (complete, excluding formation)
-        stable_ce = complete_df[
-            complete_df['Cycle'] >= _fade_start
-        ]['CE_%'].dropna()
+        stable_ce = complete_df[complete_df["Cycle"] >= _fade_start]["CE_%"].dropna()
 
         if not stable_ce.empty:
-            last_complete_cycle = int(complete_df['Cycle'].max())
-            print(f"    Average CE (cycles {_fade_start}"
-                  f"--{last_complete_cycle}): "
-                  f"{stable_ce.mean():.2f}% "
-                  f"(+/-{stable_ce.std():.2f}%)")
+            last_complete_cycle = int(complete_df["Cycle"].max())
+            print(
+                f"    Average CE (cycles {_fade_start}"
+                f"--{last_complete_cycle}): "
+                f"{stable_ce.mean():.2f}% "
+                f"(+/-{stable_ce.std():.2f}%)"
+            )
 
         # Fade rate (complete, excluding formation)
         stable = complete_df[
-            (complete_df['Cycle'] >= _fade_start) &
-            (complete_df['Discharge_mAh_g'].notna())
+            (complete_df["Cycle"] >= _fade_start)
+            & (complete_df["Discharge_mAh_g"].notna())
         ]
 
         if len(stable) >= 3:
-            slope, _ = np.polyfit(stable['Cycle'],
-                                  stable['Discharge_mAh_g'], 1)
+            slope, _ = np.polyfit(stable["Cycle"], stable["Discharge_mAh_g"], 1)
             # THE DENOMINATOR MATCHES THE RANGE. `%/cycle` divided by the
             # capacity of `RETENTION_REFERENCE_CYCLE` while the slope was
             # fitted from somewhere else entirely, so the two halves of the
             # sentence described different cycles. It is now the capacity of
             # the first cycle the slope was fitted through.
-            _row0 = stable[stable['Cycle'] == stable['Cycle'].min()]
-            _base = (float(_row0.iloc[0]['Discharge_mAh_g'])
-                     if not _row0.empty else np.nan)
-            print(f"    Formation ends at cycle {_fade_start} "
-                  f"({_fade_why})")
+            _row0 = stable[stable["Cycle"] == stable["Cycle"].min()]
+            _base = (
+                float(_row0.iloc[0]["Discharge_mAh_g"]) if not _row0.empty else np.nan
+            )
+            print(f"    Formation ends at cycle {_fade_start} ({_fade_why})")
             if pd.notna(_base) and _base > 0:
-                print(f"    Fade rate (cycles {_fade_start}"
-                      f"--{int(stable['Cycle'].max())}): "
-                      f"{slope:.3f} mAh/g/cycle "
-                      f"({slope/_base*100:.2f}%/cycle of the cycle "
-                      f"{_fade_start} capacity)")
+                print(
+                    f"    Fade rate (cycles {_fade_start}"
+                    f"--{int(stable['Cycle'].max())}): "
+                    f"{slope:.3f} mAh/g/cycle "
+                    f"({slope / _base * 100:.2f}%/cycle of the cycle "
+                    f"{_fade_start} capacity)"
+                )
             else:
-                print(f"    Fade rate (cycles {_fade_start}"
-                      f"--{int(stable['Cycle'].max())}): "
-                      f"{slope:.3f} mAh/g/cycle")
+                print(
+                    f"    Fade rate (cycles {_fade_start}"
+                    f"--{int(stable['Cycle'].max())}): "
+                    f"{slope:.3f} mAh/g/cycle"
+                )
 
         # --- Suggested caption (v1.8: anode-aware) ---
         caption = (
@@ -1367,50 +1547,62 @@ def cycling_summary(electrochemical_data, user_parameters, *, save_location=None
             _cap_notes.append(
                 f"cycle{'s' if n_incomplete > 1 else ''} "
                 f"{', '.join(str(int(c)) for c in incomplete_cycles)} "
-                f"{'were' if n_incomplete > 1 else 'was'} incomplete")
+                f"{'were' if n_incomplete > 1 else 'was'} incomplete"
+            )
         if _partial_cycles:
             _n_pf = len(_partial_cycles)
             _cap_notes.append(
                 f"cycle{'s' if _n_pf > 1 else ''} "
                 f"{', '.join(str(int(c)) for c in _partial_cycles)} "
                 f"{'were' if _n_pf > 1 else 'was'} still in progress when "
-                f"the data were exported")
+                f"the data were exported"
+            )
         if _cap_notes:
             _joined = " and ".join(_cap_notes)
-            caption += (" " + _joined[0].upper() + _joined[1:]
-                        + ", and excluded from headline metrics.")
+            caption += (
+                " "
+                + _joined[0].upper()
+                + _joined[1:]
+                + ", and excluded from headline metrics."
+            )
         print(section("  Suggested caption"))
         print(bullet(caption, indent=2, label_width=2))
 
         # --- v1.8: Print cell health diagnostics ---
         if _cell_flags:
-            print(f"\n  {'!'*60}")
+            print(f"\n  {'!' * 60}")
             print(f"  CELL HEALTH DIAGNOSTICS")
-            print(f"  {'!'*60}")
+            print(f"  {'!' * 60}")
             for severity, msg in _cell_flags:
-                if severity == 'FAILURE':
+                if severity == "FAILURE":
                     print(f"  ✘ DEFINITE FAILURE: {msg}")
-                elif severity == 'CRITICAL':
+                elif severity == "CRITICAL":
                     print(f"  ⚠ CRITICAL: {msg}")
                 else:
                     print(f"  ● WARNING: {msg}")
-            if any(s == 'FAILURE' for s, _ in _cell_flags):
-                print(f"\n  This cell has failed. Data after the failure "
-                      f"point is not meaningful.")
-                print(f"  Check the voltage profile to confirm the "
-                      f"failure mode.")
-            elif any(s == 'CRITICAL' for s, _ in _cell_flags):
-                print(f"\n  This cell shows signs of progressive "
-                      f"degradation beyond normal fading.")
-                print(f"  If this pattern continues, expect cell "
-                      f"failure within the next 5-10 cycles.")
+            if any(s == "FAILURE" for s, _ in _cell_flags):
+                print(
+                    f"\n  This cell has failed. Data after the failure "
+                    f"point is not meaningful."
+                )
+                print(f"  Check the voltage profile to confirm the failure mode.")
+            elif any(s == "CRITICAL" for s, _ in _cell_flags):
+                print(
+                    f"\n  This cell shows signs of progressive "
+                    f"degradation beyond normal fading."
+                )
+                print(
+                    f"  If this pattern continues, expect cell "
+                    f"failure within the next 5-10 cycles."
+                )
 
-            if not any(s == 'FAILURE' for s, _ in _cell_flags):
-                print(f"\n  If cycling is still in progress, the final "
-                      f"partial cycle may skew")
-                print(f"  these trends. Re-run on the completed dataset "
-                      f"to confirm.")
-            print(f"  {'!'*60}")
+            if not any(s == "FAILURE" for s, _ in _cell_flags):
+                print(
+                    f"\n  If cycling is still in progress, the final "
+                    f"partial cycle may skew"
+                )
+                print(f"  these trends. Re-run on the completed dataset to confirm.")
+            print(f"  {'!' * 60}")
 
     if all_cycle_tables:
         combined = None
@@ -1420,33 +1612,32 @@ def cycling_summary(electrochemical_data, user_parameters, *, save_location=None
             dch = _discharge_label(params)
             chg = _charge_label(params)
 
-            export_df = cdf[['Cycle']].copy()
-            export_df[f'{comp}_{chg}_mAh_g'] = cdf['Charge_mAh_g']
-            export_df[f'{comp}_{dch}_mAh_g'] = cdf['Discharge_mAh_g']
-            export_df[f'{comp}_CE_%'] = cdf['CE_%']
+            export_df = cdf[["Cycle"]].copy()
+            export_df[f"{comp}_{chg}_mAh_g"] = cdf["Charge_mAh_g"]
+            export_df[f"{comp}_{dch}_mAh_g"] = cdf["Discharge_mAh_g"]
+            export_df[f"{comp}_CE_%"] = cdf["CE_%"]
             # Self-describing: a retention figure without its reference is
             # not a measurement. RETENTION_REFERENCE_CYCLE is in the name.
-            export_df[f'{comp}_Retention_vs_C{RETENTION_REFERENCE_CYCLE}_%'] = \
-                cdf['Retention_%']
-            export_df[f'{comp}_Incomplete'] = cdf['Incomplete']
-            if 'Partial_Final' in cdf.columns:
+            export_df[f"{comp}_Retention_vs_C{RETENTION_REFERENCE_CYCLE}_%"] = cdf[
+                "Retention_%"
+            ]
+            export_df[f"{comp}_Incomplete"] = cdf["Incomplete"]
+            if "Partial_Final" in cdf.columns:
                 # Two different reasons a cycle is not a measurement, kept
                 # apart so a reader of the CSV can tell "the cycler aborted"
                 # from "the export was taken during it".
-                export_df[f'{comp}_Still_Running'] = cdf['Partial_Final']
+                export_df[f"{comp}_Still_Running"] = cdf["Partial_Final"]
 
             if combined is None:
                 combined = export_df
             else:
-                combined = pd.merge(combined, export_df, on='Cycle',
-                                   how='outer')
+                combined = pd.merge(combined, export_df, on="Cycle", how="outer")
 
         if combined is not None:
-            combined = combined.sort_values('Cycle').reset_index(drop=True)
+            combined = combined.sort_values("Cycle").reset_index(drop=True)
 
             if save_location:
-                fpath = os.path.join(save_location,
-                                    'cycling_performance_summary.csv')
+                fpath = os.path.join(save_location, "cycling_performance_summary.csv")
                 combined.to_csv(fpath, index=False)
                 saved(fpath)
 
@@ -1461,8 +1652,15 @@ def cycling_summary(electrochemical_data, user_parameters, *, save_location=None
 
 
 @_honours_verbose
-def voltage_profiles_key(electrochemical_data, user_parameters, *, save_location=None,
-        all_cycle_tables=None, file_format='png', verbose=True):
+def voltage_profiles_key(
+    electrochemical_data,
+    user_parameters,
+    *,
+    save_location=None,
+    all_cycle_tables=None,
+    file_format="png",
+    verbose=True,
+):
     """
     The same overlay, filtered to the key cycles.
 
@@ -1477,7 +1675,7 @@ def voltage_profiles_key(electrochemical_data, user_parameters, *, save_location
         if len(endpoints) < 2:
             return 0.0
 
-        caps = [e['capacity'] for e in endpoints]
+        caps = [e["capacity"] for e in endpoints]
         cap_range = max(caps) - min(caps) if len(caps) > 1 else max(caps)
         cap_tol = max(cap_range * cap_tol_frac, 2.0)
 
@@ -1486,8 +1684,10 @@ def voltage_profiles_key(electrochemical_data, user_parameters, *, save_location
             for j, other in enumerate(endpoints):
                 if i == j:
                     continue
-                if (abs(ep['capacity'] - other['capacity']) < cap_tol and
-                    abs(ep['voltage'] - other['voltage']) < volt_tol):
+                if (
+                    abs(ep["capacity"] - other["capacity"]) < cap_tol
+                    and abs(ep["voltage"] - other["voltage"]) < volt_tol
+                ):
                     n_overlapping += 1
                     break
 
@@ -1498,24 +1698,26 @@ def voltage_profiles_key(electrochemical_data, user_parameters, *, save_location
         if not endpoints:
             return
 
-        caps = [e['capacity'] for e in endpoints]
+        caps = [e["capacity"] for e in endpoints]
         cap_range = max(caps) - min(caps) if len(caps) > 1 else max(caps)
         cap_tol = max(cap_range * 0.03, 2.0)
         volt_tol = 0.05
 
         placed = []
-        sorted_endpoints = sorted(endpoints, key=lambda e: e['cycle'],
-                                   reverse=True)
+        sorted_endpoints = sorted(endpoints, key=lambda e: e["cycle"], reverse=True)
 
         for ep in sorted_endpoints:
-            cycle_idx = list(unique_cycles).index(ep['cycle'])
+            cycle_idx = list(unique_cycles).index(ep["cycle"])
             colour = palette[cycle_idx]
-            is_discharge = ep['step'] == 'Discharge'
+            is_discharge = ep["step"] == "Discharge"
 
             n_nearby = sum(
-                1 for pc, pv in placed
-                if (abs(ep['capacity'] - pc) < cap_tol and
-                    abs(ep['voltage'] - pv) < volt_tol)
+                1
+                for pc, pv in placed
+                if (
+                    abs(ep["capacity"] - pc) < cap_tol
+                    and abs(ep["voltage"] - pv) < volt_tol
+                )
             )
 
             x_offset = 0
@@ -1525,29 +1727,31 @@ def voltage_profiles_key(electrochemical_data, user_parameters, *, save_location
                 x_offset = direction * stagger * 14
 
             y_offset = -10 if is_discharge else 10
-            va = 'top' if is_discharge else 'bottom'
+            va = "top" if is_discharge else "bottom"
 
             ax.annotate(
-                str(int(ep['cycle'])),
-                xy=(ep['capacity'], ep['voltage']),
+                str(int(ep["cycle"])),
+                xy=(ep["capacity"], ep["voltage"]),
                 xytext=(x_offset, y_offset),
-                textcoords='offset points',
-                ha='center', va=va,
-                fontsize=8, fontweight='bold',
-                color=colour, alpha=0.9
+                textcoords="offset points",
+                ha="center",
+                va=va,
+                fontsize=8,
+                fontweight="bold",
+                color=colour,
+                alpha=0.9,
             )
-            placed.append((ep['capacity'], ep['voltage']))
+            placed.append((ep["capacity"], ep["voltage"]))
 
     def _add_colourbar(fig, ax, unique_cycles, colour_palette):
         """Add a colourbar mapping cycle number to colour."""
         cmap = plt.get_cmap(colour_palette)
-        norm = mcolors.Normalize(vmin=min(unique_cycles),
-                                  vmax=max(unique_cycles))
+        norm = mcolors.Normalize(vmin=min(unique_cycles), vmax=max(unique_cycles))
         sm = plt.cm.ScalarMappable(cmap=cmap, norm=norm)
         sm.set_array([])
 
         cbar = fig.colorbar(sm, ax=ax, pad=0.02, aspect=30)
-        cbar.set_label('Cycle number', fontsize=13)
+        cbar.set_label("Cycle number", fontsize=13)
         cbar.ax.tick_params(labelsize=11)
 
     global_max_capacity = 0
@@ -1555,32 +1759,40 @@ def voltage_profiles_key(electrochemical_data, user_parameters, *, save_location
     if COMMON_XAXIS_SCALE:
         for name, df in electrochemical_data.items():
             params = user_parameters.get(name, {})
-            key_cycles = (OVERRIDE_KEY_CYCLES if OVERRIDE_KEY_CYCLES
-                         else params.get('key_cycles', []))
+            key_cycles = (
+                OVERRIDE_KEY_CYCLES
+                if OVERRIDE_KEY_CYCLES
+                else params.get("key_cycles", [])
+            )
 
             df_work = df.copy()
-            for col in ['Charge_Capacity', 'Discharge_Capacity']:
+            for col in ["Charge_Capacity", "Discharge_Capacity"]:
                 if col in df_work.columns:
-                    df_work[col] = pd.to_numeric(df_work[col], errors='coerce')
+                    df_work[col] = pd.to_numeric(df_work[col], errors="coerce")
 
             if key_cycles:
-                df_filtered = df_work[df_work['Cycle'].isin(key_cycles)]
+                df_filtered = df_work[df_work["Cycle"].isin(key_cycles)]
             else:
                 df_filtered = df_work
 
-            for col in ['Charge_Capacity', 'Discharge_Capacity']:
+            for col in ["Charge_Capacity", "Discharge_Capacity"]:
                 if col in df_filtered.columns:
                     col_max = df_filtered[col].max()
                     if pd.notna(col_max):
                         global_max_capacity = max(global_max_capacity, col_max)
 
-        global_max_capacity, global_xaxis_step = nice_axis_limit(
-            global_max_capacity)
+        global_max_capacity, global_xaxis_step = nice_axis_limit(global_max_capacity)
 
         if global_max_capacity > 0:
-            print(entry("common x-axis", f"{global_max_capacity:.0f} mAh/g",
-                        f"key cycles; ticks every {global_xaxis_step:g}"
-                        if global_xaxis_step else "key cycles"))
+            print(
+                entry(
+                    "common x-axis",
+                    f"{global_max_capacity:.0f} mAh/g",
+                    f"key cycles; ticks every {global_xaxis_step:g}"
+                    if global_xaxis_step
+                    else "key cycles",
+                )
+            )
 
     _have_cycle_tables = _has_tables(all_cycle_tables)
 
@@ -1588,11 +1800,12 @@ def voltage_profiles_key(electrochemical_data, user_parameters, *, save_location
         params = user_parameters.get(name, {})
         composition = _get_display_name(name, params, user_parameters)
         print(rule(composition))
-        charge_rate_c = params.get('charge_rate_c', 'Unknown')
-        colour_palette = params.get('colour_palette', 'viridis_r')
-        key_cycles = (OVERRIDE_KEY_CYCLES if OVERRIDE_KEY_CYCLES
-                     else params.get('key_cycles', []))
-        is_anode = params.get('anode_labels_swapped', False)
+        charge_rate_c = params.get("charge_rate_c", "Unknown")
+        colour_palette = params.get("colour_palette", "viridis_r")
+        key_cycles = (
+            OVERRIDE_KEY_CYCLES if OVERRIDE_KEY_CYCLES else params.get("key_cycles", [])
+        )
+        is_anode = params.get("anode_labels_swapped", False)
         dch_label = _discharge_label(params)
         chg_label = _charge_label(params)
 
@@ -1601,10 +1814,10 @@ def voltage_profiles_key(electrochemical_data, user_parameters, *, save_location
 
         # Robust dropna (v1.8): require Voltage, Cycle, Step, and at
         # least one capacity column.
-        df_cleaned = df_work.dropna(subset=['Voltage', 'Cycle', 'Step'])
+        df_cleaned = df_work.dropna(subset=["Voltage", "Cycle", "Step"])
         df_cleaned = df_cleaned[
-            df_cleaned['Charge_Capacity'].notna() |
-            df_cleaned['Discharge_Capacity'].notna()
+            df_cleaned["Charge_Capacity"].notna()
+            | df_cleaned["Discharge_Capacity"].notna()
         ].copy()
 
         if df_cleaned.empty:
@@ -1612,13 +1825,12 @@ def voltage_profiles_key(electrochemical_data, user_parameters, *, save_location
             continue
 
         # --- Detect and exclude incomplete cycles ---
-        all_cycles_sorted = sorted(df_cleaned['Cycle'].unique())
+        all_cycles_sorted = sorted(df_cleaned["Cycle"].unique())
 
         if _have_cycle_tables and name in all_cycle_tables:
             # Prefer the table's protocol-level flags (Cell 6a)
             ct = all_cycle_tables[name]
-            incomplete_cycles = set(
-                _unusable_cycles(ct))
+            incomplete_cycles = set(_unusable_cycles(ct))
         else:
             # Fallback: protocol-level only (missing/zero discharge).
             # v1.8: removed the 80%-of-median heuristic which caused
@@ -1626,46 +1838,54 @@ def voltage_profiles_key(electrochemical_data, user_parameters, *, save_location
             # is anomalously high.
             incomplete_cycles = set()
             for cyc in all_cycles_sorted:
-                dc = df_cleaned[(df_cleaned['Cycle'] == cyc) &
-                                (df_cleaned['Step'] == 'Discharge')]
+                dc = df_cleaned[
+                    (df_cleaned["Cycle"] == cyc) & (df_cleaned["Step"] == "Discharge")
+                ]
                 if dc.empty:
                     incomplete_cycles.add(cyc)
                 else:
-                    cap = (dc['Discharge_Capacity'].max() -
-                           dc['Discharge_Capacity'].min())
+                    cap = (
+                        dc["Discharge_Capacity"].max() - dc["Discharge_Capacity"].min()
+                    )
                     if pd.isna(cap) or cap <= 0:
                         incomplete_cycles.add(cyc)
 
         # Filter key cycles: must exist in data AND not be incomplete
         available_key_cycles = [
-            c for c in key_cycles
+            c
+            for c in key_cycles
             if c in all_cycles_sorted and c not in incomplete_cycles
         ]
 
         if incomplete_cycles & set(key_cycles):
             removed = incomplete_cycles & set(key_cycles)
-            print(entry("key cycles excluded",
-                        ", ".join(str(int(c)) for c in sorted(removed)),
-                        "incomplete"))
+            print(
+                entry(
+                    "key cycles excluded",
+                    ", ".join(str(int(c)) for c in sorted(removed)),
+                    "incomplete",
+                )
+            )
 
         if not available_key_cycles:
             print(verdict("caution", f"no valid key cycles found for {name}"))
             # Fall back to all available non-incomplete cycles
             available_key_cycles = [
-                c for c in all_cycles_sorted
-                if c not in incomplete_cycles
+                c for c in all_cycles_sorted if c not in incomplete_cycles
             ]
             if not available_key_cycles:
                 continue
-            print(f"  Falling back to all complete cycles: "
-                  f"{', '.join(str(int(c)) for c in available_key_cycles)}")
+            print(
+                f"  Falling back to all complete cycles: "
+                f"{', '.join(str(int(c)) for c in available_key_cycles)}"
+            )
 
         # Filter data
-        df_key = df_cleaned[df_cleaned['Cycle'].isin(available_key_cycles)]
-        df_discharge = df_key[df_key['Step'] == 'Discharge']
-        df_charge = df_key[df_key['Step'] == 'Charge']
+        df_key = df_cleaned[df_cleaned["Cycle"].isin(available_key_cycles)]
+        df_discharge = df_key[df_key["Step"] == "Discharge"]
+        df_charge = df_key[df_key["Step"] == "Charge"]
 
-        unique_cycles = sorted(df_key['Cycle'].unique())
+        unique_cycles = sorted(df_key["Cycle"].unique())
         num_cycles = len(unique_cycles)
 
         palette = sns.color_palette(colour_palette, n_colors=num_cycles)
@@ -1678,31 +1898,41 @@ def voltage_profiles_key(electrochemical_data, user_parameters, *, save_location
         for i, cycle in enumerate(unique_cycles):
             colour = palette[i]
 
-            dc = df_discharge[df_discharge['Cycle'] == cycle]
+            dc = df_discharge[df_discharge["Cycle"] == cycle]
             if not dc.empty:
-                dc_sorted = dc.sort_values('Discharge_Capacity')
-                ax.plot(dc_sorted['Discharge_Capacity'],
-                       dc_sorted['Voltage'],
-                       color=colour, linestyle='-', linewidth=1.2)
+                dc_sorted = dc.sort_values("Discharge_Capacity")
+                ax.plot(
+                    dc_sorted["Discharge_Capacity"],
+                    dc_sorted["Voltage"],
+                    color=colour,
+                    linestyle="-",
+                    linewidth=1.2,
+                )
 
-            cc = df_charge[df_charge['Cycle'] == cycle]
+            cc = df_charge[df_charge["Cycle"] == cycle]
             if not cc.empty:
-                cc_sorted = cc.sort_values('Charge_Capacity')
-                ax.plot(cc_sorted['Charge_Capacity'],
-                       cc_sorted['Voltage'],
-                       color=colour, linestyle='--', linewidth=1.2)
+                cc_sorted = cc.sort_values("Charge_Capacity")
+                ax.plot(
+                    cc_sorted["Charge_Capacity"],
+                    cc_sorted["Voltage"],
+                    color=colour,
+                    linestyle="--",
+                    linewidth=1.2,
+                )
 
         # --- Labelling ---
-        endpoints = _get_endpoints(df_charge, df_discharge,
-                                    unique_cycles, available_key_cycles)
+        endpoints = _get_endpoints(
+            df_charge, df_discharge, unique_cycles, available_key_cycles
+        )
 
-        if LABEL_MODE == 'auto':
+        if LABEL_MODE == "auto":
             overlap_frac = _check_overlap(endpoints)
             use_colourbar = overlap_frac > AUTO_OVERLAP_THRESHOLD
-            mode_used = 'colourbar' if use_colourbar else 'annotations'
-            print(f"  Label mode: auto -> {mode_used} "
-                  f"({overlap_frac*100:.0f}% overlap)")
-        elif LABEL_MODE == 'colourbar':
+            mode_used = "colourbar" if use_colourbar else "annotations"
+            print(
+                f"  Label mode: auto -> {mode_used} ({overlap_frac * 100:.0f}% overlap)"
+            )
+        elif LABEL_MODE == "colourbar":
             use_colourbar = True
         else:
             use_colourbar = False
@@ -1713,10 +1943,17 @@ def voltage_profiles_key(electrochemical_data, user_parameters, *, save_location
             _add_annotations(ax, endpoints, unique_cycles, palette)
 
         # --- Formatting ---
-        ax.set_xlabel('Specific Capacity / mAh g$^{-1}$', fontsize=14)
-        ax.set_ylabel('Voltage / V', fontsize=14)
-        ax.tick_params(axis='both', labelcolor='black', labelsize=12,
-                       width=1, direction='in', top=True, right=True)
+        ax.set_xlabel("Specific Capacity / mAh g$^{-1}$", fontsize=14)
+        ax.set_ylabel("Voltage / V", fontsize=14)
+        ax.tick_params(
+            axis="both",
+            labelcolor="black",
+            labelsize=12,
+            width=1,
+            direction="in",
+            top=True,
+            right=True,
+        )
 
         if COMMON_XAXIS_SCALE and global_max_capacity > 0:
             ax.set_xlim(left=0, right=global_max_capacity)
@@ -1725,8 +1962,7 @@ def voltage_profiles_key(electrochemical_data, user_parameters, *, save_location
             # 0/20/40/.../140 and leaves the last gridline 10 short of the
             # frame; the step that produced the limit does not.
             if global_xaxis_step:
-                ax.xaxis.set_major_locator(
-                    mticker.MultipleLocator(global_xaxis_step))
+                ax.xaxis.set_major_locator(mticker.MultipleLocator(global_xaxis_step))
         else:
             ax.set_xlim(left=0)
             ax.set_xlim(right=ax.get_xlim()[1] * (1 + XAXIS_PADDING_FRACTION))
@@ -1735,17 +1971,17 @@ def voltage_profiles_key(electrochemical_data, user_parameters, *, save_location
 
         # --- Save ---
         if save_location:
-            file_format = params.get('file_format', 'png')
+            file_format = params.get("file_format", "png")
             filename = f"{name}_key_cycles_voltage_profile.{file_format}"
             filepath = os.path.join(save_location, filename)
-            fig.savefig(filepath, dpi=300, bbox_inches='tight')
+            fig.savefig(filepath, dpi=300, bbox_inches="tight")
             saved(filepath)
 
         # --- Figure caption (v1.8: anode-aware) ---
         # The PROTOCOL window, not the extent of the record. See
         # `_caption_window`: the record includes the open-circuit start.
         v_min, v_max = _caption_window(params, df_work)
-        cycles_str = ', '.join(str(int(c)) for c in unique_cycles)
+        cycles_str = ", ".join(str(int(c)) for c in unique_cycles)
         caption = (
             f"Figure X. Voltage profiles for selected galvanostatic "
             f"cycles ({cycles_str}) of {composition}, cycled between "
@@ -1760,15 +1996,21 @@ def voltage_profiles_key(electrochemical_data, user_parameters, *, save_location
         plt.close(fig)
 
         # --- Print which cycles were plotted ---
-        print(f"  Plotted cycles: "
-              f"{', '.join(str(int(c)) for c in unique_cycles)}")
+        print(f"  Plotted cycles: {', '.join(str(int(c)) for c in unique_cycles)}")
 
     print(rule())
 
 
 @_honours_verbose
-def cycle_life(electrochemical_data, user_parameters, *, save_location=None,
-        all_cycle_tables=None, file_format='png', verbose=True):
+def cycle_life(
+    electrochemical_data,
+    user_parameters,
+    *,
+    save_location=None,
+    all_cycle_tables=None,
+    file_format="png",
+    verbose=True,
+):
     """
     Capacity and coulombic efficiency against cycle number.
 
@@ -1783,20 +2025,29 @@ def cycle_life(electrochemical_data, user_parameters, *, save_location=None,
         """The canonical per-cycle capacity, under this function's old
         column names. One definition — see `delivered_capacity`."""
         out = delivered_capacity(df)
-        return out.rename(columns={"Discharge_mAh_g": "Discharge_Capacity",
-                                   "Charge_mAh_g": "Charge_Capacity"})
+        return out.rename(
+            columns={
+                "Discharge_mAh_g": "Discharge_Capacity",
+                "Charge_mAh_g": "Charge_Capacity",
+            }
+        )
 
     def _calculate_efficiency(row):
         """CE for one row, under this function's old column names. One
         definition — see `coulombic_efficiency`."""
-        return float(coulombic_efficiency(
-            [row['Discharge_Capacity']], [row['Charge_Capacity']]).iloc[0])
+        return float(
+            coulombic_efficiency(
+                [row["Discharge_Capacity"]], [row["Charge_Capacity"]]
+            ).iloc[0]
+        )
 
     _have_cycle_tables = _has_tables(all_cycle_tables)
 
     if EXCLUDE_INCOMPLETE and not _have_cycle_tables:
-        print("  Note: Cell 5b not run — using protocol-level incomplete "
-              "detection (missing/zero discharge).")
+        print(
+            "  Note: Cell 5b not run — using protocol-level incomplete "
+            "detection (missing/zero discharge)."
+        )
 
     global_max_capacity = 0
 
@@ -1804,25 +2055,30 @@ def cycle_life(electrochemical_data, user_parameters, *, save_location=None,
         for name, df in electrochemical_data.items():
             cap_df = _calculate_cycle_capacities(df)
             if not cap_df.empty:
-                for col in ['Charge_Capacity', 'Discharge_Capacity']:
+                for col in ["Charge_Capacity", "Discharge_Capacity"]:
                     col_max = cap_df[col].max()
                     if pd.notna(col_max):
                         global_max_capacity = max(global_max_capacity, col_max)
 
-        global_max_capacity, global_yaxis_step = nice_axis_limit(
-            global_max_capacity)
+        global_max_capacity, global_yaxis_step = nice_axis_limit(global_max_capacity)
 
         if global_max_capacity > 0:
-            print(entry("common y-axis", f"{global_max_capacity:.0f} mAh/g",
-                        f"capacity; ticks every {global_yaxis_step:g}"
-                        if global_yaxis_step else "capacity"))
+            print(
+                entry(
+                    "common y-axis",
+                    f"{global_max_capacity:.0f} mAh/g",
+                    f"capacity; ticks every {global_yaxis_step:g}"
+                    if global_yaxis_step
+                    else "capacity",
+                )
+            )
 
     for name, df in electrochemical_data.items():
         params = user_parameters.get(name, {})
         composition = _get_display_name(name, params, user_parameters)
         print(rule(composition))
-        charge_rate_c = params.get('charge_rate_c', 'Unknown')
-        is_anode = params.get('anode_labels_swapped', False)
+        charge_rate_c = params.get("charge_rate_c", "Unknown")
+        is_anode = params.get("anode_labels_swapped", False)
         dch_label = _discharge_label(params)
         chg_label = _charge_label(params)
 
@@ -1838,26 +2094,29 @@ def cycle_life(electrochemical_data, user_parameters, *, save_location=None,
             if _have_cycle_tables and name in all_cycle_tables:
                 # Prefer the table's protocol-level flags (Cell 6a)
                 ct = all_cycle_tables[name]
-                incomplete_set = set(
-                    _unusable_cycles(ct))
-                cap_df['Incomplete'] = cap_df['Cycle'].isin(incomplete_set)
+                incomplete_set = set(_unusable_cycles(ct))
+                cap_df["Incomplete"] = cap_df["Cycle"].isin(incomplete_set)
             else:
                 # Fallback: protocol-level only (missing/zero discharge).
                 # v1.8: removed 80%-of-median heuristic.
                 flags = []
                 for _, row in cap_df.iterrows():
-                    d = row['Discharge_Capacity']
+                    d = row["Discharge_Capacity"]
                     flags.append(pd.isna(d) or d <= 0)
-                cap_df['Incomplete'] = flags
+                cap_df["Incomplete"] = flags
 
-            n_incomplete = cap_df['Incomplete'].sum()
+            n_incomplete = cap_df["Incomplete"].sum()
             if n_incomplete > 0:
-                removed = cap_df[cap_df['Incomplete']]['Cycle'].tolist()
-                print(entry("cycles excluded",
-                            ", ".join(str(int(c)) for c in removed),
-                            "incomplete"))
+                removed = cap_df[cap_df["Incomplete"]]["Cycle"].tolist()
+                print(
+                    entry(
+                        "cycles excluded",
+                        ", ".join(str(int(c)) for c in removed),
+                        "incomplete",
+                    )
+                )
 
-            plot_df = cap_df[~cap_df['Incomplete']].copy()
+            plot_df = cap_df[~cap_df["Incomplete"]].copy()
         else:
             plot_df = cap_df.copy()
 
@@ -1866,48 +2125,63 @@ def cycle_life(electrochemical_data, user_parameters, *, save_location=None,
             continue
 
         # Calculate CE (v1.8: no electrode_type needed, swap handles it)
-        plot_df['CE'] = plot_df.apply(_calculate_efficiency, axis=1)
+        plot_df["CE"] = plot_df.apply(_calculate_efficiency, axis=1)
 
         # CE: skip formation cycle
-        ce_df = plot_df[
-            (plot_df['Cycle'] >= CE_START_CYCLE) &
-            (plot_df['CE'].notna())
-        ]
+        ce_df = plot_df[(plot_df["Cycle"] >= CE_START_CYCLE) & (plot_df["CE"].notna())]
 
         # --- Plot ---
         fig, ax1 = plt.subplots()
         ax2 = ax1.twinx()
 
         # Capacity (left axis) — legend labels adapt for anodes
-        ax1.plot(plot_df['Cycle'], plot_df['Charge_Capacity'],
-                color=COLOUR_CHARGE, marker=MARKER_CHARGE,
-                markersize=MARKER_SIZE, linestyle='',
-                label=chg_label, zorder=3)
+        ax1.plot(
+            plot_df["Cycle"],
+            plot_df["Charge_Capacity"],
+            color=COLOUR_CHARGE,
+            marker=MARKER_CHARGE,
+            markersize=MARKER_SIZE,
+            linestyle="",
+            label=chg_label,
+            zorder=3,
+        )
 
-        ax1.plot(plot_df['Cycle'], plot_df['Discharge_Capacity'],
-                color=COLOUR_DISCHARGE, marker=MARKER_DISCHARGE,
-                markersize=MARKER_SIZE, linestyle='',
-                label=dch_label, zorder=3)
+        ax1.plot(
+            plot_df["Cycle"],
+            plot_df["Discharge_Capacity"],
+            color=COLOUR_DISCHARGE,
+            marker=MARKER_DISCHARGE,
+            markersize=MARKER_SIZE,
+            linestyle="",
+            label=dch_label,
+            zorder=3,
+        )
 
         # CE (right axis)
         if not ce_df.empty:
-            ax2.plot(ce_df['Cycle'], ce_df['CE'],
-                    color=COLOUR_EFFICIENCY, marker=MARKER_EFFICIENCY,
-                    markersize=MARKER_SIZE - 1, linestyle='',
-                    label='CE', zorder=2, alpha=0.7)
+            ax2.plot(
+                ce_df["Cycle"],
+                ce_df["CE"],
+                color=COLOUR_EFFICIENCY,
+                marker=MARKER_EFFICIENCY,
+                markersize=MARKER_SIZE - 1,
+                linestyle="",
+                label="CE",
+                zorder=2,
+                alpha=0.7,
+            )
 
         # --- Axis formatting ---
-        ax1.set_xlabel('Cycle number', fontsize=14)
+        ax1.set_xlabel("Cycle number", fontsize=14)
         _force_integer_cycles(ax1)
-        ax1.set_ylabel('Specific capacity / mAh g$^{-1}$', fontsize=14)
-        ax2.set_ylabel('Coulombic efficiency / %', fontsize=14)
+        ax1.set_ylabel("Specific capacity / mAh g$^{-1}$", fontsize=14)
+        ax2.set_ylabel("Coulombic efficiency / %", fontsize=14)
 
         # Y-axis limits: capacity
         if COMMON_YAXIS_CAPACITY and global_max_capacity > 0:
             ax1.set_ylim(bottom=0, top=global_max_capacity)
             if global_yaxis_step:
-                ax1.yaxis.set_major_locator(
-                    mticker.MultipleLocator(global_yaxis_step))
+                ax1.yaxis.set_major_locator(mticker.MultipleLocator(global_yaxis_step))
         else:
             ax1.set_ylim(bottom=0)
             ax1.set_ylim(top=ax1.get_ylim()[1] * (1 + CAPACITY_YAXIS_PADDING))
@@ -1916,15 +2190,15 @@ def cycle_life(electrochemical_data, user_parameters, *, save_location=None,
         ax2.set_ylim(bottom=0, top=EFFICIENCY_YMAX)
 
         # Tick formatting
-        ax1.tick_params(axis='both', labelsize=12, width=1, direction='in',
-                        top=True)
-        ax2.tick_params(axis='y', labelsize=12, width=1, direction='in')
+        ax1.tick_params(axis="both", labelsize=12, width=1, direction="in", top=True)
+        ax2.tick_params(axis="y", labelsize=12, width=1, direction="in")
 
         # Combined legend from both axes
         lines1, labels1 = ax1.get_legend_handles_labels()
         lines2, labels2 = ax2.get_legend_handles_labels()
-        ax1.legend(lines1 + lines2, labels1 + labels2,
-                   fontsize=10, framealpha=0.7, loc='best')
+        ax1.legend(
+            lines1 + lines2, labels1 + labels2, fontsize=10, framealpha=0.7, loc="best"
+        )
 
         # Remove grids (clean look for dual-axis)
         ax1.grid(False)
@@ -1939,10 +2213,10 @@ def cycle_life(electrochemical_data, user_parameters, *, save_location=None,
 
         # --- Save ---
         if save_location:
-            file_format = params.get('file_format', 'png')
+            file_format = params.get("file_format", "png")
             filename = f"{name}_cycle_life.{file_format}"
             filepath = os.path.join(save_location, filename)
-            fig.savefig(filepath, dpi=300, bbox_inches='tight')
+            fig.savefig(filepath, dpi=300, bbox_inches="tight")
             saved(filepath)
 
         # --- Figure caption (v1.8: anode-aware) ---
@@ -1968,18 +2242,27 @@ def cycle_life(electrochemical_data, user_parameters, *, save_location=None,
 
         # --- Print summary ---
         if not ce_df.empty:
-            mean_ce = ce_df['CE'].mean()
-            std_ce = ce_df['CE'].std()
-            print(f"  Average CE (cycles {CE_START_CYCLE}–"
-                  f"{int(plot_df['Cycle'].max())}): "
-                  f"{mean_ce:.2f}% (+/-{std_ce:.2f}%)")
+            mean_ce = ce_df["CE"].mean()
+            std_ce = ce_df["CE"].std()
+            print(
+                f"  Average CE (cycles {CE_START_CYCLE}–"
+                f"{int(plot_df['Cycle'].max())}): "
+                f"{mean_ce:.2f}% (+/-{std_ce:.2f}%)"
+            )
 
     print(rule())
 
 
 @_honours_verbose
-def comparative_capacity(electrochemical_data, user_parameters, *, save_location=None,
-        all_cycle_tables=None, file_format='png', verbose=True):
+def comparative_capacity(
+    electrochemical_data,
+    user_parameters,
+    *,
+    save_location=None,
+    all_cycle_tables=None,
+    file_format="png",
+    verbose=True,
+):
     """
     Discharge capacity for every dataset on one axis.
 
@@ -1999,6 +2282,7 @@ def comparative_capacity(electrochemical_data, user_parameters, *, save_location
     # one changed the sentence and not the data.
 
     VISUAL_OUTLIER_THRESHOLD = VISUAL_OUTLIER_FRACTION
+
     def _comparative_capacity_label():
         """Return the best y-axis label for a multi-dataset capacity plot."""
         labels = set()
@@ -2007,7 +2291,7 @@ def comparative_capacity(electrochemical_data, user_parameters, *, save_location
             labels.add(_discharge_label(params))
         if len(labels) == 1:
             return f"{labels.pop()} capacity / mAh g$^{{-1}}$"
-        return 'Specific capacity / mAh g$^{-1}$'
+        return "Specific capacity / mAh g$^{-1}$"
 
     def _comparative_capacity_word():
         """Return the capacity noun for captions (no units)."""
@@ -2017,13 +2301,15 @@ def comparative_capacity(electrochemical_data, user_parameters, *, save_location
             labels.add(_discharge_label(params).lower())
         if len(labels) == 1:
             return f"{labels.pop()} capacities"
-        return 'specific capacities'
+        return "specific capacities"
 
     print(rule("COMPARATIVE DISCHARGE CAPACITY"))
 
     palette = MULTI_DATASET_PALETTE
 
-    fig, ax = plt.subplots(figsize=(_plots.figure_width_inches, _plots.figure_height_inches))
+    fig, ax = plt.subplots(
+        figsize=(_plots.figure_width_inches, _plots.figure_height_inches)
+    )
 
     caption_compositions = []
 
@@ -2032,13 +2318,15 @@ def comparative_capacity(electrochemical_data, user_parameters, *, save_location
     _have_cycle_tables = _has_tables(all_cycle_tables)
 
     if not _have_cycle_tables:
-        print("  ⚠ all_cycle_tables not found — Cell 5b has not been run. "
-              "Run Cell 5b first for the cleanest output.")
+        print(
+            "  ⚠ all_cycle_tables not found — Cell 5b has not been run. "
+            "Run Cell 5b first for the cleanest output."
+        )
 
     for i, (name, df) in enumerate(electrochemical_data.items()):
         params = user_parameters.get(name, {})
         composition = _get_display_name(name, params, user_parameters)
-        charge_rate_c = params.get('charge_rate_c', None)
+        charge_rate_c = params.get("charge_rate_c", None)
         dch_label = _discharge_label(params)
 
         colour = palette[i % len(palette)]
@@ -2047,86 +2335,105 @@ def comparative_capacity(electrochemical_data, user_parameters, *, save_location
         # Primary path: Cell 5b cycle table
         if _have_cycle_tables and name in all_cycle_tables:
             ct = all_cycle_tables[name]
-            plot_data = (_ct_with_flag(ct, 'Discharge_mAh_g')
-                         .rename(columns={'Discharge_mAh_g':
-                                          'Discharge_Capacity'})
-                         .dropna(subset=['Cycle', 'Discharge_Capacity'])
-                         .copy())
+            plot_data = (
+                _ct_with_flag(ct, "Discharge_mAh_g")
+                .rename(columns={"Discharge_mAh_g": "Discharge_Capacity"})
+                .dropna(subset=["Cycle", "Discharge_Capacity"])
+                .copy()
+            )
         else:
             # Fallback: derive via groupby (no Python loop)
-            discharge = df[df['Step'] == 'Discharge'].dropna(
-                subset=['Cycle', 'Discharge_Capacity'])
+            discharge = df[df["Step"] == "Discharge"].dropna(
+                subset=["Cycle", "Discharge_Capacity"]
+            )
             if discharge.empty:
-                print(f"  {composition}: no {dch_label.lower()} data "
-                      f"found, skipping.")
+                print(f"  {composition}: no {dch_label.lower()} data found, skipping.")
                 continue
-            grp = discharge.groupby('Cycle')['Discharge_Capacity']
-            plot_data = pd.DataFrame({
-                'Cycle': grp.max().index.astype(int),
-                'Discharge_Capacity': (grp.max() - grp.min()).values,
-                'Incomplete': False,
-            })
+            grp = discharge.groupby("Cycle")["Discharge_Capacity"]
+            plot_data = pd.DataFrame(
+                {
+                    "Cycle": grp.max().index.astype(int),
+                    "Discharge_Capacity": (grp.max() - grp.min()).values,
+                    "Incomplete": False,
+                }
+            )
 
         if plot_data.empty:
-            print(f"  {composition}: no {dch_label.lower()} data "
-                  f"found, skipping.")
+            print(f"  {composition}: no {dch_label.lower()} data found, skipping.")
             continue
 
-        plot_data = plot_data.sort_values('Cycle').reset_index(drop=True)
+        plot_data = plot_data.sort_values("Cycle").reset_index(drop=True)
 
         # Exclude incomplete cycles (protocol-level flag from Cell 5b)
-        if EXCLUDE_INCOMPLETE and 'Incomplete' in plot_data.columns:
-            n_incomplete = int(plot_data['Incomplete'].sum())
+        if EXCLUDE_INCOMPLETE and "Incomplete" in plot_data.columns:
+            n_incomplete = int(plot_data["Incomplete"].sum())
             if n_incomplete > 0:
-                removed = plot_data.loc[plot_data['Incomplete'],
-                                        'Cycle'].tolist()
-                print(f"  {composition}: excluded {n_incomplete} "
-                      f"protocol-incomplete cycle(s): "
-                      f"{', '.join(str(int(c)) for c in removed)}")
-            plot_data = plot_data[~plot_data['Incomplete']].reset_index(drop=True)
+                removed = plot_data.loc[plot_data["Incomplete"], "Cycle"].tolist()
+                print(
+                    f"  {composition}: excluded {n_incomplete} "
+                    f"protocol-incomplete cycle(s): "
+                    f"{', '.join(str(int(c)) for c in removed)}"
+                )
+            plot_data = plot_data[~plot_data["Incomplete"]].reset_index(drop=True)
 
         # Visual-outlier filter
         if VISUAL_OUTLIER_FILTER and not plot_data.empty:
             outlier_flags = _flag_visual_outliers(
-                plot_data['Discharge_Capacity'].tolist(), threshold=VISUAL_OUTLIER_THRESHOLD,
-                groups=rate_block_labels(plot_data['Cycle'], params))
+                plot_data["Discharge_Capacity"].tolist(),
+                threshold=VISUAL_OUTLIER_THRESHOLD,
+                groups=rate_block_labels(plot_data["Cycle"], params),
+            )
             n_outliers = sum(outlier_flags)
             if n_outliers > 0:
-                plot_data['_visual_outlier'] = outlier_flags
-                removed = plot_data.loc[plot_data['_visual_outlier'],
-                                        'Cycle'].tolist()
-                print(f"  {composition}: excluded {n_outliers} visual "
-                      f"outlier(s) (<{VISUAL_OUTLIER_THRESHOLD*100:.0f}% "
-                      f"of running median): "
-                      f"{', '.join(str(int(c)) for c in removed)}")
-                plot_data = plot_data[~plot_data['_visual_outlier']].drop(
-                    columns='_visual_outlier').reset_index(drop=True)
+                plot_data["_visual_outlier"] = outlier_flags
+                removed = plot_data.loc[plot_data["_visual_outlier"], "Cycle"].tolist()
+                print(
+                    f"  {composition}: excluded {n_outliers} visual "
+                    f"outlier(s) (<{VISUAL_OUTLIER_THRESHOLD * 100:.0f}% "
+                    f"of running median): "
+                    f"{', '.join(str(int(c)) for c in removed)}"
+                )
+                plot_data = (
+                    plot_data[~plot_data["_visual_outlier"]]
+                    .drop(columns="_visual_outlier")
+                    .reset_index(drop=True)
+                )
 
         if plot_data.empty:
             print(f"  {composition}: no complete cycles, skipping.")
             continue
 
         # Plot
-        ax.plot(plot_data['Cycle'], plot_data['Discharge_Capacity'],
-               color=colour, marker=marker, markersize=MARKER_SIZE,
-               linestyle='', label=composition, zorder=3)
+        ax.plot(
+            plot_data["Cycle"],
+            plot_data["Discharge_Capacity"],
+            color=colour,
+            marker=marker,
+            markersize=MARKER_SIZE,
+            linestyle="",
+            label=composition,
+            zorder=3,
+        )
 
         caption_compositions.append(composition)
         if charge_rate_c is not None:
             caption_rates.add(str(charge_rate_c))
 
-        print(f"  {composition}: {len(plot_data)} cycles plotted "
-              f"({plot_data['Discharge_Capacity'].iloc[0]:.1f} -> "
-              f"{plot_data['Discharge_Capacity'].iloc[-1]:.1f} mAh/g)")
+        print(
+            f"  {composition}: {len(plot_data)} cycles plotted "
+            f"({plot_data['Discharge_Capacity'].iloc[0]:.1f} -> "
+            f"{plot_data['Discharge_Capacity'].iloc[-1]:.1f} mAh/g)"
+        )
 
-    ax.set_xlabel('Cycle number', fontsize=14)
+    ax.set_xlabel("Cycle number", fontsize=14)
 
     _force_integer_cycles(ax)
 
     ax.set_ylabel(_comparative_capacity_label(), fontsize=14)
 
-    ax.tick_params(axis='both', labelsize=12, width=1, direction='in',
-                   top=True, right=True)
+    ax.tick_params(
+        axis="both", labelsize=12, width=1, direction="in", top=True, right=True
+    )
 
     for sp in ax.spines.values():
         sp.set_linewidth(0.8)
@@ -2140,22 +2447,27 @@ def comparative_capacity(electrochemical_data, user_parameters, *, save_location
     plt.tight_layout()
 
     if caption_compositions:
-        comp_str = ', '.join(caption_compositions[:-1])
+        comp_str = ", ".join(caption_compositions[:-1])
         if len(caption_compositions) > 1:
-            comp_str += f' and {caption_compositions[-1]}'
+            comp_str += f" and {caption_compositions[-1]}"
         else:
             comp_str = caption_compositions[0]
 
-        rate_str = (' and '.join(sorted(caption_rates)) + ' C'
-                   if caption_rates else 'the specified C-rate')
+        rate_str = (
+            " and ".join(sorted(caption_rates)) + " C"
+            if caption_rates
+            else "the specified C-rate"
+        )
 
         # EVERY dataset's protocol window, not the union of their
         # records — which read 1.20-2.68 V for a triplicate cycled
         # 1.2-2.5 V, because one cell started from open circuit.
         _vlo, _vhi = _caption_window_all(user_parameters)
-        v_range = (f"{_vlo:.2f} and {_vhi:.2f} V"
-                   if np.isfinite(_vlo) and np.isfinite(_vhi)
-                   else "the specified voltage limits")
+        v_range = (
+            f"{_vlo:.2f} and {_vhi:.2f} V"
+            if np.isfinite(_vlo) and np.isfinite(_vhi)
+            else "the specified voltage limits"
+        )
 
         cap_word = _comparative_capacity_word()
         caption = (
@@ -2166,9 +2478,11 @@ def comparative_capacity(electrochemical_data, user_parameters, *, save_location
         print(bullet(caption, indent=2, label_width=2))
 
     if save_location:
-        filepath = os.path.join(save_location,
-                               f'comparative_discharge_capacity.{_run_image_format(user_parameters)}')
-        fig.savefig(filepath, dpi=300, bbox_inches='tight')
+        filepath = os.path.join(
+            save_location,
+            f"comparative_discharge_capacity.{_run_image_format(user_parameters)}",
+        )
+        fig.savefig(filepath, dpi=300, bbox_inches="tight")
         saved(filepath)
 
     plt.show()
@@ -2179,7 +2493,7 @@ def comparative_capacity(electrochemical_data, user_parameters, *, save_location
         loadings = {}
         for name in electrochemical_data:
             params = user_parameters.get(name, {})
-            loading = params.get('active_loading_mg_cm2')
+            loading = params.get("active_loading_mg_cm2")
             if loading is not None:
                 comp = _get_display_name(name, params, user_parameters)
                 loadings[comp] = loading
@@ -2193,25 +2507,39 @@ def comparative_capacity(electrochemical_data, user_parameters, *, save_location
                     # Adaptive label for the warning too
                     cap_word = _comparative_capacity_word()
                     print(f"\n  ⚠ LOADING MISMATCH WARNING")
-                    print(f"  Active material loadings vary by "
-                          f"{spread_pct:.0f}% across datasets:")
+                    print(
+                        f"  Active material loadings vary by "
+                        f"{spread_pct:.0f}% across datasets:"
+                    )
                     for comp, val in loadings.items():
                         print(f"    {comp:<30} {val:.2f} mg/cm²")
-                    print(f"  Specific capacity comparisons may "
-                          f"be misleading at different")
-                    print(f"  loadings — electrochemical properties often "
-                          f"do not scale with mass loading")
-                    print(f"  (Cao et al., Nat. Nanotechnol. 14, 200-207, "
-                          f"2019).")
-                    print(f"  Consider comparing areal capacity "
-                          f"(mAh/cm², Cell 10) instead.")
+                    print(
+                        f"  Specific capacity comparisons may "
+                        f"be misleading at different"
+                    )
+                    print(
+                        f"  loadings — electrochemical properties often "
+                        f"do not scale with mass loading"
+                    )
+                    print(f"  (Cao et al., Nat. Nanotechnol. 14, 200-207, 2019).")
+                    print(
+                        f"  Consider comparing areal capacity "
+                        f"(mAh/cm², Cell 10) instead."
+                    )
 
     print(rule())
 
 
 @_honours_verbose
-def capacity_retention(electrochemical_data, user_parameters, *, save_location=None,
-        all_cycle_tables=None, file_format='png', verbose=True):
+def capacity_retention(
+    electrochemical_data,
+    user_parameters,
+    *,
+    save_location=None,
+    all_cycle_tables=None,
+    file_format="png",
+    verbose=True,
+):
     """
     Retention against a reference cycle.
 
@@ -2235,6 +2563,7 @@ def capacity_retention(electrochemical_data, user_parameters, *, save_location=N
     # one changed the sentence and not the data.
 
     VISUAL_OUTLIER_THRESHOLD = VISUAL_OUTLIER_FRACTION
+
     def _retention_ylabel():
         """Return the y-axis label for the retention plot."""
         labels = set()
@@ -2244,7 +2573,7 @@ def capacity_retention(electrochemical_data, user_parameters, *, save_location=N
         if len(labels) == 1:
             lbl = labels.pop()
             return f"{lbl} capacity retention / %"
-        return 'Capacity retention / %'
+        return "Capacity retention / %"
 
     def _retention_caption_word():
         """Return the capacity retention noun for captions."""
@@ -2254,7 +2583,7 @@ def capacity_retention(electrochemical_data, user_parameters, *, save_location=N
             labels.add(_discharge_label(params).lower())
         if len(labels) == 1:
             return f"{labels.pop()} capacity retention"
-        return 'capacity retention'
+        return "capacity retention"
 
     _cap_word = _retention_caption_word()
 
@@ -2262,7 +2591,9 @@ def capacity_retention(electrochemical_data, user_parameters, *, save_location=N
 
     palette = MULTI_DATASET_PALETTE
 
-    fig, ax = plt.subplots(figsize=(_plots.figure_width_inches, _plots.figure_height_inches))
+    fig, ax = plt.subplots(
+        figsize=(_plots.figure_width_inches, _plots.figure_height_inches)
+    )
 
     caption_compositions = []
 
@@ -2271,8 +2602,10 @@ def capacity_retention(electrochemical_data, user_parameters, *, save_location=N
     _have_cycle_tables = _has_tables(all_cycle_tables)
 
     if not _have_cycle_tables:
-        print("  ⚠ all_cycle_tables not found — Cell 5b has not been run. "
-              "Run Cell 5b first for the cleanest output.")
+        print(
+            "  ⚠ all_cycle_tables not found — Cell 5b has not been run. "
+            "Run Cell 5b first for the cleanest output."
+        )
 
     for i, (name, df) in enumerate(electrochemical_data.items()):
         params = user_parameters.get(name, {})
@@ -2285,131 +2618,152 @@ def capacity_retention(electrochemical_data, user_parameters, *, save_location=N
         # Primary path
         if _have_cycle_tables and name in all_cycle_tables:
             ct = all_cycle_tables[name]
-            cap_df = (_ct_with_flag(ct, 'Discharge_mAh_g')
-                      .rename(columns={'Discharge_mAh_g':
-                                       'Discharge_Capacity'})
-                      .dropna(subset=['Cycle', 'Discharge_Capacity'])
-                      .copy())
+            cap_df = (
+                _ct_with_flag(ct, "Discharge_mAh_g")
+                .rename(columns={"Discharge_mAh_g": "Discharge_Capacity"})
+                .dropna(subset=["Cycle", "Discharge_Capacity"])
+                .copy()
+            )
         else:
             # Fallback: derive via groupby
-            discharge = df[df['Step'] == 'Discharge'].dropna(
-                subset=['Cycle', 'Discharge_Capacity'])
+            discharge = df[df["Step"] == "Discharge"].dropna(
+                subset=["Cycle", "Discharge_Capacity"]
+            )
             if discharge.empty:
-                print(f"  {composition}: no {dch_label.lower()} data, "
-                      f"skipping.")
+                print(f"  {composition}: no {dch_label.lower()} data, skipping.")
                 continue
-            grp = discharge.groupby('Cycle')['Discharge_Capacity']
-            cap_df = pd.DataFrame({
-                'Cycle': grp.max().index.astype(int),
-                'Discharge_Capacity': (grp.max() - grp.min()).values,
-                'Incomplete': False,
-            })
+            grp = discharge.groupby("Cycle")["Discharge_Capacity"]
+            cap_df = pd.DataFrame(
+                {
+                    "Cycle": grp.max().index.astype(int),
+                    "Discharge_Capacity": (grp.max() - grp.min()).values,
+                    "Incomplete": False,
+                }
+            )
 
         if cap_df.empty:
-            print(f"  {composition}: no {dch_label.lower()} data, "
-                  f"skipping.")
+            print(f"  {composition}: no {dch_label.lower()} data, skipping.")
             continue
 
-        cap_df = cap_df.sort_values('Cycle').reset_index(drop=True)
+        cap_df = cap_df.sort_values("Cycle").reset_index(drop=True)
 
         # Exclude incomplete cycles (protocol-level)
-        if EXCLUDE_INCOMPLETE and 'Incomplete' in cap_df.columns:
-            n_incomplete = int(cap_df['Incomplete'].sum())
+        if EXCLUDE_INCOMPLETE and "Incomplete" in cap_df.columns:
+            n_incomplete = int(cap_df["Incomplete"].sum())
             if n_incomplete > 0:
-                removed = cap_df.loc[cap_df['Incomplete'],
-                                     'Cycle'].tolist()
-                print(f"  {composition}: excluded {n_incomplete} "
-                      f"protocol-incomplete cycle(s): "
-                      f"{', '.join(str(int(c)) for c in removed)}")
-            plot_data = cap_df[~cap_df['Incomplete']].copy().reset_index(drop=True)
+                removed = cap_df.loc[cap_df["Incomplete"], "Cycle"].tolist()
+                print(
+                    f"  {composition}: excluded {n_incomplete} "
+                    f"protocol-incomplete cycle(s): "
+                    f"{', '.join(str(int(c)) for c in removed)}"
+                )
+            plot_data = cap_df[~cap_df["Incomplete"]].copy().reset_index(drop=True)
         else:
             plot_data = cap_df.copy()
 
         # Visual-outlier filter
         if VISUAL_OUTLIER_FILTER and not plot_data.empty:
             outlier_flags = _flag_visual_outliers(
-                plot_data['Discharge_Capacity'].tolist(), threshold=VISUAL_OUTLIER_THRESHOLD,
-                groups=rate_block_labels(plot_data['Cycle'], params))
+                plot_data["Discharge_Capacity"].tolist(),
+                threshold=VISUAL_OUTLIER_THRESHOLD,
+                groups=rate_block_labels(plot_data["Cycle"], params),
+            )
             n_outliers = sum(outlier_flags)
             if n_outliers > 0:
-                plot_data['_visual_outlier'] = outlier_flags
-                removed = plot_data.loc[plot_data['_visual_outlier'],
-                                        'Cycle'].tolist()
-                print(f"  {composition}: excluded {n_outliers} visual "
-                      f"outlier(s) (<{VISUAL_OUTLIER_THRESHOLD*100:.0f}% "
-                      f"of running median): "
-                      f"{', '.join(str(int(c)) for c in removed)}")
-                plot_data = plot_data[~plot_data['_visual_outlier']].drop(
-                    columns='_visual_outlier').reset_index(drop=True)
+                plot_data["_visual_outlier"] = outlier_flags
+                removed = plot_data.loc[plot_data["_visual_outlier"], "Cycle"].tolist()
+                print(
+                    f"  {composition}: excluded {n_outliers} visual "
+                    f"outlier(s) (<{VISUAL_OUTLIER_THRESHOLD * 100:.0f}% "
+                    f"of running median): "
+                    f"{', '.join(str(int(c)) for c in removed)}"
+                )
+                plot_data = (
+                    plot_data[~plot_data["_visual_outlier"]]
+                    .drop(columns="_visual_outlier")
+                    .reset_index(drop=True)
+                )
 
         if plot_data.empty:
             print(f"  {composition}: no complete cycles, skipping.")
             continue
 
         # Reference capacity
-        ref_row = plot_data[plot_data['Cycle'] == RETENTION_REFERENCE_CYCLE]
+        ref_row = plot_data[plot_data["Cycle"] == RETENTION_REFERENCE_CYCLE]
         if not ref_row.empty:
-            ref_cap = ref_row['Discharge_Capacity'].iloc[0]
+            ref_cap = ref_row["Discharge_Capacity"].iloc[0]
         else:
-            ref_cap = plot_data['Discharge_Capacity'].iloc[0]
-            ref_cycle_used = int(plot_data['Cycle'].iloc[0])
-            print(f"  {composition}: reference cycle "
-                  f"{RETENTION_REFERENCE_CYCLE} not found, "
-                  f"using cycle {ref_cycle_used}")
+            ref_cap = plot_data["Discharge_Capacity"].iloc[0]
+            ref_cycle_used = int(plot_data["Cycle"].iloc[0])
+            print(
+                f"  {composition}: reference cycle "
+                f"{RETENTION_REFERENCE_CYCLE} not found, "
+                f"using cycle {ref_cycle_used}"
+            )
 
         if pd.isna(ref_cap) or ref_cap <= 0:
             print(f"  {composition}: invalid reference capacity, skipping.")
             continue
 
         # Calculate retention
-        plot_data['Retention'] = (
-            plot_data['Discharge_Capacity'] / ref_cap * 100
-        )
+        plot_data["Retention"] = plot_data["Discharge_Capacity"] / ref_cap * 100
 
-        max_retention_seen = max(max_retention_seen,
-                                 plot_data['Retention'].max())
+        max_retention_seen = max(max_retention_seen, plot_data["Retention"].max())
 
         # Plot
-        ax.plot(plot_data['Cycle'], plot_data['Retention'],
-               color=colour, marker=marker, markersize=MARKER_SIZE,
-               linestyle='', label=composition, zorder=3)
+        ax.plot(
+            plot_data["Cycle"],
+            plot_data["Retention"],
+            color=colour,
+            marker=marker,
+            markersize=MARKER_SIZE,
+            linestyle="",
+            label=composition,
+            zorder=3,
+        )
 
         caption_compositions.append(composition)
 
         last = plot_data.iloc[-1]
-        print(f"  {composition}: {len(plot_data)} cycles, "
-              f"retention at cycle {int(last['Cycle'])} = "
-              f"{last['Retention']:.1f}%")
+        print(
+            f"  {composition}: {len(plot_data)} cycles, "
+            f"retention at cycle {int(last['Cycle'])} = "
+            f"{last['Retention']:.1f}%"
+        )
 
-    ax.set_xlabel('Cycle number', fontsize=14)
+    ax.set_xlabel("Cycle number", fontsize=14)
 
     _force_integer_cycles(ax)
 
     ax.set_ylabel(_retention_ylabel(), fontsize=14)
 
-    ax.tick_params(axis='both', labelsize=12, width=1, direction='in',
-                   top=True, right=True)
+    ax.tick_params(
+        axis="both", labelsize=12, width=1, direction="in", top=True, right=True
+    )
 
     for sp in ax.spines.values():
         sp.set_linewidth(0.8)
 
     ax.set_xlim(left=0)
 
-    y_top = (max(YAXIS_MAX, max_retention_seen * 1.03)
-             if max_retention_seen > YAXIS_MAX else YAXIS_MAX)
+    y_top = (
+        max(YAXIS_MAX, max_retention_seen * 1.03)
+        if max_retention_seen > YAXIS_MAX
+        else YAXIS_MAX
+    )
 
     ax.set_ylim(bottom=YAXIS_MIN, top=y_top)
 
-    ax.axhline(y=100, color='grey', linestyle=':', linewidth=0.8, alpha=0.5)
+    ax.axhline(y=100, color="grey", linestyle=":", linewidth=0.8, alpha=0.5)
 
     ax.legend(fontsize=10, framealpha=0.7)
 
     plt.tight_layout()
 
     if caption_compositions:
-        comp_str = ', '.join(caption_compositions[:-1])
+        comp_str = ", ".join(caption_compositions[:-1])
         if len(caption_compositions) > 1:
-            comp_str += f' and {caption_compositions[-1]}'
+            comp_str += f" and {caption_compositions[-1]}"
         else:
             comp_str = caption_compositions[0]
 
@@ -2423,9 +2777,11 @@ def capacity_retention(electrochemical_data, user_parameters, *, save_location=N
         print(bullet(caption, indent=2, label_width=2))
 
     if save_location:
-        filepath = os.path.join(save_location,
-                               f'capacity_retention_vs_cycle.{_run_image_format(user_parameters)}')
-        fig.savefig(filepath, dpi=300, bbox_inches='tight')
+        filepath = os.path.join(
+            save_location,
+            f"capacity_retention_vs_cycle.{_run_image_format(user_parameters)}",
+        )
+        fig.savefig(filepath, dpi=300, bbox_inches="tight")
         saved(filepath)
 
     plt.show()
@@ -2436,8 +2792,15 @@ def capacity_retention(electrochemical_data, user_parameters, *, save_location=N
 
 
 @_honours_verbose
-def fade_rate(electrochemical_data, user_parameters, *, save_location=None,
-        all_cycle_tables=None, file_format='png', verbose=True):
+def fade_rate(
+    electrochemical_data,
+    user_parameters,
+    *,
+    save_location=None,
+    all_cycle_tables=None,
+    file_format="png",
+    verbose=True,
+):
     """
     Rate of capacity loss, per cycle and cumulative.
 
@@ -2467,8 +2830,10 @@ def fade_rate(electrochemical_data, user_parameters, *, save_location=None,
     _have_cycle_tables = _has_tables(all_cycle_tables)
 
     if not _have_cycle_tables:
-        print("  ⚠ all_cycle_tables not found — Cell 5b has not been run. "
-              "Run Cell 5b first for the cleanest output.")
+        print(
+            "  ⚠ all_cycle_tables not found — Cell 5b has not been run. "
+            "Run Cell 5b first for the cleanest output."
+        )
 
     for name, df in electrochemical_data.items():
         params = user_parameters.get(name, {})
@@ -2478,137 +2843,159 @@ def fade_rate(electrochemical_data, user_parameters, *, save_location=None,
         # Primary path: read from Cell 5b
         if _have_cycle_tables and name in all_cycle_tables:
             ct = all_cycle_tables[name]
-            cap_df = (_ct_with_flag(ct, 'Discharge_mAh_g')
-                      .dropna(subset=['Cycle', 'Discharge_mAh_g'])
-                      .copy())
+            cap_df = (
+                _ct_with_flag(ct, "Discharge_mAh_g")
+                .dropna(subset=["Cycle", "Discharge_mAh_g"])
+                .copy()
+            )
         else:
             # Fallback: derive via groupby (no Python loop)
-            discharge = df[df['Step'] == 'Discharge'].dropna(
-                subset=['Cycle', 'Discharge_Capacity'])
+            discharge = df[df["Step"] == "Discharge"].dropna(
+                subset=["Cycle", "Discharge_Capacity"]
+            )
             if discharge.empty:
-                print(f"  {composition}: no {dch_label.lower()} data, "
-                      f"skipping.")
+                print(f"  {composition}: no {dch_label.lower()} data, skipping.")
                 continue
-            grp = discharge.groupby('Cycle')['Discharge_Capacity']
-            cap_df = pd.DataFrame({
-                'Cycle': grp.max().index.astype(int),
-                'Discharge_mAh_g': (grp.max() - grp.min()).values,
-                'Incomplete': False,
-            })
+            grp = discharge.groupby("Cycle")["Discharge_Capacity"]
+            cap_df = pd.DataFrame(
+                {
+                    "Cycle": grp.max().index.astype(int),
+                    "Discharge_mAh_g": (grp.max() - grp.min()).values,
+                    "Incomplete": False,
+                }
+            )
 
         if cap_df.empty:
-            print(f"  {composition}: no {dch_label.lower()} data, "
-                  f"skipping.")
+            print(f"  {composition}: no {dch_label.lower()} data, skipping.")
             continue
 
-        cap_df = cap_df.sort_values('Cycle').reset_index(drop=True)
+        cap_df = cap_df.sort_values("Cycle").reset_index(drop=True)
 
         # Exclude incomplete cycles (protocol-level flag from Cell 5b)
-        if EXCLUDE_INCOMPLETE and 'Incomplete' in cap_df.columns:
-            n_incomplete = int(cap_df['Incomplete'].sum())
+        if EXCLUDE_INCOMPLETE and "Incomplete" in cap_df.columns:
+            n_incomplete = int(cap_df["Incomplete"].sum())
             if n_incomplete > 0:
-                removed = cap_df.loc[cap_df['Incomplete'],
-                                     'Cycle'].tolist()
-                print(f"  {composition}: excluded {n_incomplete} "
-                      f"protocol-incomplete cycle(s): "
-                      f"{', '.join(str(int(c)) for c in removed)}")
-            cap_df = cap_df[~cap_df['Incomplete']].copy().reset_index(drop=True)
+                removed = cap_df.loc[cap_df["Incomplete"], "Cycle"].tolist()
+                print(
+                    f"  {composition}: excluded {n_incomplete} "
+                    f"protocol-incomplete cycle(s): "
+                    f"{', '.join(str(int(c)) for c in removed)}"
+                )
+            cap_df = cap_df[~cap_df["Incomplete"]].copy().reset_index(drop=True)
 
         # Visual-outlier filter (applied after Incomplete)
         if VISUAL_OUTLIER_FILTER and not cap_df.empty:
             outlier_flags = _flag_visual_outliers(
-                cap_df['Discharge_mAh_g'].tolist(), threshold=VISUAL_OUTLIER_THRESHOLD,
-                groups=rate_block_labels(cap_df['Cycle'], params))
+                cap_df["Discharge_mAh_g"].tolist(),
+                threshold=VISUAL_OUTLIER_THRESHOLD,
+                groups=rate_block_labels(cap_df["Cycle"], params),
+            )
             n_outliers = sum(outlier_flags)
             if n_outliers > 0:
-                cap_df['_visual_outlier'] = outlier_flags
-                removed = cap_df.loc[cap_df['_visual_outlier'],
-                                     'Cycle'].tolist()
-                print(f"  {composition}: excluded {n_outliers} visual "
-                      f"outlier(s) (<{VISUAL_OUTLIER_THRESHOLD*100:.0f}% "
-                      f"of running median): "
-                      f"{', '.join(str(int(c)) for c in removed)}")
-                cap_df = cap_df[~cap_df['_visual_outlier']].drop(
-                    columns='_visual_outlier').reset_index(drop=True)
+                cap_df["_visual_outlier"] = outlier_flags
+                removed = cap_df.loc[cap_df["_visual_outlier"], "Cycle"].tolist()
+                print(
+                    f"  {composition}: excluded {n_outliers} visual "
+                    f"outlier(s) (<{VISUAL_OUTLIER_THRESHOLD * 100:.0f}% "
+                    f"of running median): "
+                    f"{', '.join(str(int(c)) for c in removed)}"
+                )
+                cap_df = (
+                    cap_df[~cap_df["_visual_outlier"]]
+                    .drop(columns="_visual_outlier")
+                    .reset_index(drop=True)
+                )
 
         if cap_df.empty:
             continue
 
         # Reference capacity
-        ref_row = cap_df[cap_df['Cycle'] == FADE_REFERENCE_CYCLE]
+        ref_row = cap_df[cap_df["Cycle"] == FADE_REFERENCE_CYCLE]
         if not ref_row.empty:
-            ref_cap = ref_row['Discharge_mAh_g'].iloc[0]
+            ref_cap = ref_row["Discharge_mAh_g"].iloc[0]
         else:
-            ref_cap = cap_df['Discharge_mAh_g'].iloc[0]
-            ref_cycle_used = int(cap_df['Cycle'].iloc[0])
-            print(f"  {composition}: reference cycle "
-                  f"{FADE_REFERENCE_CYCLE} not found, "
-                  f"using cycle {ref_cycle_used}")
+            ref_cap = cap_df["Discharge_mAh_g"].iloc[0]
+            ref_cycle_used = int(cap_df["Cycle"].iloc[0])
+            print(
+                f"  {composition}: reference cycle "
+                f"{FADE_REFERENCE_CYCLE} not found, "
+                f"using cycle {ref_cycle_used}"
+            )
 
         if pd.isna(ref_cap) or ref_cap <= 0:
             print(f"  {composition}: invalid reference capacity, skipping.")
             continue
 
         # Cumulative capacity loss (%)
-        cap_df['Capacity_Loss_%'] = (
-            (ref_cap - cap_df['Discharge_mAh_g']) / ref_cap * 100
+        cap_df["Capacity_Loss_%"] = (
+            (ref_cap - cap_df["Discharge_mAh_g"]) / ref_cap * 100
         )
 
         # Per-cycle change (%)
-        cap_df['Per_Cycle_Change_%'] = (
-            cap_df['Discharge_mAh_g'].diff() / ref_cap * 100
-        )
+        cap_df["Per_Cycle_Change_%"] = cap_df["Discharge_mAh_g"].diff() / ref_cap * 100
 
         # Rolling-window fade
         if len(cap_df) >= ROLLING_WINDOW:
             has_rolling_data = True
-            cap_df['Per_N_Cycle_Loss_%'] = (
-                cap_df['Capacity_Loss_%'].rolling(
-                    window=ROLLING_WINDOW, min_periods=ROLLING_WINDOW
-                ).apply(lambda x: x.iloc[-1] - x.iloc[0], raw=False)
+            cap_df["Per_N_Cycle_Loss_%"] = (
+                cap_df["Capacity_Loss_%"]
+                .rolling(window=ROLLING_WINDOW, min_periods=ROLLING_WINDOW)
+                .apply(lambda x: x.iloc[-1] - x.iloc[0], raw=False)
             )
         else:
-            cap_df['Per_N_Cycle_Loss_%'] = np.nan
+            cap_df["Per_N_Cycle_Loss_%"] = np.nan
 
-        cap_df['Composition'] = composition
+        cap_df["Composition"] = composition
         fade_data[name] = cap_df
 
         # Summary
         last = cap_df.iloc[-1]
-        print(f"  {composition}: {len(cap_df)} cycles, "
-              f"total loss = {last['Capacity_Loss_%']:.1f}%")
+        print(
+            f"  {composition}: {len(cap_df)} cycles, "
+            f"total loss = {last['Capacity_Loss_%']:.1f}%"
+        )
 
     if fade_data:
-        fig, ax = plt.subplots(figsize=(_plots.figure_width_inches, _plots.figure_height_inches))
+        fig, ax = plt.subplots(
+            figsize=(_plots.figure_width_inches, _plots.figure_height_inches)
+        )
 
         caption_compositions = []
 
         for i, (name, fdf) in enumerate(fade_data.items()):
-            composition = fdf['Composition'].iloc[0]
+            composition = fdf["Composition"].iloc[0]
             colour = palette[i % len(palette)]
             marker = MARKERS[i % len(MARKERS)]
 
-            ax.plot(fdf['Cycle'], fdf['Capacity_Loss_%'],
-                   color=colour, marker=marker, markersize=MARKER_SIZE,
-                   linestyle='', label=composition, zorder=3)
+            ax.plot(
+                fdf["Cycle"],
+                fdf["Capacity_Loss_%"],
+                color=colour,
+                marker=marker,
+                markersize=MARKER_SIZE,
+                linestyle="",
+                label=composition,
+                zorder=3,
+            )
 
             caption_compositions.append(composition)
 
-        ax.set_xlabel('Cycle number', fontsize=14)
+        ax.set_xlabel("Cycle number", fontsize=14)
         _force_integer_cycles(ax)
-        ax.set_ylabel('Cumulative capacity loss / %', fontsize=14)
-        ax.tick_params(axis='both', labelsize=12, width=1, direction='in',
-                       top=True, right=True)
-        ax.axhline(y=0, color='grey', linestyle=':', linewidth=0.8, alpha=0.5)
+        ax.set_ylabel("Cumulative capacity loss / %", fontsize=14)
+        ax.tick_params(
+            axis="both", labelsize=12, width=1, direction="in", top=True, right=True
+        )
+        ax.axhline(y=0, color="grey", linestyle=":", linewidth=0.8, alpha=0.5)
         for sp in ax.spines.values():
             sp.set_linewidth(0.8)
         ax.legend(fontsize=10, framealpha=0.7)
         plt.tight_layout()
 
         # Caption
-        comp_str = ', '.join(caption_compositions[:-1])
+        comp_str = ", ".join(caption_compositions[:-1])
         if len(caption_compositions) > 1:
-            comp_str += f' and {caption_compositions[-1]}'
+            comp_str += f" and {caption_compositions[-1]}"
         else:
             comp_str = caption_compositions[0]
 
@@ -2621,8 +3008,11 @@ def fade_rate(electrochemical_data, user_parameters, *, save_location=None,
         print(bullet(caption, indent=2, label_width=2))
 
         if save_location:
-            fpath = os.path.join(save_location, f'capacity_fade_percentage.{_run_image_format(user_parameters)}')
-            fig.savefig(fpath, dpi=300, bbox_inches='tight')
+            fpath = os.path.join(
+                save_location,
+                f"capacity_fade_percentage.{_run_image_format(user_parameters)}",
+            )
+            fig.savefig(fpath, dpi=300, bbox_inches="tight")
             saved(fpath)
 
         plt.show()
@@ -2632,26 +3022,37 @@ def fade_rate(electrochemical_data, user_parameters, *, save_location=None,
         # PLOT 2: PER-CYCLE CAPACITY CHANGE
         # =================================================================
 
-        fig, ax = plt.subplots(figsize=(_plots.figure_width_inches, _plots.figure_height_inches))
+        fig, ax = plt.subplots(
+            figsize=(_plots.figure_width_inches, _plots.figure_height_inches)
+        )
 
         for i, (name, fdf) in enumerate(fade_data.items()):
-            composition = fdf['Composition'].iloc[0]
+            composition = fdf["Composition"].iloc[0]
             colour = palette[i % len(palette)]
             marker = MARKERS[i % len(MARKERS)]
 
             # Skip the first point (NaN from diff)
-            valid = fdf.dropna(subset=['Per_Cycle_Change_%'])
+            valid = fdf.dropna(subset=["Per_Cycle_Change_%"])
 
-            ax.plot(valid['Cycle'], valid['Per_Cycle_Change_%'],
-                   color=colour, marker=marker, markersize=MARKER_SIZE - 1,
-                   linestyle='', label=composition, zorder=3, alpha=0.7)
+            ax.plot(
+                valid["Cycle"],
+                valid["Per_Cycle_Change_%"],
+                color=colour,
+                marker=marker,
+                markersize=MARKER_SIZE - 1,
+                linestyle="",
+                label=composition,
+                zorder=3,
+                alpha=0.7,
+            )
 
-        ax.set_xlabel('Cycle number', fontsize=14)
+        ax.set_xlabel("Cycle number", fontsize=14)
         _force_integer_cycles(ax)
-        ax.set_ylabel('Capacity change per cycle / %', fontsize=14)
-        ax.tick_params(axis='both', labelsize=12, width=1, direction='in',
-                       top=True, right=True)
-        ax.axhline(y=0, color='grey', linestyle=':', linewidth=0.8, alpha=0.5)
+        ax.set_ylabel("Capacity change per cycle / %", fontsize=14)
+        ax.tick_params(
+            axis="both", labelsize=12, width=1, direction="in", top=True, right=True
+        )
+        ax.axhline(y=0, color="grey", linestyle=":", linewidth=0.8, alpha=0.5)
         for sp in ax.spines.values():
             sp.set_linewidth(0.8)
         ax.legend(fontsize=10, framealpha=0.7)
@@ -2668,8 +3069,11 @@ def fade_rate(electrochemical_data, user_parameters, *, save_location=None,
         print(bullet(caption, indent=2, label_width=2))
 
         if save_location:
-            fpath = os.path.join(save_location, f'capacity_change_per_cycle.{_run_image_format(user_parameters)}')
-            fig.savefig(fpath, dpi=300, bbox_inches='tight')
+            fpath = os.path.join(
+                save_location,
+                f"capacity_change_per_cycle.{_run_image_format(user_parameters)}",
+            )
+            fig.savefig(fpath, dpi=300, bbox_inches="tight")
             saved(fpath)
 
         plt.show()
@@ -2680,35 +3084,52 @@ def fade_rate(electrochemical_data, user_parameters, *, save_location=None,
         # =================================================================
 
         if has_rolling_data:
-            fig, ax = plt.subplots(figsize=(_plots.figure_width_inches, _plots.figure_height_inches))
+            fig, ax = plt.subplots(
+                figsize=(_plots.figure_width_inches, _plots.figure_height_inches)
+            )
 
             plotted_any = False
             for i, (name, fdf) in enumerate(fade_data.items()):
-                valid = fdf.dropna(subset=['Per_N_Cycle_Loss_%'])
+                valid = fdf.dropna(subset=["Per_N_Cycle_Loss_%"])
                 if valid.empty:
-                    comp = fdf['Composition'].iloc[0]
-                    print(f"  {comp}: fewer than {ROLLING_WINDOW} cycles, "
-                          f"skipping per-{ROLLING_WINDOW}-cycle plot")
+                    comp = fdf["Composition"].iloc[0]
+                    print(
+                        f"  {comp}: fewer than {ROLLING_WINDOW} cycles, "
+                        f"skipping per-{ROLLING_WINDOW}-cycle plot"
+                    )
                     continue
 
-                composition = fdf['Composition'].iloc[0]
+                composition = fdf["Composition"].iloc[0]
                 colour = palette[i % len(palette)]
                 marker = MARKERS[i % len(MARKERS)]
 
-                ax.plot(valid['Cycle'], valid['Per_N_Cycle_Loss_%'],
-                       color=colour, marker=marker, markersize=MARKER_SIZE,
-                       linestyle='', label=composition, zorder=3)
+                ax.plot(
+                    valid["Cycle"],
+                    valid["Per_N_Cycle_Loss_%"],
+                    color=colour,
+                    marker=marker,
+                    markersize=MARKER_SIZE,
+                    linestyle="",
+                    label=composition,
+                    zorder=3,
+                )
                 plotted_any = True
 
             if plotted_any:
-                ax.set_xlabel('Cycle number', fontsize=14)
+                ax.set_xlabel("Cycle number", fontsize=14)
                 _force_integer_cycles(ax)
-                ax.set_ylabel(f'Capacity loss per {ROLLING_WINDOW} cycles / %',
-                              fontsize=14)
-                ax.tick_params(axis='both', labelsize=12, width=1,
-                               direction='in', top=True, right=True)
-                ax.axhline(y=0, color='grey', linestyle=':',
-                           linewidth=0.8, alpha=0.5)
+                ax.set_ylabel(
+                    f"Capacity loss per {ROLLING_WINDOW} cycles / %", fontsize=14
+                )
+                ax.tick_params(
+                    axis="both",
+                    labelsize=12,
+                    width=1,
+                    direction="in",
+                    top=True,
+                    right=True,
+                )
+                ax.axhline(y=0, color="grey", linestyle=":", linewidth=0.8, alpha=0.5)
                 for sp in ax.spines.values():
                     sp.set_linewidth(0.8)
                 ax.legend(fontsize=10, framealpha=0.7)
@@ -2723,17 +3144,21 @@ def fade_rate(electrochemical_data, user_parameters, *, save_location=None,
                 print(bullet(caption, indent=2, label_width=2))
 
                 if save_location:
-                    fpath = os.path.join(save_location,
-                                        f'capacity_loss_per_{ROLLING_WINDOW}_cycles.{_run_image_format(user_parameters)}')
-                    fig.savefig(fpath, dpi=300, bbox_inches='tight')
+                    fpath = os.path.join(
+                        save_location,
+                        f"capacity_loss_per_{ROLLING_WINDOW}_cycles.{_run_image_format(user_parameters)}",
+                    )
+                    fig.savefig(fpath, dpi=300, bbox_inches="tight")
                     saved(fpath)
 
                 plt.show()
             else:
                 plt.close(fig)
         else:
-            print(f"\n  No datasets have {ROLLING_WINDOW}+ cycles — "
-                  f"per-{ROLLING_WINDOW}-cycle plot skipped.")
+            print(
+                f"\n  No datasets have {ROLLING_WINDOW}+ cycles — "
+                f"per-{ROLLING_WINDOW}-cycle plot skipped."
+            )
     else:
         print("\nNo valid fade data to plot.")
 
@@ -2741,8 +3166,15 @@ def fade_rate(electrochemical_data, user_parameters, *, save_location=None,
 
 
 @_honours_verbose
-def power_and_energy(electrochemical_data, user_parameters, *, save_location=None,
-        all_cycle_tables=None, file_format='png', verbose=True):
+def power_and_energy(
+    electrochemical_data,
+    user_parameters,
+    *,
+    save_location=None,
+    all_cycle_tables=None,
+    file_format="png",
+    verbose=True,
+):
     """
     Power and energy density, three normalisations.
 
@@ -2752,13 +3184,15 @@ def power_and_energy(electrochemical_data, user_parameters, *, save_location=Non
     not-yet-run branch exactly.
     """
     _run_pe = any(
-        user_parameters.get(name, {}).get('power_energy_analysis', True)
+        user_parameters.get(name, {}).get("power_energy_analysis", True)
         for name in electrochemical_data
     )
 
     if not _run_pe:
-        print("Power and energy density analysis skipped "
-              "(disabled in Cell 3 parameters for all datasets).")
+        print(
+            "Power and energy density analysis skipped "
+            "(disabled in Cell 3 parameters for all datasets)."
+        )
     else:
         # =====================================================================
         # USER-ADJUSTABLE DEFAULTS
@@ -2768,7 +3202,7 @@ def power_and_energy(electrochemical_data, user_parameters, *, save_location=Non
         PLOT_PER_ELECTRODE_MASS = True
         PLOT_PER_AREA = True
         PLOT_RAGONE = True
-        RAGONE_BASIS = 'active'  # 'active', 'electrode', or 'area'
+        RAGONE_BASIS = "active"  # 'active', 'electrode', or 'area'
 
         # Areal capacity plot (v1.7.2) — discharge capacity normalised to
         # electrode area. Exposes whether thick electrodes actually deliver
@@ -2783,10 +3217,10 @@ def power_and_energy(electrochemical_data, user_parameters, *, save_location=Non
         # Na-ion layered oxide target: 2-3 mAh/cm2 at 20-25 mg/cm2
         #   (Liu et al., Nat. Energy 2025; Zheng et al., ScienceDirect 2023)
         _AREAL_BENCHMARKS = {
-            'Li-ion': ([3.0, 5.0], 'Li-ion commercial'),
-            'Na-ion': ([2.0, 3.0], 'Na-ion target'),
+            "Li-ion": ([3.0, 5.0], "Li-ion commercial"),
+            "Na-ion": ([2.0, 3.0], "Na-ion target"),
         }
-        _AREAL_BENCHMARK_DEFAULT = ([2.0, 4.0], 'commercial target')
+        _AREAL_BENCHMARK_DEFAULT = ([2.0, 4.0], "commercial target")
 
         # Exclude protocol-incomplete cycles (from Cell 5b)
         EXCLUDE_INCOMPLETE = True
@@ -2800,38 +3234,47 @@ def power_and_energy(electrochemical_data, user_parameters, *, save_location=Non
         VISUAL_OUTLIER_THRESHOLD = VISUAL_OUTLIER_FRACTION
         _have_cycle_tables = _has_tables(all_cycle_tables)
         if EXCLUDE_INCOMPLETE and not _have_cycle_tables:
-            print("  ⚠ all_cycle_tables not found — Cell 5b has not been "
-                  "run. Incomplete-cycle filtering unavailable.")
+            print(
+                "  ⚠ all_cycle_tables not found — Cell 5b has not been "
+                "run. Incomplete-cycle filtering unavailable."
+            )
 
         # =====================================================================
         # HELPER FUNCTIONS
         # =====================================================================
         def _parse_active_fraction(blend_str):
             try:
-                parts = [float(p) for p in blend_str.split('/')]
+                parts = [float(p) for p in blend_str.split("/")]
                 return parts[0] / sum(parts) if sum(parts) > 0 else 0.8
-            except (ValueError, AttributeError):
+            except ValueError, AttributeError:
                 return 0.8
 
         def _get_electrode_area(params):
-            if 'electrode_area_cm2' in params:
-                return params['electrode_area_cm2']
-            diameter_mm = params.get('electrode_diameter_mm',
-                                     DEFAULT_ELECTRODE_DIAMETER_MM)
+            if "electrode_area_cm2" in params:
+                return params["electrode_area_cm2"]
+            diameter_mm = params.get(
+                "electrode_diameter_mm", DEFAULT_ELECTRODE_DIAMETER_MM
+            )
             radius_cm = diameter_mm / 2 / 10
             return np.pi * radius_cm**2
 
         def _apply_pub_style(ax):
-            ax.tick_params(axis='both', labelsize=11, width=0.8, direction='in',
-                           top=True, right=True)
+            ax.tick_params(
+                axis="both",
+                labelsize=11,
+                width=0.8,
+                direction="in",
+                top=True,
+                right=True,
+            )
             for sp in ax.spines.values():
                 sp.set_linewidth(0.8)
 
-        def _set_lim_with_padding(ax, axis='y', bottom=0, padding=0.08):
-            if axis == 'y':
+        def _set_lim_with_padding(ax, axis="y", bottom=0, padding=0.08):
+            if axis == "y":
                 current_top = ax.get_ylim()[1]
                 ax.set_ylim(bottom=bottom, top=current_top * (1 + padding))
-            elif axis == 'x':
+            elif axis == "x":
                 current_right = ax.get_xlim()[1]
                 ax.set_xlim(left=bottom, right=current_right * (1 + padding))
 
@@ -2843,37 +3286,40 @@ def power_and_energy(electrochemical_data, user_parameters, *, save_location=Non
             and Power(W) per cycle (the absolute handles sign conventions
             across different cyclers).
             """
-            active_mass_mg = params.get('active_material_mass_mg')
-            active_mass_g = (active_mass_mg / 1000.0
-                            if active_mass_mg is not None else None)
-            blend = params.get('blend', '80/10/10')
-            active_fraction = params.get('active_fraction',
-                                          _parse_active_fraction(blend))
+            active_mass_mg = params.get("active_material_mass_mg")
+            active_mass_g = (
+                active_mass_mg / 1000.0 if active_mass_mg is not None else None
+            )
+            blend = params.get("blend", "80/10/10")
+            active_fraction = params.get(
+                "active_fraction", _parse_active_fraction(blend)
+            )
             electrode_area = _get_electrode_area(params)
-            total_coating_g = (active_mass_g / active_fraction
-                              if active_mass_g is not None else None)
+            total_coating_g = (
+                active_mass_g / active_fraction if active_mass_g is not None else None
+            )
 
-            df_discharge = df[df['Step'] == 'Discharge']
+            df_discharge = df[df["Step"] == "Discharge"]
             if df_discharge.empty:
                 return pd.DataFrame()
 
-            has_spec_energy = 'Spec. Energy(mWh/g)' in df_discharge.columns
-            has_power = 'Power(W)' in df_discharge.columns
+            has_spec_energy = "Spec. Energy(mWh/g)" in df_discharge.columns
+            has_power = "Power(W)" in df_discharge.columns
 
             # Cell 2 has already coerced Cycle. Coerce the power/energy
             # columns here since they're not in Cell 2's coercion list.
-            work = df_discharge[['Cycle']].copy()
+            work = df_discharge[["Cycle"]].copy()
             if has_spec_energy:
-                work['_spec_energy_abs'] = pd.to_numeric(
-                    df_discharge['Spec. Energy(mWh/g)'],
-                    errors='coerce').abs()
+                work["_spec_energy_abs"] = pd.to_numeric(
+                    df_discharge["Spec. Energy(mWh/g)"], errors="coerce"
+                ).abs()
             if has_power:
-                work['_power_abs'] = pd.to_numeric(
-                    df_discharge['Power(W)'], errors='coerce').abs()
+                work["_power_abs"] = pd.to_numeric(
+                    df_discharge["Power(W)"], errors="coerce"
+                ).abs()
 
-            required = ['Cycle'] + [
-                c for c in ('_spec_energy_abs', '_power_abs')
-                if c in work.columns
+            required = ["Cycle"] + [
+                c for c in ("_spec_energy_abs", "_power_abs") if c in work.columns
             ]
             valid = work.dropna(subset=required)
             if valid.empty:
@@ -2882,37 +3328,39 @@ def power_and_energy(electrochemical_data, user_parameters, *, save_location=Non
             # Single vectorised aggregation
             agg_dict = {}
             if has_spec_energy:
-                agg_dict['_spec_energy_abs'] = 'max'
+                agg_dict["_spec_energy_abs"] = "max"
             if has_power:
-                agg_dict['_power_abs'] = 'max'
-            agg = valid.groupby('Cycle').agg(agg_dict).reset_index()
-            agg['Cycle'] = agg['Cycle'].astype(int)
+                agg_dict["_power_abs"] = "max"
+            agg = valid.groupby("Cycle").agg(agg_dict).reset_index()
+            agg["Cycle"] = agg["Cycle"].astype(int)
 
             # Derive the normalisation variants (vectorised)
             if has_spec_energy:
-                agg['energy_Wh_kg_active'] = agg['_spec_energy_abs']
+                agg["energy_Wh_kg_active"] = agg["_spec_energy_abs"]
                 if total_coating_g is not None:
-                    agg['energy_Wh_kg_electrode'] = (
-                        agg['_spec_energy_abs'] * active_fraction)
+                    agg["energy_Wh_kg_electrode"] = (
+                        agg["_spec_energy_abs"] * active_fraction
+                    )
                 if active_mass_g is not None:
-                    agg['energy_mWh_cm2'] = (
-                        agg['_spec_energy_abs'] * active_mass_g
-                        / electrode_area)
+                    agg["energy_mWh_cm2"] = (
+                        agg["_spec_energy_abs"] * active_mass_g / electrode_area
+                    )
 
             if has_power:
-                agg['power_W'] = agg['_power_abs']
+                agg["power_W"] = agg["_power_abs"]
                 if active_mass_g is not None:
-                    agg['power_mW_g_active'] = (
-                        agg['_power_abs'] / active_mass_g * 1000)
+                    agg["power_mW_g_active"] = agg["_power_abs"] / active_mass_g * 1000
                 if total_coating_g is not None:
-                    agg['power_mW_g_electrode'] = (
-                        agg['_power_abs'] / total_coating_g * 1000)
-                agg['power_mW_cm2'] = (
-                    agg['_power_abs'] / electrode_area * 1000)
+                    agg["power_mW_g_electrode"] = (
+                        agg["_power_abs"] / total_coating_g * 1000
+                    )
+                agg["power_mW_cm2"] = agg["_power_abs"] / electrode_area * 1000
 
-            return agg.drop(columns=[c for c in ('_spec_energy_abs',
-                                                 '_power_abs')
-                                     if c in agg.columns])
+            return agg.drop(
+                columns=[
+                    c for c in ("_spec_energy_abs", "_power_abs") if c in agg.columns
+                ]
+            )
 
         # =====================================================================
         # MAIN ANALYSIS
@@ -2923,7 +3371,7 @@ def power_and_energy(electrochemical_data, user_parameters, *, save_location=Non
 
         for name, df in electrochemical_data.items():
             params = user_parameters.get(name, {})
-            if not params.get('power_energy_analysis', True):
+            if not params.get("power_energy_analysis", True):
                 print(f"  {name}: power/energy analysis disabled, skipping.")
                 continue
 
@@ -2932,79 +3380,88 @@ def power_and_energy(electrochemical_data, user_parameters, *, save_location=Non
 
             if pe_df.empty:
                 dch = _discharge_label(user_parameters.get(name, {}))
-                print(f"  {name}: no {dch.lower()} power/energy data "
-                      f"found, skipping.")
+                print(f"  {name}: no {dch.lower()} power/energy data found, skipping.")
                 continue
 
             # Exclude protocol-incomplete cycles (Cell 5b flag)
-            if (EXCLUDE_INCOMPLETE and _have_cycle_tables
-                and name in all_cycle_tables):
+            if EXCLUDE_INCOMPLETE and _have_cycle_tables and name in all_cycle_tables:
                 ct = all_cycle_tables[name]
-                incomplete_cycles = set(
-                    _unusable_cycles(ct))
+                incomplete_cycles = set(_unusable_cycles(ct))
                 if incomplete_cycles:
-                    mask = pe_df['Cycle'].isin(incomplete_cycles)
-                    removed = pe_df.loc[mask, 'Cycle'].tolist()
+                    mask = pe_df["Cycle"].isin(incomplete_cycles)
+                    removed = pe_df.loc[mask, "Cycle"].tolist()
                     if removed:
-                        print(f"  {composition}: excluded "
-                              f"{len(removed)} protocol-incomplete "
-                              f"cycle(s): "
-                              f"{', '.join(str(c) for c in removed)}")
+                        print(
+                            f"  {composition}: excluded "
+                            f"{len(removed)} protocol-incomplete "
+                            f"cycle(s): "
+                            f"{', '.join(str(c) for c in removed)}"
+                        )
                     pe_df = pe_df[~mask].reset_index(drop=True)
 
             # Visual-outlier filter (using energy as the capacity proxy;
             # falls back to power if energy isn't available)
             if VISUAL_OUTLIER_FILTER and not pe_df.empty:
                 proxy_col = None
-                for candidate in ('energy_Wh_kg_active',
-                                  'energy_mWh_cm2', 'power_W'):
+                for candidate in ("energy_Wh_kg_active", "energy_mWh_cm2", "power_W"):
                     if candidate in pe_df.columns:
                         proxy_col = candidate
                         break
                 if proxy_col is not None:
                     outlier_flags = _flag_visual_outliers(
-                        pe_df[proxy_col].tolist(), threshold=VISUAL_OUTLIER_THRESHOLD,
-                        groups=rate_block_labels(pe_df['Cycle'], params))
+                        pe_df[proxy_col].tolist(),
+                        threshold=VISUAL_OUTLIER_THRESHOLD,
+                        groups=rate_block_labels(pe_df["Cycle"], params),
+                    )
                     n_outliers = sum(outlier_flags)
                     if n_outliers > 0:
-                        removed = [int(c) for c, f in
-                                   zip(pe_df['Cycle'], outlier_flags) if f]
-                        print(f"  {composition}: excluded {n_outliers} "
-                              f"visual outlier(s) "
-                              f"(<{VISUAL_OUTLIER_THRESHOLD*100:.0f}% of "
-                              f"running median on {proxy_col}): "
-                              f"{', '.join(str(c) for c in removed)}")
+                        removed = [
+                            int(c) for c, f in zip(pe_df["Cycle"], outlier_flags) if f
+                        ]
+                        print(
+                            f"  {composition}: excluded {n_outliers} "
+                            f"visual outlier(s) "
+                            f"(<{VISUAL_OUTLIER_THRESHOLD * 100:.0f}% of "
+                            f"running median on {proxy_col}): "
+                            f"{', '.join(str(c) for c in removed)}"
+                        )
                         pe_df = pe_df[
-                            ~pd.Series(outlier_flags,
-                                       index=pe_df.index)
+                            ~pd.Series(outlier_flags, index=pe_df.index)
                         ].reset_index(drop=True)
 
             if pe_df.empty:
-                print(f"  {composition}: no valid cycles after filtering, "
-                      "skipping.")
+                print(f"  {composition}: no valid cycles after filtering, skipping.")
                 continue
 
             all_pe_data[name] = pe_df
 
-            active_mass = params.get('active_material_mass_mg', '?')
-            blend = params.get('blend', '80/10/10')
-            active_frac = params.get('active_fraction',
-                                      _parse_active_fraction(blend))
+            active_mass = params.get("active_material_mass_mg", "?")
+            blend = params.get("blend", "80/10/10")
+            active_frac = params.get("active_fraction", _parse_active_fraction(blend))
             area = _get_electrode_area(params)
-            loading = (float(active_mass) / area
-                      if isinstance(active_mass, (int, float)) else None)
+            loading = (
+                float(active_mass) / area
+                if isinstance(active_mass, (int, float))
+                else None
+            )
 
             print(heading(composition))
-            print(f"    Active mass: {active_mass} mg | "
-                  f"Blend: {blend} ({active_frac*100:.0f}% active)")
-            print(f"    Electrode area: {area:.3f} cm2"
-                  f"{f' | Loading: {loading:.2f} mg/cm2' if loading else ''}")
+            print(
+                f"    Active mass: {active_mass} mg | "
+                f"Blend: {blend} ({active_frac * 100:.0f}% active)"
+            )
+            print(
+                f"    Electrode area: {area:.3f} cm2"
+                f"{f' | Loading: {loading:.2f} mg/cm2' if loading else ''}"
+            )
             print(f"    Cycles with data: {len(pe_df)}")
-            if 'energy_Wh_kg_active' in pe_df.columns:
-                print(f"    Energy range: "
-                      f"{pe_df['energy_Wh_kg_active'].min():.1f}--"
-                      f"{pe_df['energy_Wh_kg_active'].max():.1f} "
-                      f"Wh/kg (active)")
+            if "energy_Wh_kg_active" in pe_df.columns:
+                print(
+                    f"    Energy range: "
+                    f"{pe_df['energy_Wh_kg_active'].min():.1f}--"
+                    f"{pe_df['energy_Wh_kg_active'].max():.1f} "
+                    f"Wh/kg (active)"
+                )
 
         # =====================================================================
         # PLOTTING
@@ -3022,150 +3479,197 @@ def power_and_energy(electrochemical_data, user_parameters, *, save_location=Non
 
             # v1.8: determine electrode type word for captions
             _etypes = set(
-                user_parameters.get(n, {}).get('electrode_type', 'Positive')
-                for n in all_pe_data)
-            if _etypes == {'Negative'}:
-                _mat_word = 'anode'
-            elif _etypes == {'Positive'}:
-                _mat_word = 'cathode'
+                user_parameters.get(n, {}).get("electrode_type", "Positive")
+                for n in all_pe_data
+            )
+            if _etypes == {"Negative"}:
+                _mat_word = "anode"
+            elif _etypes == {"Positive"}:
+                _mat_word = "cathode"
             else:
-                _mat_word = 'electrode'
+                _mat_word = "electrode"
 
             # --- Energy density vs cycle ---
             if PLOT_PER_ACTIVE_MASS:
-                fig, ax = plt.subplots(figsize=(_plots.figure_width_inches, _plots.figure_height_inches))
+                fig, ax = plt.subplots(
+                    figsize=(_plots.figure_width_inches, _plots.figure_height_inches)
+                )
                 for i, (name, pe_df) in enumerate(all_pe_data.items()):
                     comp = _get_display_name(
-                        name, user_parameters.get(name, {}), user_parameters)
-                    if 'energy_Wh_kg_active' in pe_df.columns:
-                        ax.plot(pe_df['Cycle'],
-                               pe_df['energy_Wh_kg_active'],
-                               color=colours[i], marker=markers[i], markersize=4,
-                               linewidth=1.2, label=comp)
-                ax.set_xlabel('Cycle number', fontsize=13)
+                        name, user_parameters.get(name, {}), user_parameters
+                    )
+                    if "energy_Wh_kg_active" in pe_df.columns:
+                        ax.plot(
+                            pe_df["Cycle"],
+                            pe_df["energy_Wh_kg_active"],
+                            color=colours[i],
+                            marker=markers[i],
+                            markersize=4,
+                            linewidth=1.2,
+                            label=comp,
+                        )
+                ax.set_xlabel("Cycle number", fontsize=13)
                 _force_integer_cycles(ax)
                 ax.set_ylabel(
-                    'Specific energy / '
-                    'Wh kg$^{-1}_{\\mathrm{active}}$',
-                    fontsize=13)
+                    "Specific energy / Wh kg$^{-1}_{\\mathrm{active}}$", fontsize=13
+                )
                 ax.set_title(
-                    'Specific energy vs. cycle (active material basis)',
-                    fontsize=13)
+                    "Specific energy vs. cycle (active material basis)", fontsize=13
+                )
                 _apply_pub_style(ax)
                 ax.legend(fontsize=9, framealpha=0.7)
-                _set_lim_with_padding(ax, 'y', bottom=0)
+                _set_lim_with_padding(ax, "y", bottom=0)
                 plt.tight_layout()
                 if save_location:
-                    fpath = os.path.join(save_location,
-                        f'energy_per_active_mass_vs_cycle.{_run_image_format(user_parameters)}')
-                    fig.savefig(fpath, dpi=300, bbox_inches='tight')
+                    fpath = os.path.join(
+                        save_location,
+                        f"energy_per_active_mass_vs_cycle.{_run_image_format(user_parameters)}",
+                    )
+                    fig.savefig(fpath, dpi=300, bbox_inches="tight")
                     saved(fpath)
                 plt.show()
                 plt.close(fig)
 
             if PLOT_PER_ELECTRODE_MASS:
-                fig, ax = plt.subplots(figsize=(_plots.figure_width_inches, _plots.figure_height_inches))
+                fig, ax = plt.subplots(
+                    figsize=(_plots.figure_width_inches, _plots.figure_height_inches)
+                )
                 for i, (name, pe_df) in enumerate(all_pe_data.items()):
                     comp = _get_display_name(
-                        name, user_parameters.get(name, {}), user_parameters)
-                    if 'energy_Wh_kg_electrode' in pe_df.columns:
-                        ax.plot(pe_df['Cycle'],
-                               pe_df['energy_Wh_kg_electrode'],
-                               color=colours[i], marker=markers[i], markersize=4,
-                               linewidth=1.2, label=comp)
-                ax.set_xlabel('Cycle number', fontsize=13)
+                        name, user_parameters.get(name, {}), user_parameters
+                    )
+                    if "energy_Wh_kg_electrode" in pe_df.columns:
+                        ax.plot(
+                            pe_df["Cycle"],
+                            pe_df["energy_Wh_kg_electrode"],
+                            color=colours[i],
+                            marker=markers[i],
+                            markersize=4,
+                            linewidth=1.2,
+                            label=comp,
+                        )
+                ax.set_xlabel("Cycle number", fontsize=13)
                 _force_integer_cycles(ax)
                 ax.set_ylabel(
-                    'Specific energy / '
-                    'Wh kg$^{-1}_{\\mathrm{electrode}}$',
-                    fontsize=13)
+                    "Specific energy / Wh kg$^{-1}_{\\mathrm{electrode}}$", fontsize=13
+                )
                 ax.set_title(
-                    'Specific energy vs. cycle (electrode coating basis)',
-                    fontsize=13)
+                    "Specific energy vs. cycle (electrode coating basis)", fontsize=13
+                )
                 _apply_pub_style(ax)
                 ax.legend(fontsize=9, framealpha=0.7)
-                _set_lim_with_padding(ax, 'y', bottom=0)
+                _set_lim_with_padding(ax, "y", bottom=0)
                 plt.tight_layout()
                 if save_location:
-                    fpath = os.path.join(save_location,
-                        f'energy_per_electrode_mass_vs_cycle.{_run_image_format(user_parameters)}')
-                    fig.savefig(fpath, dpi=300, bbox_inches='tight')
+                    fpath = os.path.join(
+                        save_location,
+                        f"energy_per_electrode_mass_vs_cycle.{_run_image_format(user_parameters)}",
+                    )
+                    fig.savefig(fpath, dpi=300, bbox_inches="tight")
                     saved(fpath)
                 plt.show()
                 plt.close(fig)
 
             if PLOT_PER_AREA:
-                fig, ax = plt.subplots(figsize=(_plots.figure_width_inches, _plots.figure_height_inches))
+                fig, ax = plt.subplots(
+                    figsize=(_plots.figure_width_inches, _plots.figure_height_inches)
+                )
                 for i, (name, pe_df) in enumerate(all_pe_data.items()):
                     comp = _get_display_name(
-                        name, user_parameters.get(name, {}), user_parameters)
-                    if 'energy_mWh_cm2' in pe_df.columns:
-                        ax.plot(pe_df['Cycle'], pe_df['energy_mWh_cm2'],
-                               color=colours[i], marker=markers[i], markersize=4,
-                               linewidth=1.2, label=comp)
-                ax.set_xlabel('Cycle number', fontsize=13)
+                        name, user_parameters.get(name, {}), user_parameters
+                    )
+                    if "energy_mWh_cm2" in pe_df.columns:
+                        ax.plot(
+                            pe_df["Cycle"],
+                            pe_df["energy_mWh_cm2"],
+                            color=colours[i],
+                            marker=markers[i],
+                            markersize=4,
+                            linewidth=1.2,
+                            label=comp,
+                        )
+                ax.set_xlabel("Cycle number", fontsize=13)
                 _force_integer_cycles(ax)
-                ax.set_ylabel('Areal energy density / mWh cm$^{-2}$',
-                              fontsize=13)
-                ax.set_title('Areal energy density vs. cycle', fontsize=13)
+                ax.set_ylabel("Areal energy density / mWh cm$^{-2}$", fontsize=13)
+                ax.set_title("Areal energy density vs. cycle", fontsize=13)
                 _apply_pub_style(ax)
                 ax.legend(fontsize=9, framealpha=0.7)
-                _set_lim_with_padding(ax, 'y', bottom=0)
+                _set_lim_with_padding(ax, "y", bottom=0)
                 plt.tight_layout()
                 if save_location:
-                    fpath = os.path.join(save_location,
-                        f'energy_per_area_vs_cycle.{_run_image_format(user_parameters)}')
-                    fig.savefig(fpath, dpi=300, bbox_inches='tight')
+                    fpath = os.path.join(
+                        save_location,
+                        f"energy_per_area_vs_cycle.{_run_image_format(user_parameters)}",
+                    )
+                    fig.savefig(fpath, dpi=300, bbox_inches="tight")
                     saved(fpath)
                 plt.show()
                 plt.close(fig)
 
             # --- Power density vs cycle ---
             power_col_map = {
-                'active': ('power_mW_g_active',
-                           'mW g$^{-1}_{\\mathrm{active}}$',
-                           'power_per_active_mass'),
-                'electrode': ('power_mW_g_electrode',
-                             'mW g$^{-1}_{\\mathrm{electrode}}$',
-                             'power_per_electrode_mass'),
-                'area': ('power_mW_cm2', 'mW cm$^{-2}$',
-                         'power_per_area')
+                "active": (
+                    "power_mW_g_active",
+                    "mW g$^{-1}_{\\mathrm{active}}$",
+                    "power_per_active_mass",
+                ),
+                "electrode": (
+                    "power_mW_g_electrode",
+                    "mW g$^{-1}_{\\mathrm{electrode}}$",
+                    "power_per_electrode_mass",
+                ),
+                "area": ("power_mW_cm2", "mW cm$^{-2}$", "power_per_area"),
             }
 
-            for basis, plot_flag in [('active', PLOT_PER_ACTIVE_MASS),
-                                      ('electrode', PLOT_PER_ELECTRODE_MASS),
-                                      ('area', PLOT_PER_AREA)]:
+            for basis, plot_flag in [
+                ("active", PLOT_PER_ACTIVE_MASS),
+                ("electrode", PLOT_PER_ELECTRODE_MASS),
+                ("area", PLOT_PER_AREA),
+            ]:
                 if not plot_flag:
                     continue
 
                 col, ylabel, fname = power_col_map[basis]
 
-                fig, ax = plt.subplots(figsize=(_plots.figure_width_inches, _plots.figure_height_inches))
+                fig, ax = plt.subplots(
+                    figsize=(_plots.figure_width_inches, _plots.figure_height_inches)
+                )
                 for i, (name, pe_df) in enumerate(all_pe_data.items()):
                     comp = _get_display_name(
-                        name, user_parameters.get(name, {}), user_parameters)
+                        name, user_parameters.get(name, {}), user_parameters
+                    )
                     if col in pe_df.columns:
-                        ax.plot(pe_df['Cycle'], pe_df[col],
-                               color=colours[i], marker=markers[i], markersize=4,
-                               linewidth=1.2, label=comp)
+                        ax.plot(
+                            pe_df["Cycle"],
+                            pe_df[col],
+                            color=colours[i],
+                            marker=markers[i],
+                            markersize=4,
+                            linewidth=1.2,
+                            label=comp,
+                        )
 
-                ax.set_xlabel('Cycle number', fontsize=13)
+                ax.set_xlabel("Cycle number", fontsize=13)
                 _force_integer_cycles(ax)
-                ax.set_ylabel(f'Maximum power / {ylabel}', fontsize=13)
-                basis_label = {'active': 'active material',
-                              'electrode': 'electrode coating',
-                              'area': 'electrode area'}[basis]
+                ax.set_ylabel(f"Maximum power / {ylabel}", fontsize=13)
+                basis_label = {
+                    "active": "active material",
+                    "electrode": "electrode coating",
+                    "area": "electrode area",
+                }[basis]
                 ax.set_title(
-                    f'Maximum power vs. cycle ({basis_label} basis)',
-                    fontsize=13)
+                    f"Maximum power vs. cycle ({basis_label} basis)", fontsize=13
+                )
                 _apply_pub_style(ax)
                 ax.legend(fontsize=9, framealpha=0.7)
-                _set_lim_with_padding(ax, 'y', bottom=0)
+                _set_lim_with_padding(ax, "y", bottom=0)
                 plt.tight_layout()
                 if save_location:
-                    fpath = os.path.join(save_location,
-                        f'{fname}_vs_cycle.{_run_image_format(user_parameters)}')
-                    fig.savefig(fpath, dpi=300, bbox_inches='tight')
+                    fpath = os.path.join(
+                        save_location,
+                        f"{fname}_vs_cycle.{_run_image_format(user_parameters)}",
+                    )
+                    fig.savefig(fpath, dpi=300, bbox_inches="tight")
                     saved(fpath)
                 plt.show()
                 plt.close(fig)
@@ -3173,85 +3677,98 @@ def power_and_energy(electrochemical_data, user_parameters, *, save_location=Non
             # --- Ragone plot ---
             if PLOT_RAGONE:
                 energy_cols = {
-                    'active': 'energy_Wh_kg_active',
-                    'electrode': 'energy_Wh_kg_electrode',
-                    'area': 'energy_mWh_cm2'
+                    "active": "energy_Wh_kg_active",
+                    "electrode": "energy_Wh_kg_electrode",
+                    "area": "energy_mWh_cm2",
                 }
                 power_cols = {
-                    'active': 'power_mW_g_active',
-                    'electrode': 'power_mW_g_electrode',
-                    'area': 'power_mW_cm2'
+                    "active": "power_mW_g_active",
+                    "electrode": "power_mW_g_electrode",
+                    "area": "power_mW_cm2",
                 }
                 energy_labels = {
-                    'active': 'Specific energy / '
-                              'Wh kg$^{-1}_{\\mathrm{active}}$',
-                    'electrode': 'Specific energy / '
-                                 'Wh kg$^{-1}_{\\mathrm{electrode}}$',
-                    'area': 'Areal energy / mWh cm$^{-2}$'
+                    "active": "Specific energy / Wh kg$^{-1}_{\\mathrm{active}}$",
+                    "electrode": "Specific energy / Wh kg$^{-1}_{\\mathrm{electrode}}$",
+                    "area": "Areal energy / mWh cm$^{-2}$",
                 }
                 power_labels = {
-                    'active': 'Power / '
-                              'mW g$^{-1}_{\\mathrm{active}}$',
-                    'electrode': 'Power / '
-                                 'mW g$^{-1}_{\\mathrm{electrode}}$',
-                    'area': 'Power / mW cm$^{-2}$'
+                    "active": "Power / mW g$^{-1}_{\\mathrm{active}}$",
+                    "electrode": "Power / mW g$^{-1}_{\\mathrm{electrode}}$",
+                    "area": "Power / mW cm$^{-2}$",
                 }
 
                 e_col = energy_cols[RAGONE_BASIS]
                 p_col = power_cols[RAGONE_BASIS]
 
-                fig, ax = plt.subplots(figsize=(_plots.figure_width_inches, _plots.figure_height_inches))
+                fig, ax = plt.subplots(
+                    figsize=(_plots.figure_width_inches, _plots.figure_height_inches)
+                )
                 for i, (name, pe_df) in enumerate(all_pe_data.items()):
                     comp = _get_display_name(
-                        name, user_parameters.get(name, {}), user_parameters)
-                    key_cycles = user_parameters.get(name, {}).get(
-                        'key_cycles', [])
+                        name, user_parameters.get(name, {}), user_parameters
+                    )
+                    key_cycles = user_parameters.get(name, {}).get("key_cycles", [])
 
-                    if (e_col not in pe_df.columns or
-                        p_col not in pe_df.columns):
+                    if e_col not in pe_df.columns or p_col not in pe_df.columns:
                         continue
 
                     valid = pe_df.dropna(subset=[e_col, p_col])
                     if valid.empty:
                         continue
 
-                    ax.scatter(valid[e_col], valid[p_col],
-                              color=colours[i], s=40, alpha=0.6,
-                              label=comp)
+                    ax.scatter(
+                        valid[e_col],
+                        valid[p_col],
+                        color=colours[i],
+                        s=40,
+                        alpha=0.6,
+                        label=comp,
+                    )
 
-                    sorted_v = valid.sort_values('Cycle')
-                    ax.plot(sorted_v[e_col], sorted_v[p_col],
-                           color=colours[i], linewidth=0.8, alpha=0.4)
+                    sorted_v = valid.sort_values("Cycle")
+                    ax.plot(
+                        sorted_v[e_col],
+                        sorted_v[p_col],
+                        color=colours[i],
+                        linewidth=0.8,
+                        alpha=0.4,
+                    )
 
                     for cycle in key_cycles:
-                        cd = valid[valid['Cycle'] == cycle]
+                        cd = valid[valid["Cycle"] == cycle]
                         if not cd.empty:
                             ax.annotate(
                                 str(int(cycle)),
                                 (cd[e_col].iloc[0], cd[p_col].iloc[0]),
-                                textcoords='offset points', xytext=(6, 6),
-                                fontsize=8, fontweight='bold',
-                                color=colours[i], alpha=0.8
+                                textcoords="offset points",
+                                xytext=(6, 6),
+                                fontsize=8,
+                                fontweight="bold",
+                                color=colours[i],
+                                alpha=0.8,
                             )
 
                 ax.set_xlabel(energy_labels[RAGONE_BASIS], fontsize=13)
                 ax.set_ylabel(power_labels[RAGONE_BASIS], fontsize=13)
-                basis_note = {'active': 'active material',
-                             'electrode': 'electrode coating',
-                             'area': 'electrode area'}[RAGONE_BASIS]
+                basis_note = {
+                    "active": "active material",
+                    "electrode": "electrode coating",
+                    "area": "electrode area",
+                }[RAGONE_BASIS]
                 ax.set_title(
-                    f'Ragone plot -- half-cell ({basis_note} basis)',
-                    fontsize=13)
+                    f"Ragone plot -- half-cell ({basis_note} basis)", fontsize=13
+                )
                 _apply_pub_style(ax)
                 ax.legend(fontsize=9, framealpha=0.7)
-                _set_lim_with_padding(ax, 'x', bottom=0)
-                _set_lim_with_padding(ax, 'y', bottom=0)
+                _set_lim_with_padding(ax, "x", bottom=0)
+                _set_lim_with_padding(ax, "y", bottom=0)
                 plt.tight_layout()
                 if save_location:
                     fpath = os.path.join(
                         save_location,
-                        f'ragone_{RAGONE_BASIS}_basis.{_run_image_format(user_parameters)}')
-                    fig.savefig(fpath, dpi=300, bbox_inches='tight')
+                        f"ragone_{RAGONE_BASIS}_basis.{_run_image_format(user_parameters)}",
+                    )
+                    fig.savefig(fpath, dpi=300, bbox_inches="tight")
                     saved(fpath)
                 plt.show()
                 plt.close(fig)
@@ -3262,31 +3779,32 @@ def power_and_energy(electrochemical_data, user_parameters, *, save_location=Non
                 all_areal_cap = {}
                 for name, pe_df in all_pe_data.items():
                     params = user_parameters.get(name, {})
-                    active_mass_mg = params.get('active_material_mass_mg')
-                    area_cm2 = params.get('electrode_area_cm2')
+                    active_mass_mg = params.get("active_material_mass_mg")
+                    area_cm2 = params.get("electrode_area_cm2")
                     if active_mass_mg is None or area_cm2 is None:
                         continue
                     active_mass_g = active_mass_mg / 1000.0
 
                     # Get discharge capacity per cycle from cycle tables
-                    if (_have_cycle_tables and name in all_cycle_tables):
+                    if _have_cycle_tables and name in all_cycle_tables:
                         ct = all_cycle_tables[name]
                         ct_complete = ct[~_unusable(ct)]
-                        areal_df = ct_complete[['Cycle', 'Discharge_mAh_g']].copy()
-                        areal_df = areal_df.dropna(subset=['Discharge_mAh_g'])
+                        areal_df = ct_complete[["Cycle", "Discharge_mAh_g"]].copy()
+                        areal_df = areal_df.dropna(subset=["Discharge_mAh_g"])
                         # Apply visual outlier filter (same as Cells 8/9/10)
                         if VISUAL_OUTLIER_FILTER and not areal_df.empty:
                             _outlier_flags = _flag_visual_outliers(
-                                areal_df['Discharge_mAh_g'].tolist(), threshold=VISUAL_OUTLIER_THRESHOLD,
-                                groups=rate_block_labels(areal_df['Cycle'], params))
+                                areal_df["Discharge_mAh_g"].tolist(),
+                                threshold=VISUAL_OUTLIER_THRESHOLD,
+                                groups=rate_block_labels(areal_df["Cycle"], params),
+                            )
                             areal_df = areal_df[
-                                ~pd.Series(_outlier_flags,
-                                           index=areal_df.index)
+                                ~pd.Series(_outlier_flags, index=areal_df.index)
                             ].reset_index(drop=True)
                         # Convert: mAh/g * g / cm2 = mAh/cm2
-                        areal_df['Areal_mAh_cm2'] = (
-                            areal_df['Discharge_mAh_g'] * active_mass_g
-                            / area_cm2)
+                        areal_df["Areal_mAh_cm2"] = (
+                            areal_df["Discharge_mAh_g"] * active_mass_g / area_cm2
+                        )
                         all_areal_cap[name] = areal_df
                     else:
                         # NO FALLBACK. This branch used to back-calculate
@@ -3298,75 +3816,93 @@ def power_and_energy(electrochemical_data, user_parameters, *, save_location=Non
                         # real mean near 3.8 V, a 4% error in every point.
                         # Areal capacity comes from the canonical cycle table
                         # or it is not plotted.
-                        print(f"  {name}: no cycle table, so areal capacity "
-                              f"is not plotted (it will not be estimated "
-                              f"from energy and an assumed voltage).")
+                        print(
+                            f"  {name}: no cycle table, so areal capacity "
+                            f"is not plotted (it will not be estimated "
+                            f"from energy and an assumed voltage)."
+                        )
 
                 if all_areal_cap:
-                    fig, ax = plt.subplots(figsize=(_plots.figure_width_inches, _plots.figure_height_inches))
-                    for i, (name, areal_df) in enumerate(
-                            all_areal_cap.items()):
+                    fig, ax = plt.subplots(
+                        figsize=(
+                            _plots.figure_width_inches,
+                            _plots.figure_height_inches,
+                        )
+                    )
+                    for i, (name, areal_df) in enumerate(all_areal_cap.items()):
                         comp = _get_display_name(
-                            name, user_parameters.get(name, {}),
-                            user_parameters)
+                            name, user_parameters.get(name, {}), user_parameters
+                        )
                         loading = user_parameters.get(name, {}).get(
-                            'active_loading_mg_cm2')
-                        loading_str = (f" [{loading:.1f} mg/cm²]"
-                                      if loading else "")
-                        ax.plot(areal_df['Cycle'],
-                               areal_df['Areal_mAh_cm2'],
-                               color=colours[i], marker=markers[i], markersize=4,
-                               linewidth=1.2,
-                               label=f"{comp}{loading_str}")
+                            "active_loading_mg_cm2"
+                        )
+                        loading_str = f" [{loading:.1f} mg/cm²]" if loading else ""
+                        ax.plot(
+                            areal_df["Cycle"],
+                            areal_df["Areal_mAh_cm2"],
+                            color=colours[i],
+                            marker=markers[i],
+                            markersize=4,
+                            linewidth=1.2,
+                            label=f"{comp}{loading_str}",
+                        )
 
                     # Chemistry-aware benchmark lines (v1.7.2)
                     _chemistries = set(
-                        user_parameters.get(n, {}).get('battery_chemistry', 'Unknown')
-                        for n in all_areal_cap)
-                    _chem = (_chemistries.pop() if len(_chemistries) == 1
-                             else 'Unknown')
+                        user_parameters.get(n, {}).get("battery_chemistry", "Unknown")
+                        for n in all_areal_cap
+                    )
+                    _chem = _chemistries.pop() if len(_chemistries) == 1 else "Unknown"
                     _bench_vals, _bench_label = _AREAL_BENCHMARKS.get(
-                        _chem, _AREAL_BENCHMARK_DEFAULT)
+                        _chem, _AREAL_BENCHMARK_DEFAULT
+                    )
                     _bench_annotations = []
                     for bench in _bench_vals:
-                        ax.axhline(y=bench, color='grey', linestyle='--',
-                                  linewidth=0.8, alpha=0.6)
+                        ax.axhline(
+                            y=bench,
+                            color="grey",
+                            linestyle="--",
+                            linewidth=0.8,
+                            alpha=0.6,
+                        )
                         _bench_annotations.append(bench)
 
-                    ax.set_xlabel('Cycle number', fontsize=13)
+                    ax.set_xlabel("Cycle number", fontsize=13)
                     _force_integer_cycles(ax)
                     ax.set_ylabel(
-                        'Areal discharge capacity / mAh cm$^{-2}$',
-                        fontsize=13)
-                    ax.set_title(
-                        'Areal discharge capacity vs. cycle',
-                        fontsize=13)
+                        "Areal discharge capacity / mAh cm$^{-2}$", fontsize=13
+                    )
+                    ax.set_title("Areal discharge capacity vs. cycle", fontsize=13)
                     _apply_pub_style(ax)
                     ax.legend(fontsize=9, framealpha=0.7)
                     ax.set_ylim(bottom=0)
-                    _set_lim_with_padding(ax, 'y', bottom=0)
+                    _set_lim_with_padding(ax, "y", bottom=0)
                     # Add benchmark annotations after axis limits are final
                     for bench in _bench_annotations:
                         ax.annotate(
-                            f'{bench:.0f} mAh/cm² ({_bench_label})',
+                            f"{bench:.0f} mAh/cm² ({_bench_label})",
                             xy=(ax.get_xlim()[1] * 0.02, bench),
-                            xytext=(5, 3), textcoords='offset points',
-                            fontsize=8, color='grey', alpha=0.8,
-                            fontstyle='italic')
+                            xytext=(5, 3),
+                            textcoords="offset points",
+                            fontsize=8,
+                            color="grey",
+                            alpha=0.8,
+                            fontstyle="italic",
+                        )
                     plt.tight_layout()
 
                     # Caption
                     loading_range = [
-                        user_parameters.get(n, {}).get(
-                            'active_loading_mg_cm2')
+                        user_parameters.get(n, {}).get("active_loading_mg_cm2")
                         for n in all_areal_cap
                     ]
-                    loading_range = [l for l in loading_range
-                                    if l is not None]
+                    loading_range = [l for l in loading_range if l is not None]
                     if loading_range:
-                        lo_str = (f"Active material loadings: "
-                                 f"{min(loading_range):.1f}--"
-                                 f"{max(loading_range):.1f} mg/cm².")
+                        lo_str = (
+                            f"Active material loadings: "
+                            f"{min(loading_range):.1f}--"
+                            f"{max(loading_range):.1f} mg/cm²."
+                        )
                     else:
                         lo_str = ""
                     caption = (
@@ -3383,82 +3919,93 @@ def power_and_energy(electrochemical_data, user_parameters, *, save_location=Non
                     print(bullet(caption, indent=2, label_width=2))
 
                     if save_location:
-                        fpath = os.path.join(save_location,
-                            f'areal_discharge_capacity_vs_cycle.{_run_image_format(user_parameters)}')
-                        fig.savefig(fpath, dpi=300, bbox_inches='tight')
+                        fpath = os.path.join(
+                            save_location,
+                            f"areal_discharge_capacity_vs_cycle.{_run_image_format(user_parameters)}",
+                        )
+                        fig.savefig(fpath, dpi=300, bbox_inches="tight")
                         saved(fpath)
                     plt.show()
                     plt.close(fig)
 
                     # Print areal capacity summary
                     print(f"\n  Areal capacity summary (cycle 2):")
-                    print(f"  {'Composition':<30} {'Loading':>10} "
-                          f"{'Q_areal':>10}")
-                    print(f"  {'':30} {'mg/cm²':>10} "
-                          f"{'mAh/cm²':>10}")
-                    print(f"  {'-'*52}")
+                    print(f"  {'Composition':<30} {'Loading':>10} {'Q_areal':>10}")
+                    print(f"  {'':30} {'mg/cm²':>10} {'mAh/cm²':>10}")
+                    print(f"  {'-' * 52}")
                     for name, areal_df in all_areal_cap.items():
                         comp = _get_display_name(
-                            name, user_parameters.get(name, {}),
-                            user_parameters)
+                            name, user_parameters.get(name, {}), user_parameters
+                        )
                         loading = user_parameters.get(name, {}).get(
-                            'active_loading_mg_cm2')
-                        c2 = areal_df[areal_df['Cycle'] == 2]
+                            "active_loading_mg_cm2"
+                        )
+                        c2 = areal_df[areal_df["Cycle"] == 2]
                         if not c2.empty:
-                            q_ar = c2['Areal_mAh_cm2'].iloc[0]
-                            l_str = (f"{loading:.2f}"
-                                    if loading else '--')
-                            print(f"  {comp:<30} {l_str:>10} "
-                                  f"{q_ar:>10.3f}")
-                    print(f"  {'-'*52}")
+                            q_ar = c2["Areal_mAh_cm2"].iloc[0]
+                            l_str = f"{loading:.2f}" if loading else "--"
+                            print(f"  {comp:<30} {l_str:>10} {q_ar:>10.3f}")
+                    print(f"  {'-' * 52}")
                 else:
-                    print("  Areal capacity: insufficient data "
-                          "(need active mass and electrode area).")
+                    print(
+                        "  Areal capacity: insufficient data "
+                        "(need active mass and electrode area)."
+                    )
 
             # --- Summary table ---
             print()
             print(f"  Power, Energy & Areal Capacity Summary (final cycle)")
-            print(f"  {'Composition':<28} {'E/Wh kg':>10} "
-                  f"{'E/Wh kg':>10} {'E/mWh cm2':>11} "
-                  f"{'P/mW g':>10} {'P/mW cm2':>10} {'Q_areal':>10} {'Cyc':>5}")
-            print(f"  {'':28} {'(active)':>10} {'(electr.)':>10} "
-                  f"{'(areal)':>11} {'(active)':>10} {'(areal)':>10} "
-                  f"{'mAh/cm2':>10} {'':>5}")
-            print(f"  {'-'*95}")
+            print(
+                f"  {'Composition':<28} {'E/Wh kg':>10} "
+                f"{'E/Wh kg':>10} {'E/mWh cm2':>11} "
+                f"{'P/mW g':>10} {'P/mW cm2':>10} {'Q_areal':>10} {'Cyc':>5}"
+            )
+            print(
+                f"  {'':28} {'(active)':>10} {'(electr.)':>10} "
+                f"{'(areal)':>11} {'(active)':>10} {'(areal)':>10} "
+                f"{'mAh/cm2':>10} {'':>5}"
+            )
+            print(f"  {'-' * 95}")
             for name, pe_df in all_pe_data.items():
                 comp = _get_display_name(
-                    name, user_parameters.get(name, {}), user_parameters)
+                    name, user_parameters.get(name, {}), user_parameters
+                )
                 last = pe_df.iloc[-1]
-                def _fmt(val, fmt='.1f'):
-                    return f"{val:{fmt}}" if pd.notna(val) else '--'
-                e_act = _fmt(last.get('energy_Wh_kg_active'))
-                e_elec = _fmt(last.get('energy_Wh_kg_electrode'))
-                e_area = _fmt(last.get('energy_mWh_cm2'), '.3f')
-                p_act = _fmt(last.get('power_mW_g_active'))
-                p_area = _fmt(last.get('power_mW_cm2'), '.3f')
+
+                def _fmt(val, fmt=".1f"):
+                    return f"{val:{fmt}}" if pd.notna(val) else "--"
+
+                e_act = _fmt(last.get("energy_Wh_kg_active"))
+                e_elec = _fmt(last.get("energy_Wh_kg_electrode"))
+                e_area = _fmt(last.get("energy_mWh_cm2"), ".3f")
+                p_act = _fmt(last.get("power_mW_g_active"))
+                p_area = _fmt(last.get("power_mW_cm2"), ".3f")
                 # Areal capacity from final cycle
-                q_areal = '--'
-                if (PLOT_AREAL_CAPACITY and 'all_areal_cap' in dir()
-                    and name in all_areal_cap):
+                q_areal = "--"
+                if (
+                    PLOT_AREAL_CAPACITY
+                    and "all_areal_cap" in dir()
+                    and name in all_areal_cap
+                ):
                     ac_df = all_areal_cap[name]
                     last_ac = ac_df.iloc[-1] if not ac_df.empty else None
                     if last_ac is not None:
                         q_areal = f"{last_ac['Areal_mAh_cm2']:.3f}"
                 # Final cycle number
-                last_cyc = str(int(last['Cycle'])) if 'Cycle' in last else '--'
-                print(f"  {comp:<28} {e_act:>10} {e_elec:>10} "
-                      f"{e_area:>11} {p_act:>10} {p_area:>10} "
-                      f"{q_areal:>10} {last_cyc:>5}")
-            print(f"  {'-'*95}")
+                last_cyc = str(int(last["Cycle"])) if "Cycle" in last else "--"
+                print(
+                    f"  {comp:<28} {e_act:>10} {e_elec:>10} "
+                    f"{e_area:>11} {p_act:>10} {p_area:>10} "
+                    f"{q_areal:>10} {last_cyc:>5}"
+                )
+            print(f"  {'-' * 95}")
             print(f"  Note: Half-cell data (vs metal counter electrode).")
             print(f"  Energy and power reflect {_mat_word} material only.")
 
             # --- Export ---
             for name, pe_df in all_pe_data.items():
                 if save_location:
-                    fpath = os.path.join(
-                        save_location,
-                        f'{name}_power_energy_data.csv')
+                    fpath = os.path.join(save_location, f"{name}_power_energy_data.csv")
                     pe_df.to_csv(fpath, index=False)
                     saved(fpath)
 
@@ -3466,8 +4013,15 @@ def power_and_energy(electrochemical_data, user_parameters, *, save_location=Non
 
 
 @_honours_verbose
-def average_discharge_voltage(electrochemical_data, user_parameters, *, save_location=None,
-        all_cycle_tables=None, file_format='png', verbose=True):
+def average_discharge_voltage(
+    electrochemical_data,
+    user_parameters,
+    *,
+    save_location=None,
+    all_cycle_tables=None,
+    file_format="png",
+    verbose=True,
+):
     """
     Mean discharge voltage against cycle number.
 
@@ -3487,6 +4041,7 @@ def average_discharge_voltage(electrochemical_data, user_parameters, *, save_loc
     # one changed the sentence and not the data.
 
     VISUAL_OUTLIER_THRESHOLD = VISUAL_OUTLIER_FRACTION
+
     def _calculate_avg_voltage_per_cycle(df):
         """
         Energy-weighted average discharge voltage per cycle:
@@ -3497,12 +4052,14 @@ def average_discharge_voltage(electrochemical_data, user_parameters, *, save_loc
         said until 1.9.0.15.
         """
         # Cell 2 has already coerced the numeric columns.
-        discharge = df[df['Step'] == 'Discharge'].dropna(
-            subset=['Cycle', 'Voltage', 'Discharge_Capacity'])
+        discharge = df[df["Step"] == "Discharge"].dropna(
+            subset=["Cycle", "Voltage", "Discharge_Capacity"]
+        )
 
         if discharge.empty:
-            return pd.DataFrame(columns=['Cycle', 'Avg_Discharge_Voltage_V',
-                                          'Discharge_mAh_g'])
+            return pd.DataFrame(
+                columns=["Cycle", "Avg_Discharge_Voltage_V", "Discharge_mAh_g"]
+            )
 
         # ONE DEFINITION. `mean_discharge_voltage` at the top of this module
         # was written to be the single definition of this quantity — its
@@ -3513,30 +4070,30 @@ def average_discharge_voltage(electrochemical_data, user_parameters, *, save_loc
         # now the module-level function plus the delivered capacity, which is
         # the only thing the figure needs that the canonical one does not
         # return.
-        base = mean_discharge_voltage(
-            discharge.assign(Step='Discharge'))
+        base = mean_discharge_voltage(discharge.assign(Step="Discharge"))
         if base.empty:
-            return pd.DataFrame(columns=['Cycle', 'Avg_Discharge_Voltage_V',
-                                         'Discharge_mAh_g'])
+            return pd.DataFrame(
+                columns=["Cycle", "Avg_Discharge_Voltage_V", "Discharge_mAh_g"]
+            )
         deliv = {}
-        for cycle, cd in discharge.groupby('Cycle'):
-            q = pd.to_numeric(cd['Discharge_Capacity'],
-                              errors='coerce').dropna()
+        for cycle, cd in discharge.groupby("Cycle"):
+            q = pd.to_numeric(cd["Discharge_Capacity"], errors="coerce").dropna()
             if q.size < 3:
                 continue
             span = float(q.max() - q.min())
             if span > 0:
                 deliv[int(cycle)] = span
-        base = base[base['Cycle'].isin(deliv)].copy()
-        base['Discharge_mAh_g'] = base['Cycle'].map(deliv)
+        base = base[base["Cycle"].isin(deliv)].copy()
+        base["Discharge_mAh_g"] = base["Cycle"].map(deliv)
         return base.reset_index(drop=True)
 
     _avg_v_labels = set(
-        _discharge_label(user_parameters.get(n, {}))
-        for n in electrochemical_data)
+        _discharge_label(user_parameters.get(n, {})) for n in electrochemical_data
+    )
 
-    _avg_v_word = (_avg_v_labels.pop().lower() if len(_avg_v_labels) == 1
-                   else 'discharge')
+    _avg_v_word = (
+        _avg_v_labels.pop().lower() if len(_avg_v_labels) == 1 else "discharge"
+    )
 
     print(rule(f"AVERAGE {_avg_v_word.upper()} VOLTAGE"))
 
@@ -3545,9 +4102,11 @@ def average_discharge_voltage(electrochemical_data, user_parameters, *, save_loc
     _have_cycle_tables = _has_tables(all_cycle_tables)
 
     if EXCLUDE_INCOMPLETE and not _have_cycle_tables:
-        print("  ⚠ all_cycle_tables not found — Cell 5b has not been "
-              "run. Protocol-incomplete filtering unavailable; "
-              "visual-outlier filter still active.\n")
+        print(
+            "  ⚠ all_cycle_tables not found — Cell 5b has not been "
+            "run. Protocol-incomplete filtering unavailable; "
+            "visual-outlier filter still active.\n"
+        )
 
     all_avg_voltage = {}
 
@@ -3562,33 +4121,38 @@ def average_discharge_voltage(electrochemical_data, user_parameters, *, save_loc
             continue
 
         # Exclude protocol-incomplete cycles (Cell 5b flag)
-        if (EXCLUDE_INCOMPLETE and _have_cycle_tables
-            and name in all_cycle_tables):
+        if EXCLUDE_INCOMPLETE and _have_cycle_tables and name in all_cycle_tables:
             ct = all_cycle_tables[name]
-            incomplete_cycles = set(
-                _unusable_cycles(ct))
+            incomplete_cycles = set(_unusable_cycles(ct))
             if incomplete_cycles:
-                mask = avg_v_df['Cycle'].isin(incomplete_cycles)
-                removed = avg_v_df.loc[mask, 'Cycle'].tolist()
+                mask = avg_v_df["Cycle"].isin(incomplete_cycles)
+                removed = avg_v_df.loc[mask, "Cycle"].tolist()
                 if removed:
-                    print(f"  {composition}: excluded {len(removed)} "
-                          f"protocol-incomplete cycle(s): "
-                          f"{', '.join(str(int(c)) for c in removed)}")
+                    print(
+                        f"  {composition}: excluded {len(removed)} "
+                        f"protocol-incomplete cycle(s): "
+                        f"{', '.join(str(int(c)) for c in removed)}"
+                    )
                 avg_v_df = avg_v_df[~mask].reset_index(drop=True)
 
         # Visual-outlier filter
         if VISUAL_OUTLIER_FILTER and not avg_v_df.empty:
             outlier_flags = _flag_visual_outliers(
-                avg_v_df['Discharge_mAh_g'].tolist(), threshold=VISUAL_OUTLIER_THRESHOLD,
-                groups=rate_block_labels(avg_v_df['Cycle'], params))
+                avg_v_df["Discharge_mAh_g"].tolist(),
+                threshold=VISUAL_OUTLIER_THRESHOLD,
+                groups=rate_block_labels(avg_v_df["Cycle"], params),
+            )
             n_outliers = sum(outlier_flags)
             if n_outliers > 0:
-                removed = [int(c) for c, f in
-                           zip(avg_v_df['Cycle'], outlier_flags) if f]
-                print(f"  {composition}: excluded {n_outliers} visual "
-                      f"outlier(s) (<{VISUAL_OUTLIER_THRESHOLD*100:.0f}% "
-                      f"of running median on Discharge_mAh_g): "
-                      f"{', '.join(str(c) for c in removed)}")
+                removed = [
+                    int(c) for c, f in zip(avg_v_df["Cycle"], outlier_flags) if f
+                ]
+                print(
+                    f"  {composition}: excluded {n_outliers} visual "
+                    f"outlier(s) (<{VISUAL_OUTLIER_THRESHOLD * 100:.0f}% "
+                    f"of running median on Discharge_mAh_g): "
+                    f"{', '.join(str(c) for c in removed)}"
+                )
                 avg_v_df = avg_v_df[
                     ~pd.Series(outlier_flags, index=avg_v_df.index)
                 ].reset_index(drop=True)
@@ -3599,46 +4163,65 @@ def average_discharge_voltage(electrochemical_data, user_parameters, *, save_loc
         all_avg_voltage[name] = avg_v_df
 
         # Voltage drift summary
-        ref_row = avg_v_df[avg_v_df['Cycle'] == DRIFT_REFERENCE_CYCLE]
+        ref_row = avg_v_df[avg_v_df["Cycle"] == DRIFT_REFERENCE_CYCLE]
         if not ref_row.empty:
-            ref_v = ref_row['Avg_Discharge_Voltage_V'].iloc[0]
-            last_v = avg_v_df['Avg_Discharge_Voltage_V'].iloc[-1]
-            last_cycle = int(avg_v_df['Cycle'].iloc[-1])
+            ref_v = ref_row["Avg_Discharge_Voltage_V"].iloc[0]
+            last_v = avg_v_df["Avg_Discharge_Voltage_V"].iloc[-1]
+            last_cycle = int(avg_v_df["Cycle"].iloc[-1])
             drift_mV = (last_v - ref_v) * 1000
             n_cycles = last_cycle - DRIFT_REFERENCE_CYCLE
             drift_rate = drift_mV / n_cycles if n_cycles > 0 else 0
 
-            print(f"  {composition}: V_avg = {ref_v:.4f} V (cycle "
-                  f"{DRIFT_REFERENCE_CYCLE}) -> {last_v:.4f} V (cycle "
-                  f"{last_cycle})")
-            print(f"    Total drift: {drift_mV:+.1f} mV over {n_cycles} "
-                  f"cycles ({drift_rate:+.2f} mV/cycle)")
+            print(
+                f"  {composition}: V_avg = {ref_v:.4f} V (cycle "
+                f"{DRIFT_REFERENCE_CYCLE}) -> {last_v:.4f} V (cycle "
+                f"{last_cycle})"
+            )
+            print(
+                f"    Total drift: {drift_mV:+.1f} mV over {n_cycles} "
+                f"cycles ({drift_rate:+.2f} mV/cycle)"
+            )
         else:
-            print(f"  {composition}: {len(avg_v_df)} cycles analysed, "
-                  f"V_avg range {avg_v_df['Avg_Discharge_Voltage_V'].min():.4f}"
-                  f"--{avg_v_df['Avg_Discharge_Voltage_V'].max():.4f} V")
+            print(
+                f"  {composition}: {len(avg_v_df)} cycles analysed, "
+                f"V_avg range {avg_v_df['Avg_Discharge_Voltage_V'].min():.4f}"
+                f"--{avg_v_df['Avg_Discharge_Voltage_V'].max():.4f} V"
+            )
 
     if all_avg_voltage:
-        fig, ax = plt.subplots(figsize=(_plots.figure_width_inches, _plots.figure_height_inches))
+        fig, ax = plt.subplots(
+            figsize=(_plots.figure_width_inches, _plots.figure_height_inches)
+        )
 
         caption_compositions = []
 
         for i, (name, avdf) in enumerate(all_avg_voltage.items()):
-            composition = _get_display_name(name, user_parameters.get(name, {}), user_parameters)
+            composition = _get_display_name(
+                name, user_parameters.get(name, {}), user_parameters
+            )
             colour = palette[i % len(palette)]
             marker = MARKERS[i % len(MARKERS)]
 
-            ax.plot(avdf['Cycle'], avdf['Avg_Discharge_Voltage_V'],
-                   color=colour, marker=marker, markersize=MARKER_SIZE,
-                   linestyle='-', linewidth=0.8, label=composition, zorder=3)
+            ax.plot(
+                avdf["Cycle"],
+                avdf["Avg_Discharge_Voltage_V"],
+                color=colour,
+                marker=marker,
+                markersize=MARKER_SIZE,
+                linestyle="-",
+                linewidth=0.8,
+                label=composition,
+                zorder=3,
+            )
 
             caption_compositions.append(composition)
 
-        ax.set_xlabel('Cycle number', fontsize=14)
+        ax.set_xlabel("Cycle number", fontsize=14)
         _force_integer_cycles(ax)
-        ax.set_ylabel(f'Average {_avg_v_word} voltage / V', fontsize=14)
-        ax.tick_params(axis='both', labelsize=12, width=1, direction='in',
-                       top=True, right=True)
+        ax.set_ylabel(f"Average {_avg_v_word} voltage / V", fontsize=14)
+        ax.tick_params(
+            axis="both", labelsize=12, width=1, direction="in", top=True, right=True
+        )
         for sp in ax.spines.values():
             sp.set_linewidth(0.8)
 
@@ -3647,23 +4230,24 @@ def average_discharge_voltage(electrochemical_data, user_parameters, *, save_loc
             ax.set_ylim(bottom=VOLTAGE_YMIN, top=VOLTAGE_YMAX)
         else:
             y_lo, y_hi = ax.get_ylim()
-            ax.set_ylim(bottom=y_lo - VOLTAGE_YAXIS_PADDING,
-                        top=y_hi + VOLTAGE_YAXIS_PADDING)
+            ax.set_ylim(
+                bottom=y_lo - VOLTAGE_YAXIS_PADDING, top=y_hi + VOLTAGE_YAXIS_PADDING
+            )
 
         ax.set_xlim(left=0)
         ax.legend(fontsize=10, framealpha=0.7)
         plt.tight_layout()
 
         # Caption
-        comp_str = ', '.join(caption_compositions[:-1])
+        comp_str = ", ".join(caption_compositions[:-1])
         if len(caption_compositions) > 1:
-            comp_str += f' and {caption_compositions[-1]}'
+            comp_str += f" and {caption_compositions[-1]}"
         else:
             comp_str = caption_compositions[0]
 
-        charge_rate = user_parameters.get(
-            list(all_avg_voltage.keys())[0], {}
-        ).get('charge_rate_c', 'the specified')
+        charge_rate = user_parameters.get(list(all_avg_voltage.keys())[0], {}).get(
+            "charge_rate_c", "the specified"
+        )
 
         caption = (
             f"Figure X. Energy-weighted average {_avg_v_word} voltage "
@@ -3677,9 +4261,11 @@ def average_discharge_voltage(electrochemical_data, user_parameters, *, save_loc
 
         # Save
         if save_location:
-            filepath = os.path.join(save_location,
-                                   f'average_discharge_voltage_vs_cycle.{_run_image_format(user_parameters)}')
-            fig.savefig(filepath, dpi=300, bbox_inches='tight')
+            filepath = os.path.join(
+                save_location,
+                f"average_discharge_voltage_vs_cycle.{_run_image_format(user_parameters)}",
+            )
+            fig.savefig(filepath, dpi=300, bbox_inches="tight")
             saved(filepath)
 
         plt.show()
@@ -3688,8 +4274,9 @@ def average_discharge_voltage(electrochemical_data, user_parameters, *, save_loc
         # Export
         if save_location:
             for name, avdf in all_avg_voltage.items():
-                fpath = os.path.join(save_location,
-                                    f'{name}_avg_{_avg_v_word}_voltage.csv')
+                fpath = os.path.join(
+                    save_location, f"{name}_avg_{_avg_v_word}_voltage.csv"
+                )
                 avdf.to_csv(fpath, index=False)
                 saved(fpath)
     else:
@@ -3699,8 +4286,15 @@ def average_discharge_voltage(electrochemical_data, user_parameters, *, save_loc
 
 
 @_honours_verbose
-def energy_efficiency(electrochemical_data, user_parameters, *, save_location=None,
-        all_cycle_tables=None, file_format='png', verbose=True):
+def energy_efficiency(
+    electrochemical_data,
+    user_parameters,
+    *,
+    save_location=None,
+    all_cycle_tables=None,
+    file_format="png",
+    verbose=True,
+):
     """
     Round-trip energy efficiency against cycle number.
 
@@ -3724,6 +4318,7 @@ def energy_efficiency(electrochemical_data, user_parameters, *, save_location=No
     # one changed the sentence and not the data.
 
     VISUAL_OUTLIER_THRESHOLD = VISUAL_OUTLIER_FRACTION
+
     def _calculate_energy_per_cycle(df):
         """
         Per-cycle charge and discharge ENERGY, by trapezoidal integration of
@@ -3744,49 +4339,51 @@ def energy_efficiency(electrochemical_data, user_parameters, *, save_location=No
         """
         # Cell 2 has already coerced the numeric columns; we only need to
         # drop rows with missing Cycle/Voltage/Step for the integration.
-        df_work = df.dropna(subset=['Cycle', 'Voltage', 'Step'])
+        df_work = df.dropna(subset=["Cycle", "Voltage", "Step"])
 
         rows = []
-        for cycle in sorted(df_work['Cycle'].unique()):
-            cd = df_work[df_work['Cycle'] == cycle]
-            row = {'Cycle': int(cycle)}
+        for cycle in sorted(df_work["Cycle"].unique()):
+            cd = df_work[df_work["Cycle"] == cycle]
+            row = {"Cycle": int(cycle)}
 
             # --- Discharge energy ---
-            dc = cd[
-                cd['Step'] == 'Discharge'
-            ].dropna(subset=['Discharge_Capacity', 'Voltage'])
+            dc = cd[cd["Step"] == "Discharge"].dropna(
+                subset=["Discharge_Capacity", "Voltage"]
+            )
 
             if len(dc) >= 3:
-                dc_sorted = dc.sort_values('Discharge_Capacity')
-                Q_d = dc_sorted['Discharge_Capacity'].values
-                V_d = dc_sorted['Voltage'].values
+                dc_sorted = dc.sort_values("Discharge_Capacity")
+                Q_d = dc_sorted["Discharge_Capacity"].values
+                V_d = dc_sorted["Voltage"].values
 
-                row['Discharge_Energy'] = abs(trapezoid(V_d, Q_d))
+                row["Discharge_Energy"] = abs(trapezoid(V_d, Q_d))
             else:
-                row['Discharge_Energy'] = np.nan
+                row["Discharge_Energy"] = np.nan
 
             # --- Charge energy ---
-            cc = cd[
-                cd['Step'] == 'Charge'
-            ].dropna(subset=['Charge_Capacity', 'Voltage'])
+            cc = cd[cd["Step"] == "Charge"].dropna(
+                subset=["Charge_Capacity", "Voltage"]
+            )
 
             if len(cc) >= 3:
-                cc_sorted = cc.sort_values('Charge_Capacity')
-                Q_c = cc_sorted['Charge_Capacity'].values
-                V_c = cc_sorted['Voltage'].values
+                cc_sorted = cc.sort_values("Charge_Capacity")
+                Q_c = cc_sorted["Charge_Capacity"].values
+                V_c = cc_sorted["Voltage"].values
 
-                row['Charge_Energy'] = abs(trapezoid(V_c, Q_c))
+                row["Charge_Energy"] = abs(trapezoid(V_c, Q_c))
             else:
-                row['Charge_Energy'] = np.nan
+                row["Charge_Energy"] = np.nan
 
-            if (pd.notna(row['Charge_Energy']) and
-                pd.notna(row['Discharge_Energy']) and
-                row['Charge_Energy'] > 0):
-                row['Energy_Efficiency_%'] = (
-                    row['Discharge_Energy'] / row['Charge_Energy'] * 100
+            if (
+                pd.notna(row["Charge_Energy"])
+                and pd.notna(row["Discharge_Energy"])
+                and row["Charge_Energy"] > 0
+            ):
+                row["Energy_Efficiency_%"] = (
+                    row["Discharge_Energy"] / row["Charge_Energy"] * 100
                 )
             else:
-                row['Energy_Efficiency_%'] = np.nan
+                row["Energy_Efficiency_%"] = np.nan
 
             rows.append(row)
 
@@ -3796,27 +4393,27 @@ def energy_efficiency(electrochemical_data, user_parameters, *, save_location=No
 
         # --- capacity and CE from the ONE definition ---------------------
         cap = delivered_capacity(df)
-        out = out.merge(cap, on='Cycle', how='left')
-        for c in ('Charge_mAh_g', 'Discharge_mAh_g'):
+        out = out.merge(cap, on="Cycle", how="left")
+        for c in ("Charge_mAh_g", "Discharge_mAh_g"):
             if c not in out.columns:
                 out[c] = np.nan
-        out['CE_%'] = coulombic_efficiency(out['Discharge_mAh_g'],
-                                           out['Charge_mAh_g']).values
+        out["CE_%"] = coulombic_efficiency(
+            out["Discharge_mAh_g"], out["Charge_mAh_g"]
+        ).values
 
         # --- mean voltages: energy / that same capacity ------------------
         # Voltage efficiency decomposes the energy loss: EE ~ CE * VE / 100.
         # CE tells you about material loss, VE about polarisation.
         # Ref: Cao et al., Nat. Nanotechnol. 14, 200-207 (2019)
-        qc = pd.to_numeric(out['Charge_mAh_g'], errors='coerce')
-        qd = pd.to_numeric(out['Discharge_mAh_g'], errors='coerce')
-        out['Avg_V_Charge'] = (out['Charge_Energy'] / qc).where(qc > 0)
-        out['Avg_Discharge_Voltage_V'] = (
-            out['Discharge_Energy'] / qd).where(qd > 0)
-        out['Voltage_Efficiency_%'] = (
-            out['Avg_Discharge_Voltage_V'] / out['Avg_V_Charge'] * 100
-        ).where(out['Avg_V_Charge'] > 0)
+        qc = pd.to_numeric(out["Charge_mAh_g"], errors="coerce")
+        qd = pd.to_numeric(out["Discharge_mAh_g"], errors="coerce")
+        out["Avg_V_Charge"] = (out["Charge_Energy"] / qc).where(qc > 0)
+        out["Avg_Discharge_Voltage_V"] = (out["Discharge_Energy"] / qd).where(qd > 0)
+        out["Voltage_Efficiency_%"] = (
+            out["Avg_Discharge_Voltage_V"] / out["Avg_V_Charge"] * 100
+        ).where(out["Avg_V_Charge"] > 0)
 
-        out['CE_EE_Gap_%'] = out['CE_%'] - out['Energy_Efficiency_%']
+        out["CE_EE_Gap_%"] = out["CE_%"] - out["Energy_Efficiency_%"]
         return out
 
     print(rule("ENERGY EFFICIENCY ANALYSIS"))
@@ -3828,9 +4425,11 @@ def energy_efficiency(electrochemical_data, user_parameters, *, save_location=No
     _have_cycle_tables = _has_tables(all_cycle_tables)
 
     if EXCLUDE_INCOMPLETE and not _have_cycle_tables:
-        print("  ⚠ all_cycle_tables not found — Cell 5b has not been "
-              "run. Protocol-incomplete filtering unavailable; "
-              "visual-outlier filter still active.")
+        print(
+            "  ⚠ all_cycle_tables not found — Cell 5b has not been "
+            "run. Protocol-incomplete filtering unavailable; "
+            "visual-outlier filter still active."
+        )
 
     all_ee_data = {}
 
@@ -3843,7 +4442,7 @@ def energy_efficiency(electrochemical_data, user_parameters, *, save_location=No
         # and on every later one it carried the PREVIOUS dataset's flag.
         # Binding it at the top of the loop is what the later line does, one
         # iteration too late.
-        is_anode = params.get('anode_labels_swapped', False)
+        is_anode = params.get("anode_labels_swapped", False)
 
         ee_df = _calculate_energy_per_cycle(df)
 
@@ -3852,174 +4451,227 @@ def energy_efficiency(electrochemical_data, user_parameters, *, save_location=No
             continue
 
         # Exclude protocol-incomplete cycles (Cell 5b flag)
-        if (EXCLUDE_INCOMPLETE and _have_cycle_tables
-            and name in all_cycle_tables):
+        if EXCLUDE_INCOMPLETE and _have_cycle_tables and name in all_cycle_tables:
             ct = all_cycle_tables[name]
-            incomplete_cycles = set(
-                _unusable_cycles(ct))
+            incomplete_cycles = set(_unusable_cycles(ct))
             if incomplete_cycles:
-                mask = ee_df['Cycle'].isin(incomplete_cycles)
-                removed = ee_df.loc[mask, 'Cycle'].tolist()
+                mask = ee_df["Cycle"].isin(incomplete_cycles)
+                removed = ee_df.loc[mask, "Cycle"].tolist()
                 if removed:
-                    print(f"  {composition}: excluded {len(removed)} "
-                          f"protocol-incomplete cycle(s): "
-                          f"{', '.join(str(int(c)) for c in removed)}")
+                    print(
+                        f"  {composition}: excluded {len(removed)} "
+                        f"protocol-incomplete cycle(s): "
+                        f"{', '.join(str(int(c)) for c in removed)}"
+                    )
                 ee_df = ee_df[~mask].reset_index(drop=True)
 
         # Visual-outlier filter
         if VISUAL_OUTLIER_FILTER and not ee_df.empty:
             outlier_flags = _flag_visual_outliers(
-                ee_df['Discharge_mAh_g'].tolist(), threshold=VISUAL_OUTLIER_THRESHOLD,
-                groups=rate_block_labels(ee_df['Cycle'], params))
+                ee_df["Discharge_mAh_g"].tolist(),
+                threshold=VISUAL_OUTLIER_THRESHOLD,
+                groups=rate_block_labels(ee_df["Cycle"], params),
+            )
             n_outliers = sum(outlier_flags)
             if n_outliers > 0:
-                removed = [int(c) for c, f in
-                           zip(ee_df['Cycle'], outlier_flags) if f]
-                print(f"  {composition}: excluded {n_outliers} visual "
-                      f"outlier(s) (<{VISUAL_OUTLIER_THRESHOLD*100:.0f}% "
-                      f"of running median on Discharge_mAh_g): "
-                      f"{', '.join(str(c) for c in removed)}")
-                ee_df = ee_df[
-                    ~pd.Series(outlier_flags, index=ee_df.index)
-                ].reset_index(drop=True)
+                removed = [int(c) for c, f in zip(ee_df["Cycle"], outlier_flags) if f]
+                print(
+                    f"  {composition}: excluded {n_outliers} visual "
+                    f"outlier(s) (<{VISUAL_OUTLIER_THRESHOLD * 100:.0f}% "
+                    f"of running median on Discharge_mAh_g): "
+                    f"{', '.join(str(c) for c in removed)}"
+                )
+                ee_df = ee_df[~pd.Series(outlier_flags, index=ee_df.index)].reset_index(
+                    drop=True
+                )
 
         if ee_df.empty:
             continue
 
         # Flag any EE > 100% (physically suspicious)
-        over_100 = ee_df[ee_df['Energy_Efficiency_%'] > 100]
+        over_100 = ee_df[ee_df["Energy_Efficiency_%"] > 100]
         if not over_100.empty:
             n_over = len(over_100)
             n_total = len(ee_df)
             if n_over == n_total:
-                print(f"  {composition}: EE >100% in all {n_total} cycles"
-                      f" (expected for anode half-cells)"
-                      if is_anode else
-                      f"  {composition}: EE >100% in all {n_total} cycles"
-                      f" (check for measurement artefact)")
+                print(
+                    f"  {composition}: EE >100% in all {n_total} cycles"
+                    f" (expected for anode half-cells)"
+                    if is_anode
+                    else f"  {composition}: EE >100% in all {n_total} cycles"
+                    f" (check for measurement artefact)"
+                )
             elif n_over > 5:
-                note = ("expected for anode half-cells" if is_anode
-                        else "likely formation effect")
-                print(f"  {composition}: EE >100% in {n_over}/{n_total} "
-                      f"cycles ({note})")
+                note = (
+                    "expected for anode half-cells"
+                    if is_anode
+                    else "likely formation effect"
+                )
+                print(
+                    f"  {composition}: EE >100% in {n_over}/{n_total} cycles ({note})"
+                )
             else:
-                print(f"  {composition}: EE >100% in cycle(s) "
-                      f"{', '.join(str(int(c)) for c in over_100['Cycle'])} "
-                      f"(likely formation effect)")
+                print(
+                    f"  {composition}: EE >100% in cycle(s) "
+                    f"{', '.join(str(int(c)) for c in over_100['Cycle'])} "
+                    f"(likely formation effect)"
+                )
 
         all_ee_data[name] = ee_df
 
         # Summary (excluding formation)
-        stable = ee_df[ee_df['Cycle'] >= EE_START_CYCLE]
+        stable = ee_df[ee_df["Cycle"] >= EE_START_CYCLE]
         if not stable.empty:
-            mean_ee = stable['Energy_Efficiency_%'].mean()
-            std_ee = stable['Energy_Efficiency_%'].std()
-            mean_ce = stable['CE_%'].mean()
-            mean_gap = stable['CE_EE_Gap_%'].mean()
+            mean_ee = stable["Energy_Efficiency_%"].mean()
+            std_ee = stable["Energy_Efficiency_%"].std()
+            mean_ce = stable["CE_%"].mean()
+            mean_gap = stable["CE_EE_Gap_%"].mean()
 
             print()
             print(heading(composition))
-            print(f"    Energy efficiency (cycles {EE_START_CYCLE}+): "
-                  f"{mean_ee:.2f}% (+/-{std_ee:.2f}%)")
+            print(
+                f"    Energy efficiency (cycles {EE_START_CYCLE}+): "
+                f"{mean_ee:.2f}% (+/-{std_ee:.2f}%)"
+            )
             if is_anode and mean_ee > 100:
-                print(f"    Note: EE >100% is expected for anode half-cells — "
-                      f"delithiation (discharge) voltage is higher than "
-                      f"lithiation (charge) voltage, so E_out > E_in.")
-                print(f"    This is not an error; the energy balance is closed "
-                      f"by the Li/Na metal counter electrode.")
-            print(f"    Coulombic efficiency (cycles {EE_START_CYCLE}+): "
-                  f"{mean_ce:.2f}%")
-            is_anode = params.get('anode_labels_swapped', False)
-            if 'Voltage_Efficiency_%' in stable.columns:
-                mean_ve = stable['Voltage_Efficiency_%'].mean()
+                print(
+                    f"    Note: EE >100% is expected for anode half-cells — "
+                    f"delithiation (discharge) voltage is higher than "
+                    f"lithiation (charge) voltage, so E_out > E_in."
+                )
+                print(
+                    f"    This is not an error; the energy balance is closed "
+                    f"by the Li/Na metal counter electrode."
+                )
+            print(
+                f"    Coulombic efficiency (cycles {EE_START_CYCLE}+): {mean_ce:.2f}%"
+            )
+            is_anode = params.get("anode_labels_swapped", False)
+            if "Voltage_Efficiency_%" in stable.columns:
+                mean_ve = stable["Voltage_Efficiency_%"].mean()
                 if is_anode:
                     abs_hysteresis = abs(100 - mean_ve)
-                    print(f"    Voltage ratio (cycles {EE_START_CYCLE}+): "
-                          f"{mean_ve:.2f}%")
-                    print(f"    Voltage hysteresis:   "
-                          f"|1 - V_ratio| = {abs_hysteresis:.2f}%")
-                    print(f"    Note: For anodes, V_ratio > 100% is expected "
-                          f"(the useful half-cycle occurs at higher voltage).")
-                    print(f"    The deviation from 100% reflects the same "
-                          f"polarisation loss as in cathodes.")
+                    print(
+                        f"    Voltage ratio (cycles {EE_START_CYCLE}+): {mean_ve:.2f}%"
+                    )
+                    print(
+                        f"    Voltage hysteresis:   "
+                        f"|1 - V_ratio| = {abs_hysteresis:.2f}%"
+                    )
+                    print(
+                        f"    Note: For anodes, V_ratio > 100% is expected "
+                        f"(the useful half-cycle occurs at higher voltage)."
+                    )
+                    print(
+                        f"    The deviation from 100% reflects the same "
+                        f"polarisation loss as in cathodes."
+                    )
                 else:
-                    print(f"    Voltage efficiency (cycles {EE_START_CYCLE}+): "
-                          f"{mean_ve:.2f}%")
-                    print(f"    Loss decomposition:  "
-                          f"CE loss = {100 - mean_ce:.2f}% (material)  |  "
-                          f"VE loss = {100 - mean_ve:.2f}% (polarisation)")
+                    print(
+                        f"    Voltage efficiency (cycles {EE_START_CYCLE}+): "
+                        f"{mean_ve:.2f}%"
+                    )
+                    print(
+                        f"    Loss decomposition:  "
+                        f"CE loss = {100 - mean_ce:.2f}% (material)  |  "
+                        f"VE loss = {100 - mean_ve:.2f}% (polarisation)"
+                    )
             abs_gap = abs(mean_gap)
-            gap_sign = '' if mean_gap >= 0 else ' (note: negative for anodes)'
-            print(f"    |CE - EE| gap: {abs_gap:.2f}% "
-                  f"(voltage hysteresis contribution){gap_sign}")
+            gap_sign = "" if mean_gap >= 0 else " (note: negative for anodes)"
+            print(
+                f"    |CE - EE| gap: {abs_gap:.2f}% "
+                f"(voltage hysteresis contribution){gap_sign}"
+            )
 
     if all_ee_data:
         for name, ee_df in all_ee_data.items():
             params = user_parameters.get(name, {})
             composition = _get_display_name(name, params, user_parameters)
-            charge_rate_c = params.get('charge_rate_c', 'Unknown')
+            charge_rate_c = params.get("charge_rate_c", "Unknown")
 
             # Filter to stable cycling (skip formation)
-            plot_df = ee_df[ee_df['Cycle'] >= EE_START_CYCLE]
+            plot_df = ee_df[ee_df["Cycle"] >= EE_START_CYCLE]
 
             if plot_df.empty:
                 continue
 
-            fig, ax = plt.subplots(figsize=(_plots.figure_width_inches, _plots.figure_height_inches))
+            fig, ax = plt.subplots(
+                figsize=(_plots.figure_width_inches, _plots.figure_height_inches)
+            )
 
             # CE
-            ax.plot(plot_df['Cycle'], plot_df['CE_%'],
-                   color=COLOUR_CE, marker=MARKERS_CE,
-                   markersize=MARKER_SIZE, linestyle='-',
-                   linewidth=0.8, label='Coulombic efficiency', zorder=3)
+            ax.plot(
+                plot_df["Cycle"],
+                plot_df["CE_%"],
+                color=COLOUR_CE,
+                marker=MARKERS_CE,
+                markersize=MARKER_SIZE,
+                linestyle="-",
+                linewidth=0.8,
+                label="Coulombic efficiency",
+                zorder=3,
+            )
 
             # Energy efficiency
-            ax.plot(plot_df['Cycle'], plot_df['Energy_Efficiency_%'],
-                   color=COLOUR_EE, marker=MARKERS_EE,
-                   markersize=MARKER_SIZE, linestyle='-',
-                   linewidth=0.8, label='Energy efficiency', zorder=3)
+            ax.plot(
+                plot_df["Cycle"],
+                plot_df["Energy_Efficiency_%"],
+                color=COLOUR_EE,
+                marker=MARKERS_EE,
+                markersize=MARKER_SIZE,
+                linestyle="-",
+                linewidth=0.8,
+                label="Energy efficiency",
+                zorder=3,
+            )
 
             # Voltage efficiency / ratio (v1.8: adaptive label for anodes)
-            is_anode = params.get('anode_labels_swapped', False)
-            if 'Voltage_Efficiency_%' in plot_df.columns:
-                _ve_legend = ('Voltage ratio' if is_anode
-                              else 'Voltage efficiency')
-                ax.plot(plot_df['Cycle'], plot_df['Voltage_Efficiency_%'],
-                       color='#009E73', marker='s',
-                       markersize=MARKER_SIZE - 1, linestyle='-',
-                       linewidth=0.8, label=_ve_legend,
-                       zorder=3, alpha=0.8)
+            is_anode = params.get("anode_labels_swapped", False)
+            if "Voltage_Efficiency_%" in plot_df.columns:
+                _ve_legend = "Voltage ratio" if is_anode else "Voltage efficiency"
+                ax.plot(
+                    plot_df["Cycle"],
+                    plot_df["Voltage_Efficiency_%"],
+                    color="#009E73",
+                    marker="s",
+                    markersize=MARKER_SIZE - 1,
+                    linestyle="-",
+                    linewidth=0.8,
+                    label=_ve_legend,
+                    zorder=3,
+                    alpha=0.8,
+                )
 
             # Shade the gap
             ax.fill_between(
-                plot_df['Cycle'],
-                plot_df['Energy_Efficiency_%'],
-                plot_df['CE_%'],
-                alpha=0.10, color='grey',
-                label='Voltage hysteresis loss'
+                plot_df["Cycle"],
+                plot_df["Energy_Efficiency_%"],
+                plot_df["CE_%"],
+                alpha=0.10,
+                color="grey",
+                label="Voltage hysteresis loss",
             )
 
             # 100% reference line
-            ax.axhline(y=100, color='grey', linestyle=':',
-                        linewidth=0.8, alpha=0.5)
+            ax.axhline(y=100, color="grey", linestyle=":", linewidth=0.8, alpha=0.5)
 
-            ax.set_xlabel('Cycle number', fontsize=14)
+            ax.set_xlabel("Cycle number", fontsize=14)
             _force_integer_cycles(ax)
-            ax.set_ylabel('Efficiency / %', fontsize=14)
-            ax.tick_params(axis='both', labelsize=12, width=1,
-                           direction='in', top=True, right=True)
+            ax.set_ylabel("Efficiency / %", fontsize=14)
+            ax.tick_params(
+                axis="both", labelsize=12, width=1, direction="in", top=True, right=True
+            )
             for sp in ax.spines.values():
                 sp.set_linewidth(0.8)
 
             # Y-axis (v1.8: extend for anode VE > 100%)
-            y_lo = min(YAXIS_MIN,
-                       plot_df['Energy_Efficiency_%'].min() - 2)
-            y_hi = max(YAXIS_MAX,
-                       plot_df['CE_%'].max() + 2)
-            if ('Voltage_Efficiency_%' in plot_df.columns
-                    and plot_df['Voltage_Efficiency_%'].notna().any()):
-                y_hi = max(y_hi,
-                           plot_df['Voltage_Efficiency_%'].max() + 5)
+            y_lo = min(YAXIS_MIN, plot_df["Energy_Efficiency_%"].min() - 2)
+            y_hi = max(YAXIS_MAX, plot_df["CE_%"].max() + 2)
+            if (
+                "Voltage_Efficiency_%" in plot_df.columns
+                and plot_df["Voltage_Efficiency_%"].notna().any()
+            ):
+                y_hi = max(y_hi, plot_df["Voltage_Efficiency_%"].max() + 5)
             # A KNOB THAT DID NOTHING. `COMMON_YAXIS_EFFICIENCY` sat beside
             # `COMMON_YAXIS_CAPACITY`, which works, and was read nowhere — so
             # a user turning it off got the fixed floor and ceiling anyway.
@@ -4033,7 +4685,7 @@ def energy_efficiency(electrochemical_data, user_parameters, *, save_location=No
             plt.tight_layout()
 
             # Caption (v1.8: absolute gap for anodes)
-            mean_gap = plot_df['CE_EE_Gap_%'].mean()
+            mean_gap = plot_df["CE_EE_Gap_%"].mean()
             abs_gap = abs(mean_gap)
             chg_word = _charge_label(params).lower()
             caption = (
@@ -4050,55 +4702,64 @@ def energy_efficiency(electrochemical_data, user_parameters, *, save_location=No
             # Save
             if save_location:
                 filepath = os.path.join(
-                    save_location,
-                    f'{name}_energy_efficiency.{image_format(params)}')
-                fig.savefig(filepath, dpi=300, bbox_inches='tight')
+                    save_location, f"{name}_energy_efficiency.{image_format(params)}"
+                )
+                fig.savefig(filepath, dpi=300, bbox_inches="tight")
                 saved(filepath)
 
             plt.show()
             plt.close(fig)
 
-
         # --- Comparative plot (if multiple datasets) ---
         if len(all_ee_data) > 1:
-            fig, ax = plt.subplots(figsize=(_plots.figure_width_inches, _plots.figure_height_inches))
+            fig, ax = plt.subplots(
+                figsize=(_plots.figure_width_inches, _plots.figure_height_inches)
+            )
 
             caption_compositions = []
 
             for i, (name, ee_df) in enumerate(all_ee_data.items()):
                 composition = _get_display_name(
-                    name, user_parameters.get(name, {}), user_parameters)
+                    name, user_parameters.get(name, {}), user_parameters
+                )
                 colour = palette_multi[i % len(palette_multi)]
                 marker = markers_multi[i % len(markers_multi)]
 
-                stable = ee_df[ee_df['Cycle'] >= EE_START_CYCLE]
+                stable = ee_df[ee_df["Cycle"] >= EE_START_CYCLE]
                 if stable.empty:
                     continue
 
-                ax.plot(stable['Cycle'], stable['Energy_Efficiency_%'],
-                       color=colour, marker=marker,
-                       markersize=MARKER_SIZE, linestyle='-',
-                       linewidth=0.8, label=composition, zorder=3)
+                ax.plot(
+                    stable["Cycle"],
+                    stable["Energy_Efficiency_%"],
+                    color=colour,
+                    marker=marker,
+                    markersize=MARKER_SIZE,
+                    linestyle="-",
+                    linewidth=0.8,
+                    label=composition,
+                    zorder=3,
+                )
 
                 caption_compositions.append(composition)
 
-            ax.axhline(y=100, color='grey', linestyle=':',
-                        linewidth=0.8, alpha=0.5)
+            ax.axhline(y=100, color="grey", linestyle=":", linewidth=0.8, alpha=0.5)
 
-            ax.set_xlabel('Cycle number', fontsize=14)
+            ax.set_xlabel("Cycle number", fontsize=14)
             _force_integer_cycles(ax)
-            ax.set_ylabel('Energy efficiency / %', fontsize=14)
-            ax.tick_params(axis='both', labelsize=12, width=1,
-                           direction='in', top=True, right=True)
+            ax.set_ylabel("Energy efficiency / %", fontsize=14)
+            ax.tick_params(
+                axis="both", labelsize=12, width=1, direction="in", top=True, right=True
+            )
             for sp in ax.spines.values():
                 sp.set_linewidth(0.8)
             ax.set_xlim(left=0)
             # Auto-extend y-axis for anode data where EE > 100%
             _all_ee_vals = []
             for _ee_df in all_ee_data.values():
-                _s = _ee_df[_ee_df['Cycle'] >= EE_START_CYCLE]
+                _s = _ee_df[_ee_df["Cycle"] >= EE_START_CYCLE]
                 if not _s.empty:
-                    _all_ee_vals.extend(_s['Energy_Efficiency_%'].dropna().tolist())
+                    _all_ee_vals.extend(_s["Energy_Efficiency_%"].dropna().tolist())
             if _all_ee_vals:
                 y_hi = max(YAXIS_MAX, max(_all_ee_vals) + 5)
                 y_lo = min(YAXIS_MIN, min(_all_ee_vals) - 2)
@@ -4109,20 +4770,24 @@ def energy_efficiency(electrochemical_data, user_parameters, *, save_location=No
             ax.legend(fontsize=10, framealpha=0.7)
             plt.tight_layout()
 
-            comp_str = ', '.join(caption_compositions[:-1])
+            comp_str = ", ".join(caption_compositions[:-1])
             if len(caption_compositions) > 1:
-                comp_str += f' and {caption_compositions[-1]}'
+                comp_str += f" and {caption_compositions[-1]}"
             else:
                 comp_str = caption_compositions[0]
 
             # Check if any dataset is an anode
             _any_anode = any(
-                user_parameters.get(n, {}).get('anode_labels_swapped', False)
-                for n in all_ee_data)
-            _anode_note = (" Note: anode half-cell EE exceeds 100% because "
-                           "the useful half-cycle occurs at higher voltage "
-                           "than the insertion half-cycle."
-                           if _any_anode else "")
+                user_parameters.get(n, {}).get("anode_labels_swapped", False)
+                for n in all_ee_data
+            )
+            _anode_note = (
+                " Note: anode half-cell EE exceeds 100% because "
+                "the useful half-cycle occurs at higher voltage "
+                "than the insertion half-cycle."
+                if _any_anode
+                else ""
+            )
             caption = (
                 f"Figure X. Comparative energy efficiency for "
                 f"{comp_str}. Formation cycle excluded.{_anode_note}"
@@ -4131,20 +4796,20 @@ def energy_efficiency(electrochemical_data, user_parameters, *, save_location=No
             print(bullet(caption, indent=2, label_width=2))
 
             if save_location:
-                filepath = os.path.join(save_location,
-                                       f'comparative_energy_efficiency.{_run_image_format(user_parameters)}')
-                fig.savefig(filepath, dpi=300, bbox_inches='tight')
+                filepath = os.path.join(
+                    save_location,
+                    f"comparative_energy_efficiency.{_run_image_format(user_parameters)}",
+                )
+                fig.savefig(filepath, dpi=300, bbox_inches="tight")
                 saved(filepath)
 
             plt.show()
             plt.close(fig)
 
-
         # --- Export ---
         if save_location:
             for name, ee_df in all_ee_data.items():
-                fpath = os.path.join(save_location,
-                                    f'{name}_energy_efficiency.csv')
+                fpath = os.path.join(save_location, f"{name}_energy_efficiency.csv")
                 ee_df.to_csv(fpath, index=False)
                 saved(fpath)
 
@@ -4182,23 +4847,25 @@ def discharge_current_per_cycle(df):
     current_scale = 1.0
     for col in df.columns:
         cl = str(col).lower()
-        if 'current' in cl and 'cut' not in cl:
+        if "current" in cl and "cut" not in cl:
             current_col = col
-            if 'ma' in cl:
+            if "ma" in cl:
                 current_scale = 0.001
             break
-    if current_col is None or 'Cycle' not in df.columns:
-        return pd.DataFrame(columns=['Cycle', 'Avg_Current_A'])
-    work = df[['Cycle', 'Step', current_col]].copy()
-    work[current_col] = pd.to_numeric(work[current_col], errors='coerce')
-    dis = work[work['Step'] == 'Discharge'].dropna(subset=['Cycle',
-                                                           current_col])
+    if current_col is None or "Cycle" not in df.columns:
+        return pd.DataFrame(columns=["Cycle", "Avg_Current_A"])
+    work = df[["Cycle", "Step", current_col]].copy()
+    work[current_col] = pd.to_numeric(work[current_col], errors="coerce")
+    dis = work[work["Step"] == "Discharge"].dropna(subset=["Cycle", current_col])
     if dis.empty:
-        return pd.DataFrame(columns=['Cycle', 'Avg_Current_A'])
-    out = (dis.groupby('Cycle')[current_col]
-              .apply(lambda x: x.abs().mean() * current_scale).reset_index())
-    out.columns = ['Cycle', 'Avg_Current_A']
-    out['Cycle'] = out['Cycle'].astype(int)
+        return pd.DataFrame(columns=["Cycle", "Avg_Current_A"])
+    out = (
+        dis.groupby("Cycle")[current_col]
+        .apply(lambda x: x.abs().mean() * current_scale)
+        .reset_index()
+    )
+    out.columns = ["Cycle", "Avg_Current_A"]
+    out["Cycle"] = out["Cycle"].astype(int)
     return out
 
 
@@ -4213,26 +4880,34 @@ def group_cycles_by_rate(current_per_cycle, tolerance=None):
     if current_per_cycle is None or current_per_cycle.empty:
         return []
     groups = []
-    cyc = [current_per_cycle.iloc[0]['Cycle']]
-    cur = [current_per_cycle.iloc[0]['Avg_Current_A']]
+    cyc = [current_per_cycle.iloc[0]["Cycle"]]
+    cur = [current_per_cycle.iloc[0]["Avg_Current_A"]]
     for i in range(1, len(current_per_cycle)):
         row = current_per_cycle.iloc[i]
         prev = np.mean(cur)
-        if (prev > 0 and abs(row['Avg_Current_A'] - prev) / prev <= tol):
-            cyc.append(row['Cycle']); cur.append(row['Avg_Current_A'])
+        if prev > 0 and abs(row["Avg_Current_A"] - prev) / prev <= tol:
+            cyc.append(row["Cycle"])
+            cur.append(row["Avg_Current_A"])
         else:
-            groups.append(dict(cycles=cyc, mean_current_A=float(np.mean(cur)),
-                               n_cycles=len(cyc)))
-            cyc = [row['Cycle']]; cur = [row['Avg_Current_A']]
-    groups.append(dict(cycles=cyc, mean_current_A=float(np.mean(cur)),
-                       n_cycles=len(cyc)))
+            groups.append(
+                dict(cycles=cyc, mean_current_A=float(np.mean(cur)), n_cycles=len(cyc))
+            )
+            cyc = [row["Cycle"]]
+            cur = [row["Avg_Current_A"]]
+    groups.append(
+        dict(cycles=cyc, mean_current_A=float(np.mean(cur)), n_cycles=len(cyc))
+    )
     return groups
 
 
 def current_to_crate(current_A, active_mass_mg, theoretical_cap):
     """C-rate from current, active mass and theoretical capacity."""
-    if (active_mass_mg is None or theoretical_cap is None
-            or active_mass_mg <= 0 or theoretical_cap <= 0):
+    if (
+        active_mass_mg is None
+        or theoretical_cap is None
+        or active_mass_mg <= 0
+        or theoretical_cap <= 0
+    ):
         return None
     theo_A = (active_mass_mg / 1000.0) * theoretical_cap / 1000.0
     return (current_A / theo_A) if theo_A > 0 else None
@@ -4257,13 +4932,12 @@ def snap_crate(crate):
 def format_crate(crate, snap=True):
     """`0.1 -> C/10`, `0.5 -> C/2`, `1.0 -> 1C`. See RATE_LABEL_SNAP."""
     if crate is None or not np.isfinite(crate) or crate <= 0:
-        return '?C'
+        return "?C"
     c = snap_crate(float(crate)) if snap else float(crate)
     if c < 1.0:
         denom = 1.0 / c
-        return f'C/{denom:.0f}' if abs(denom - round(denom)) < 0.05 \
-            else f'{c:.2f}C'
-    return f'{c:.0f}C' if abs(c - round(c)) < 0.05 else f'{c:.2f}C'
+        return f"C/{denom:.0f}" if abs(denom - round(denom)) < 0.05 else f"{c:.2f}C"
+    return f"{c:.0f}C" if abs(c - round(c)) < 0.05 else f"{c:.2f}C"
 
 
 def rate_phrase(params):
@@ -4273,12 +4947,12 @@ def rate_phrase(params):
     one number and append " C", which on a rate-capability run stated a rate
     that was false for most of the cycles in the figure.
     """
-    rp = (params or {}).get('rate_protocol') or {}
-    if rp.get('available') and rp.get('is_variable') and rp.get('label'):
+    rp = (params or {}).get("rate_protocol") or {}
+    if rp.get("available") and rp.get("is_variable") and rp.get("label"):
         return f"rates from {rp['label']}"
-    if rp.get('available') and rp.get('label'):
-        return rp['label']
-    c = (params or {}).get('charge_rate_c')
+    if rp.get("available") and rp.get("label"):
+        return rp["label"]
+    c = (params or {}).get("charge_rate_c")
     return f"{c} C" if c is not None else "an unstated rate"
 
 
@@ -4302,48 +4976,60 @@ def rate_protocol(df, params, *, tolerance=None):
       `label`       'C/20' for a single rate, 'C/20 to 5C' for a ramp
       `returns_to_start`  the last block is at the first block's rate
     """
-    out = dict(available=False, blocks=[], n_blocks=0, is_variable=False,
-               transition_cycles=[], label=None, returns_to_start=False)
+    out = dict(
+        available=False,
+        blocks=[],
+        n_blocks=0,
+        is_variable=False,
+        transition_cycles=[],
+        label=None,
+        returns_to_start=False,
+    )
     if df is None or not hasattr(df, "columns"):
         return out
     cpc = discharge_current_per_cycle(df)
     if cpc.empty:
         return out
-    mass = (params or {}).get('active_material_mass_mg')
-    theo = (params or {}).get('theoretical_capacity_mAh_g')
+    mass = (params or {}).get("active_material_mass_mg")
+    theo = (params or {}).get("theoretical_capacity_mAh_g")
     groups = group_cycles_by_rate(cpc, tolerance)
     if not groups:
         return out
-    out['available'] = True
+    out["available"] = True
     blocks, short = [], []
     for g in groups:
-        cr = current_to_crate(g['mean_current_A'], mass, theo)
-        rec = dict(cycles=[int(c) for c in g['cycles']],
-                   first_cycle=int(min(g['cycles'])),
-                   last_cycle=int(max(g['cycles'])),
-                   n_cycles=int(g['n_cycles']),
-                   mean_current_A=float(g['mean_current_A']),
-                   c_rate=cr, label=format_crate(cr))
-        if g['n_cycles'] >= MIN_CYCLES_PER_RATE:
+        cr = current_to_crate(g["mean_current_A"], mass, theo)
+        rec = dict(
+            cycles=[int(c) for c in g["cycles"]],
+            first_cycle=int(min(g["cycles"])),
+            last_cycle=int(max(g["cycles"])),
+            n_cycles=int(g["n_cycles"]),
+            mean_current_A=float(g["mean_current_A"]),
+            c_rate=cr,
+            label=format_crate(cr),
+        )
+        if g["n_cycles"] >= MIN_CYCLES_PER_RATE:
             blocks.append(rec)
         else:
-            short.extend(rec['cycles'])
-    out['blocks'] = blocks
-    out['n_blocks'] = len(blocks)
-    out['transition_cycles'] = sorted(short)
-    out['is_variable'] = len(blocks) > 1
+            short.extend(rec["cycles"])
+    out["blocks"] = blocks
+    out["n_blocks"] = len(blocks)
+    out["transition_cycles"] = sorted(short)
+    out["is_variable"] = len(blocks) > 1
     if blocks:
-        rates = [b['c_rate'] for b in blocks if b['c_rate'] is not None]
-        if not out['is_variable'] or not rates:
-            out['label'] = blocks[0]['label']
+        rates = [b["c_rate"] for b in blocks if b["c_rate"] is not None]
+        if not out["is_variable"] or not rates:
+            out["label"] = blocks[0]["label"]
         else:
-            out['label'] = (f"{format_crate(min(rates))} to "
-                            f"{format_crate(max(rates))}")
-        f, l = blocks[0]['c_rate'], blocks[-1]['c_rate']
-        out['returns_to_start'] = (
-            f is not None and l is not None and f > 0
-            and abs(l - f) / f <= 2 * float(
-                CURRENT_GROUPING_TOLERANCE if tolerance is None else tolerance))
+            out["label"] = f"{format_crate(min(rates))} to {format_crate(max(rates))}"
+        f, l = blocks[0]["c_rate"], blocks[-1]["c_rate"]
+        out["returns_to_start"] = (
+            f is not None
+            and l is not None
+            and f > 0
+            and abs(l - f) / f
+            <= 2 * float(CURRENT_GROUPING_TOLERANCE if tolerance is None else tolerance)
+        )
     return out
 
 
@@ -4353,13 +5039,12 @@ def describe_rate(params, protocol=None):
     detected, the entered value otherwise. Never a single number for a run
     that used several.
     """
-    if protocol and protocol.get('available') and protocol.get('label'):
-        if protocol.get('is_variable'):
-            return (f"{protocol['label']} "
-                    f"({protocol['n_blocks']} rate blocks)")
-        return protocol['label']
-    c = (params or {}).get('charge_rate_c')
-    return (f"{c} C" if c is not None else None)
+    if protocol and protocol.get("available") and protocol.get("label"):
+        if protocol.get("is_variable"):
+            return f"{protocol['label']} ({protocol['n_blocks']} rate blocks)"
+        return protocol["label"]
+    c = (params or {}).get("charge_rate_c")
+    return f"{c} C" if c is not None else None
 
 
 # --- RATE RECOVERY: what the return to the reference rate actually says ----
@@ -4404,8 +5089,7 @@ def describe_rate(params, protocol=None):
 # reference block that outlives formation) and the protocol is field
 # standard, so the tool reports the bound honestly rather than inventing a
 # point estimate.
-def annotate_rate_protocol(electrochemical_data, user_parameters, *,
-                           verbose=True):
+def annotate_rate_protocol(electrochemical_data, user_parameters, *, verbose=True):
     """
     Detect each dataset's rate protocol and store it on its parameters.
 
@@ -4431,17 +5115,27 @@ def annotate_rate_protocol(electrochemical_data, user_parameters, *,
             continue
         if proto.get("is_variable"):
             any_var = True
-            print(f"  {name}: {proto['n_blocks']} rate blocks, "
-                  f"{proto['label']}"
-                  + (" , returning to the starting rate"
-                     if proto.get("returns_to_start") else ""))
-            print("      " + "  ".join(
-                f"{b['label']}:{b['first_cycle']}-{b['last_cycle']}"
-                for b in proto["blocks"]))
+            print(
+                f"  {name}: {proto['n_blocks']} rate blocks, "
+                f"{proto['label']}"
+                + (
+                    " , returning to the starting rate"
+                    if proto.get("returns_to_start")
+                    else ""
+                )
+            )
+            print(
+                "      "
+                + "  ".join(
+                    f"{b['label']}:{b['first_cycle']}-{b['last_cycle']}"
+                    for b in proto["blocks"]
+                )
+            )
             if proto.get("transition_cycles"):
-                print(f"      rate-transition cycle(s) not in any block: "
-                      + ", ".join(str(c)
-                                  for c in proto["transition_cycles"]))
+                print(
+                    f"      rate-transition cycle(s) not in any block: "
+                    + ", ".join(str(c) for c in proto["transition_cycles"])
+                )
         elif proto.get("label"):
             print(f"  {name}: single rate, {proto['label']}")
     if any_var and verbose:
@@ -4449,14 +5143,17 @@ def annotate_rate_protocol(electrochemical_data, user_parameters, *,
         # cycle number in a rate test is not a fade curve; most of its shape
         # is the rate schedule. Everything downstream that says "retention"
         # now scopes itself to one rate block, and this says why.
-        print("  Capacity varies with the RATE SCHEDULE in this run, not "
-              "only with age — retention across rate blocks is not "
-              "retention.")
+        print(
+            "  Capacity varies with the RATE SCHEDULE in this run, not "
+            "only with age — retention across rate blocks is not "
+            "retention."
+        )
     return user_parameters
 
 
-def rate_recovery(cap_df, protocol, *, formation_end_cycle=None,
-                  reference_cycle_min=None):
+def rate_recovery(
+    cap_df, protocol, *, formation_end_cycle=None, reference_cycle_min=None
+):
     """
     Fade rate during a rate ramp, and what the return to the reference rate
     says once that fade is accounted for.
@@ -4471,94 +5168,118 @@ def rate_recovery(cap_df, protocol, *, formation_end_cycle=None,
     `damage_bound_pct` (min, max over anchors), `anchor_in_formation`,
     `formation_end`, `note`.
     """
-    if not protocol or not protocol.get('is_variable') \
-            or not protocol.get('returns_to_start'):
+    if (
+        not protocol
+        or not protocol.get("is_variable")
+        or not protocol.get("returns_to_start")
+    ):
         return None
-    blocks = protocol.get('blocks') or []
+    blocks = protocol.get("blocks") or []
     if len(blocks) < 3:
         return None
     first, last = blocks[0], blocks[-1]
-    d = cap_df[['Cycle', 'Discharge_mAh_g']].dropna().copy()
-    d['Cycle'] = d['Cycle'].astype(int)
-    d = d[d['Discharge_mAh_g'] > 0]
+    d = cap_df[["Cycle", "Discharge_mAh_g"]].dropna().copy()
+    d["Cycle"] = d["Cycle"].astype(int)
+    d = d[d["Discharge_mAh_g"] > 0]
     if d.empty:
         return None
-    trans = set(protocol.get('transition_cycles') or [])
+    trans = set(protocol.get("transition_cycles") or [])
 
     # Post-formation, and never the transition cycles: the fit is what the
     # whole result rests on, so it gets only cycles that are measurements of
     # a settled cell at a known rate.
-    f_end = (int(formation_end_cycle) if formation_end_cycle
-             else int(first['last_cycle']))
+    f_end = (
+        int(formation_end_cycle) if formation_end_cycle else int(first["last_cycle"])
+    )
     ramp = [b for b in blocks[1:-1]]
     if not ramp:
         return None
-    lo = max(f_end + 1, ramp[0]['first_cycle'])
-    hi = ramp[-1]['last_cycle']
-    fit = d[(d['Cycle'] >= lo) & (d['Cycle'] <= hi)
-            & (~d['Cycle'].isin(trans))].copy()
+    lo = max(f_end + 1, ramp[0]["first_cycle"])
+    hi = ramp[-1]["last_cycle"]
+    fit = d[(d["Cycle"] >= lo) & (d["Cycle"] <= hi) & (~d["Cycle"].isin(trans))].copy()
     labels = {}
     for b in ramp:
-        for c in b['cycles']:
-            labels[c] = b['label']
-    fit['block'] = fit['Cycle'].map(labels)
-    fit = fit.dropna(subset=['block'])
-    keys = sorted(fit['block'].unique())
+        for c in b["cycles"]:
+            labels[c] = b["label"]
+    fit["block"] = fit["Cycle"].map(labels)
+    fit = fit.dropna(subset=["block"])
+    keys = sorted(fit["block"].unique())
     if len(fit) < len(keys) + 3 or len(keys) < 2:
         return None
 
-    y = np.log(fit['Discharge_mAh_g'].to_numpy(float))
+    y = np.log(fit["Discharge_mAh_g"].to_numpy(float))
     X = np.zeros((len(fit), len(keys) + 1))
     for i, k in enumerate(keys):
-        X[:, i] = (fit['block'] == k).to_numpy(float)
-    X[:, -1] = fit['Cycle'].to_numpy(float)
+        X[:, i] = (fit["block"] == k).to_numpy(float)
+    X[:, -1] = fit["Cycle"].to_numpy(float)
     coef, *_ = np.linalg.lstsq(X, y, rcond=None)
     b_share = float(coef[-1])
     resid = y - X @ coef
     dof = max(len(fit) - (len(keys) + 1), 1)
-    s = float(np.sqrt((resid ** 2).sum() / dof))
+    s = float(np.sqrt((resid**2).sum() / dof))
     try:
         se_b = float(s * np.sqrt(np.linalg.inv(X.T @ X)[-1, -1]))
     except np.linalg.LinAlgError:
-        se_b = float('nan')
+        se_b = float("nan")
 
-    post = d[(d['Cycle'] >= last['first_cycle'])
-             & (d['Cycle'] <= last['last_cycle'])
-             & (~d['Cycle'].isin(trans))]
-    pre = d[(d['Cycle'] >= first['first_cycle'])
-            & (d['Cycle'] <= first['last_cycle'])
-            & (~d['Cycle'].isin(trans))]
-    _cmin = int(RATE_RECOVERY_MIN_REFERENCE if reference_cycle_min is None
-                else reference_cycle_min)
+    post = d[
+        (d["Cycle"] >= last["first_cycle"])
+        & (d["Cycle"] <= last["last_cycle"])
+        & (~d["Cycle"].isin(trans))
+    ]
+    pre = d[
+        (d["Cycle"] >= first["first_cycle"])
+        & (d["Cycle"] <= first["last_cycle"])
+        & (~d["Cycle"].isin(trans))
+    ]
+    _cmin = int(
+        RATE_RECOVERY_MIN_REFERENCE
+        if reference_cycle_min is None
+        else reference_cycle_min
+    )
     if len(post) < _cmin or len(pre) < _cmin:
         return None
-    obs = float(post['Discharge_mAh_g'].mean())
-    xt = float(post['Cycle'].mean())
+    obs = float(post["Discharge_mAh_g"].mean())
+    xt = float(post["Cycle"].mean())
 
     # THREE ANCHORS, NOT ONE. They differ by as much as the effect, and the
     # difference is not noise — it is how much formation is still in the
     # reference block. Reporting one of them would be choosing an answer.
     anchors = []
-    _pre_body = pre[pre['Cycle'] > int(pre['Cycle'].min())] \
-        if len(pre) > 1 else pre
-    cands = [("block mean", float(_pre_body['Cycle'].mean()),
-              float(_pre_body['Discharge_mAh_g'].mean()))]
-    for _c in sorted(pre['Cycle'])[-2:]:
-        cands.append((f"cycle {int(_c)}", float(_c),
-                      float(pre.loc[pre['Cycle'] == _c,
-                                    'Discharge_mAh_g'].iloc[0])))
+    _pre_body = pre[pre["Cycle"] > int(pre["Cycle"].min())] if len(pre) > 1 else pre
+    cands = [
+        (
+            "block mean",
+            float(_pre_body["Cycle"].mean()),
+            float(_pre_body["Discharge_mAh_g"].mean()),
+        )
+    ]
+    for _c in sorted(pre["Cycle"])[-2:]:
+        cands.append(
+            (
+                f"cycle {int(_c)}",
+                float(_c),
+                float(pre.loc[pre["Cycle"] == _c, "Discharge_mAh_g"].iloc[0]),
+            )
+        )
     seen = set()
     for nm, x0, c0 in cands:
         if c0 <= 0 or round(x0, 3) in seen:
             continue
         seen.add(round(x0, 3))
         pred = c0 * np.exp(b_share * (xt - x0))
-        anchors.append(dict(name=nm, cycle=x0, capacity=c0,
-                            predicted=float(pred),
-                            ratio_pct=float(100.0 * obs / pred)))
+        anchors.append(
+            dict(
+                name=nm,
+                cycle=x0,
+                capacity=c0,
+                predicted=float(pred),
+                ratio_pct=float(100.0 * obs / pred),
+            )
+        )
     if not anchors:
         return None
-    ratios = [a['ratio_pct'] for a in anchors]
+    ratios = [a["ratio_pct"] for a in anchors]
 
     # AN UNKNOWN FORMATION END IS NOT A CLEAN ONE. `detect.formation_end`
     # tests coulombic efficiency against the median of the later cycles, and
@@ -4583,38 +5304,55 @@ def rate_recovery(cap_df, protocol, *, formation_end_cycle=None,
             "formation happens, so every anchor for the reference level may "
             "still contain formation capacity and read high. The range below "
             "is an UPPER BOUND on the loss caused by the rate excursion, not "
-            "an estimate of it.")
-    elif int(first['last_cycle']) <= int(formation_end_cycle):
+            "an estimate of it."
+        )
+    elif int(first["last_cycle"]) <= int(formation_end_cycle):
         in_formation = True
-        note = ("The reference block ends at cycle "
+        note = (
+            "The reference block ends at cycle "
             f"{int(first['last_cycle'])} and formation is not complete until "
             f"cycle {int(formation_end_cycle)}, so every anchor for the "
             "reference "
             "level still contains formation capacity and reads high. The "
             "range below is an UPPER BOUND on the loss caused by the rate "
-            "excursion, not an estimate of it.")
+            "excursion, not an estimate of it."
+        )
     else:
         in_formation = False
-        note = (f"Formation ends at cycle {int(formation_end_cycle)}, before "
-                f"the reference block closes at cycle "
-                f"{int(first['last_cycle'])}, so the anchors below are "
-                f"settled reference-rate cycles and the range is an "
-                f"estimate rather than a bound.")
-    return dict(fade_pct_per_cycle=100.0 * (np.exp(b_share) - 1.0),
-                fade_se_pct=100.0 * se_b, residual_sd_pct=100.0 * s,
-                n_fit=int(len(fit)), blocks_fitted=keys,
-                q_recovery_pct=float(100.0 * obs
-                                     / pre['Discharge_mAh_g'].mean()),
-                observed=obs, observed_cycle=xt, anchors=anchors,
-                damage_bound_pct=(float(min(ratios)), float(max(ratios))),
-                anchor_in_formation=in_formation,
-                formation_end=formation_end_cycle,
-                note=note)
+        note = (
+            f"Formation ends at cycle {int(formation_end_cycle)}, before "
+            f"the reference block closes at cycle "
+            f"{int(first['last_cycle'])}, so the anchors below are "
+            f"settled reference-rate cycles and the range is an "
+            f"estimate rather than a bound."
+        )
+    return dict(
+        fade_pct_per_cycle=100.0 * (np.exp(b_share) - 1.0),
+        fade_se_pct=100.0 * se_b,
+        residual_sd_pct=100.0 * s,
+        n_fit=int(len(fit)),
+        blocks_fitted=keys,
+        q_recovery_pct=float(100.0 * obs / pre["Discharge_mAh_g"].mean()),
+        observed=obs,
+        observed_cycle=xt,
+        anchors=anchors,
+        damage_bound_pct=(float(min(ratios)), float(max(ratios))),
+        anchor_in_formation=in_formation,
+        formation_end=formation_end_cycle,
+        note=note,
+    )
 
 
 @_honours_verbose
-def rate_capability(electrochemical_data, user_parameters, *, save_location=None,
-        all_cycle_tables=None, file_format='png', verbose=True):
+def rate_capability(
+    electrochemical_data,
+    user_parameters,
+    *,
+    save_location=None,
+    all_cycle_tables=None,
+    file_format="png",
+    verbose=True,
+):
     """
     Capacity grouped by C-rate.
 
@@ -4638,14 +5376,16 @@ def rate_capability(electrochemical_data, user_parameters, *, save_location=None
     _have_cycle_tables = _has_tables(all_cycle_tables)
 
     if EXCLUDE_INCOMPLETE and not _have_cycle_tables:
-        print("  ⚠ all_cycle_tables not found — Cell 5b has not been "
-              "run. Protocol-incomplete filtering unavailable.\n")
+        print(
+            "  ⚠ all_cycle_tables not found — Cell 5b has not been "
+            "run. Protocol-incomplete filtering unavailable.\n"
+        )
 
     for name, df in electrochemical_data.items():
         params = user_parameters.get(name, {})
         composition = _get_display_name(name, params, user_parameters)
-        active_mass_mg = params.get('active_material_mass_mg')
-        theoretical_cap = params.get('theoretical_capacity_mAh_g')
+        active_mass_mg = params.get("active_material_mass_mg")
+        theoretical_cap = params.get("theoretical_capacity_mAh_g")
 
         # Get discharge current per cycle
         current_df = _get_discharge_current_per_cycle(df)
@@ -4658,7 +5398,7 @@ def rate_capability(electrochemical_data, user_parameters, *, save_location=None
         rate_groups = _group_by_rate(current_df)
 
         # Count distinct rate levels
-        unique_currents = [g['mean_current_A'] for g in rate_groups]
+        unique_currents = [g["mean_current_A"] for g in rate_groups]
 
         # Cluster unique currents to find distinct rates
         distinct_rates = []
@@ -4674,34 +5414,43 @@ def rate_capability(electrochemical_data, user_parameters, *, save_location=None
         n_distinct = len(distinct_rates)
 
         if n_distinct < 2:
-            print(f"  {composition}: single rate detected "
-                  f"({_format_crate(_current_to_crate(distinct_rates[0], active_mass_mg, theoretical_cap)) if distinct_rates else '?'}), "
-                  f"rate capability analysis skipped.")
+            print(
+                f"  {composition}: single rate detected "
+                f"({_format_crate(_current_to_crate(distinct_rates[0], active_mass_mg, theoretical_cap)) if distinct_rates else '?'}), "
+                f"rate capability analysis skipped."
+            )
             continue
 
         _any_multirate = True
-        print(f"  {composition}: {n_distinct} distinct rates detected "
-              f"across {len(rate_groups)} rate blocks")
+        print(
+            f"  {composition}: {n_distinct} distinct rates detected "
+            f"across {len(rate_groups)} rate blocks"
+        )
 
         # Get capacity data from Cell 5b's cache, falling back to raw derivation
         if _have_cycle_tables and name in all_cycle_tables:
             ct = all_cycle_tables[name]
-            cap_df = (_ct_with_flag(ct, 'Discharge_mAh_g')
-                      .dropna(subset=['Cycle', 'Discharge_mAh_g'])
-                      .copy())
+            cap_df = (
+                _ct_with_flag(ct, "Discharge_mAh_g")
+                .dropna(subset=["Cycle", "Discharge_mAh_g"])
+                .copy()
+            )
         else:
             # Fallback: derive via groupby
-            discharge = df[df['Step'] == 'Discharge'].dropna(
-                subset=['Cycle', 'Discharge_Capacity'])
+            discharge = df[df["Step"] == "Discharge"].dropna(
+                subset=["Cycle", "Discharge_Capacity"]
+            )
             if discharge.empty:
                 print(f"  {composition}: no capacity data, skipping.")
                 continue
-            grp = discharge.groupby('Cycle')['Discharge_Capacity']
-            cap_df = pd.DataFrame({
-                'Cycle': grp.max().index.astype(int),
-                'Discharge_mAh_g': (grp.max() - grp.min()).values,
-                'Incomplete': False,
-            })
+            grp = discharge.groupby("Cycle")["Discharge_Capacity"]
+            cap_df = pd.DataFrame(
+                {
+                    "Cycle": grp.max().index.astype(int),
+                    "Discharge_mAh_g": (grp.max() - grp.min()).values,
+                    "Incomplete": False,
+                }
+            )
 
         if cap_df.empty:
             print(f"  {composition}: no capacity data, skipping.")
@@ -4712,101 +5461,115 @@ def rate_capability(electrochemical_data, user_parameters, *, save_location=None
         # deliberately removed: high-rate cycles in rate-capability
         # experiments genuinely deliver much less capacity than the
         # reference rate, and the heuristic falsely flagged them.
-        if EXCLUDE_INCOMPLETE and 'Incomplete' in cap_df.columns:
-            n_incomplete = int(cap_df['Incomplete'].sum())
+        if EXCLUDE_INCOMPLETE and "Incomplete" in cap_df.columns:
+            n_incomplete = int(cap_df["Incomplete"].sum())
             if n_incomplete > 0:
-                removed = cap_df.loc[cap_df['Incomplete'],
-                                     'Cycle'].tolist()
-                print(f"    Excluded {n_incomplete} "
-                      f"protocol-incomplete cycle(s): "
-                      f"{', '.join(str(int(c)) for c in removed)}")
-            cap_df = cap_df[~cap_df['Incomplete']].copy()
+                removed = cap_df.loc[cap_df["Incomplete"], "Cycle"].tolist()
+                print(
+                    f"    Excluded {n_incomplete} "
+                    f"protocol-incomplete cycle(s): "
+                    f"{', '.join(str(int(c)) for c in removed)}"
+                )
+            cap_df = cap_df[~cap_df["Incomplete"]].copy()
 
         # Merge current and capacity data
-        merged = pd.merge(cap_df, current_df, on='Cycle', how='inner')
+        merged = pd.merge(cap_df, current_df, on="Cycle", how="inner")
 
         if merged.empty:
             continue
 
         # Assign C-rate labels to each cycle
-        merged['C_rate'] = merged['Avg_Current_A'].apply(
+        merged["C_rate"] = merged["Avg_Current_A"].apply(
             lambda x: _current_to_crate(x, active_mass_mg, theoretical_cap)
         )
-        merged['C_rate_label'] = merged['C_rate'].apply(_format_crate)
+        merged["C_rate_label"] = merged["C_rate"].apply(_format_crate)
 
         # Assign rate group index
         group_assignments = {}
         for gi, group in enumerate(rate_groups):
-            for cyc in group['cycles']:
+            for cyc in group["cycles"]:
                 group_assignments[cyc] = gi
-        merged['Rate_Group'] = merged['Cycle'].map(group_assignments)
+        merged["Rate_Group"] = merged["Cycle"].map(group_assignments)
 
         # Build summary per rate group
         rate_summary = []
         for gi, group in enumerate(rate_groups):
-            group_data = merged[merged['Rate_Group'] == gi]
+            group_data = merged[merged["Rate_Group"] == gi]
             if group_data.empty or len(group_data) < MIN_CYCLES_PER_RATE:
                 continue
 
-            crate = _current_to_crate(group['mean_current_A'],
-                                       active_mass_mg, theoretical_cap)
+            crate = _current_to_crate(
+                group["mean_current_A"], active_mass_mg, theoretical_cap
+            )
             crate_label = _format_crate(crate)
 
-            rate_summary.append({
-                'group_index': gi,
-                'c_rate': crate,
-                'c_rate_label': crate_label,
-                'mean_current_A': group['mean_current_A'],
-                'mean_capacity': group_data['Discharge_mAh_g'].mean(),
-                'std_capacity': group_data['Discharge_mAh_g'].std(),
-                'n_cycles': len(group_data),
-                'first_cycle': int(group_data['Cycle'].min()),
-                'last_cycle': int(group_data['Cycle'].max())
-            })
+            rate_summary.append(
+                {
+                    "group_index": gi,
+                    "c_rate": crate,
+                    "c_rate_label": crate_label,
+                    "mean_current_A": group["mean_current_A"],
+                    "mean_capacity": group_data["Discharge_mAh_g"].mean(),
+                    "std_capacity": group_data["Discharge_mAh_g"].std(),
+                    "n_cycles": len(group_data),
+                    "first_cycle": int(group_data["Cycle"].min()),
+                    "last_cycle": int(group_data["Cycle"].max()),
+                }
+            )
 
         if len(rate_summary) < 2:
-            print(f"  {composition}: insufficient rate groups "
-                  f"(need >= 2 with >= {MIN_CYCLES_PER_RATE} cycles each)")
+            print(
+                f"  {composition}: insufficient rate groups "
+                f"(need >= 2 with >= {MIN_CYCLES_PER_RATE} cycles each)"
+            )
             continue
 
         rate_df = pd.DataFrame(rate_summary)
 
         # Reference capacity (first rate group, usually lowest rate)
-        ref_cap = rate_df.iloc[0]['mean_capacity']
+        ref_cap = rate_df.iloc[0]["mean_capacity"]
         # NOT capacity retention: capacity at this RATE against the
         # reference rate group. Exporting both under one header was how a
         # reader ended up comparing two different quantities.
-        rate_df['Rate_Capability_%'] = rate_df['mean_capacity'] / ref_cap * 100
+        rate_df["Rate_Capability_%"] = rate_df["mean_capacity"] / ref_cap * 100
 
         # Recovery: if final group is at the same rate as the first
-        first_rate = rate_df.iloc[0]['c_rate']
+        first_rate = rate_df.iloc[0]["c_rate"]
         last_group = rate_df.iloc[-1]
         recovery = None
-        if (first_rate is not None and last_group['c_rate'] is not None and
-            abs(last_group['c_rate'] - first_rate) / max(first_rate, 1e-9)
-            <= CURRENT_GROUPING_TOLERANCE * 2):
-            recovery = last_group['mean_capacity'] / ref_cap * 100
+        if (
+            first_rate is not None
+            and last_group["c_rate"] is not None
+            and abs(last_group["c_rate"] - first_rate) / max(first_rate, 1e-9)
+            <= CURRENT_GROUPING_TOLERANCE * 2
+        ):
+            recovery = last_group["mean_capacity"] / ref_cap * 100
 
         # --- Print summary ---
         print("\n" + heading(composition))
-        print(f"  {'Rate':<10} {'Capacity':>10} {'Retention':>10} "
-              f"{'Cycles':>8} {'Range':>12}")
+        print(
+            f"  {'Rate':<10} {'Capacity':>10} {'Retention':>10} "
+            f"{'Cycles':>8} {'Range':>12}"
+        )
         print(f"  {'':10} {'mAh/g':>10} {'%':>10} {'':>8} {'':>12}")
-        print(f"  {'-'*52}")
+        print(f"  {'-' * 52}")
 
         for _, row in rate_df.iterrows():
-            cycle_range = (f"{row['first_cycle']}-{row['last_cycle']}"
-                          if row['first_cycle'] != row['last_cycle']
-                          else str(row['first_cycle']))
-            print(f"  {row['c_rate_label']:<10} "
-                  f"{row['mean_capacity']:>10.1f} "
-                  f"{row['Rate_Capability_%']:>10.1f} "
-                  f"{row['n_cycles']:>8} "
-                  f"{cycle_range:>12}")
+            cycle_range = (
+                f"{row['first_cycle']}-{row['last_cycle']}"
+                if row["first_cycle"] != row["last_cycle"]
+                else str(row["first_cycle"])
+            )
+            print(
+                f"  {row['c_rate_label']:<10} "
+                f"{row['mean_capacity']:>10.1f} "
+                f"{row['Rate_Capability_%']:>10.1f} "
+                f"{row['n_cycles']:>8} "
+                f"{cycle_range:>12}"
+            )
 
         if recovery is not None:
-            print(f"\n  Recovery to {rate_df.iloc[0]['c_rate_label']}: "
-                  f"{recovery:.1f}%")
+            print(f"\n  Recovery to {rate_df.iloc[0]['c_rate_label']}: {recovery:.1f}%")
 
         # --- what that recovery is made of -------------------------------
         # THE RECOVERY PERCENTAGE WAS PRINTED AND NEVER EXPORTED. It reached
@@ -4817,53 +5580,62 @@ def rate_capability(electrochemical_data, user_parameters, *, save_location=None
         # with the rest, together with what it decomposes into.
         _proto = rate_protocol(df, params)
         _f_end = None
-        if 'CE_%' in cap_df.columns:
-            _ce = {int(r['Cycle']): float(r['CE_%'])
-                   for _, r in cap_df.iterrows() if pd.notna(r.get('CE_%'))}
+        if "CE_%" in cap_df.columns:
+            _ce = {
+                int(r["Cycle"]): float(r["CE_%"])
+                for _, r in cap_df.iterrows()
+                if pd.notna(r.get("CE_%"))
+            }
             _fe, _ = formation_end(_ce)
             if _fe is not None:
                 _f_end = int(_fe)
         _rec = rate_recovery(cap_df, _proto, formation_end_cycle=_f_end)
-        if _proto.get('transition_cycles'):
+        if _proto.get("transition_cycles"):
             # NAMED, NOT DROPPED. At a rate change the cycler's last cycle of
             # a block carries a mixed mean current, lands in a block of its
             # own and fails MIN_CYCLES_PER_RATE. Excluding it is right; doing
             # it silently is not — on the NNM rate test that is 7 of 33
             # cycles absent from every block mean with nothing saying so.
-            print(f"    {len(_proto['transition_cycles'])} rate-transition "
-                  f"cycle(s) excluded from the block means: "
-                  + ", ".join(str(c)
-                              for c in _proto['transition_cycles']))
+            print(
+                f"    {len(_proto['transition_cycles'])} rate-transition "
+                f"cycle(s) excluded from the block means: "
+                + ", ".join(str(c) for c in _proto["transition_cycles"])
+            )
         if _rec is not None:
-            print(f"\n  Fade during the ramp: "
-                  f"{_rec['fade_pct_per_cycle']:+.3f} %/cycle "
-                  f"(se {_rec['fade_se_pct']:.3f}, residual sd "
-                  f"{_rec['residual_sd_pct']:.2f}%, n={_rec['n_fit']})")
-            _lo, _hi = _rec['damage_bound_pct']
-            print(f"  Recovery against that fade: {_lo:.1f}-{_hi:.1f}% "
-                  f"across {len(_rec['anchors'])} anchor(s) for the "
-                  f"reference level")
-            for _a in _rec['anchors']:
-                print(f"      {_a['name']:<12} {_a['capacity']:6.1f} mAh/g "
-                      f"at cycle {_a['cycle']:.1f} -> predicts "
-                      f"{_a['predicted']:6.1f}, observed "
-                      f"{_rec['observed']:6.1f}  ({_a['ratio_pct']:.1f}%)")
+            print(
+                f"\n  Fade during the ramp: "
+                f"{_rec['fade_pct_per_cycle']:+.3f} %/cycle "
+                f"(se {_rec['fade_se_pct']:.3f}, residual sd "
+                f"{_rec['residual_sd_pct']:.2f}%, n={_rec['n_fit']})"
+            )
+            _lo, _hi = _rec["damage_bound_pct"]
+            print(
+                f"  Recovery against that fade: {_lo:.1f}-{_hi:.1f}% "
+                f"across {len(_rec['anchors'])} anchor(s) for the "
+                f"reference level"
+            )
+            for _a in _rec["anchors"]:
+                print(
+                    f"      {_a['name']:<12} {_a['capacity']:6.1f} mAh/g "
+                    f"at cycle {_a['cycle']:.1f} -> predicts "
+                    f"{_a['predicted']:6.1f}, observed "
+                    f"{_rec['observed']:6.1f}  ({_a['ratio_pct']:.1f}%)"
+                )
             print(f"  {_rec['note']}")
-            rate_df['q_recovery_pct'] = _rec['q_recovery_pct']
-            rate_df['fade_pct_per_cycle'] = _rec['fade_pct_per_cycle']
-            rate_df['fade_se_pct'] = _rec['fade_se_pct']
-            rate_df['fade_residual_sd_pct'] = _rec['residual_sd_pct']
-            rate_df['damage_bound_low_pct'] = _rec['damage_bound_pct'][0]
-            rate_df['damage_bound_high_pct'] = _rec['damage_bound_pct'][1]
-            rate_df['damage_bound_is_upper_bound'] = \
-                _rec['anchor_in_formation']
-            rate_df['formation_end_cycle'] = _rec['formation_end']
+            rate_df["q_recovery_pct"] = _rec["q_recovery_pct"]
+            rate_df["fade_pct_per_cycle"] = _rec["fade_pct_per_cycle"]
+            rate_df["fade_se_pct"] = _rec["fade_se_pct"]
+            rate_df["fade_residual_sd_pct"] = _rec["residual_sd_pct"]
+            rate_df["damage_bound_low_pct"] = _rec["damage_bound_pct"][0]
+            rate_df["damage_bound_high_pct"] = _rec["damage_bound_pct"][1]
+            rate_df["damage_bound_is_upper_bound"] = _rec["anchor_in_formation"]
+            rate_df["formation_end_cycle"] = _rec["formation_end"]
         elif recovery is not None:
-            rate_df['q_recovery_pct'] = recovery
-        if _proto.get('transition_cycles'):
-            rate_df['transition_cycles_excluded'] = ";".join(
-                str(c) for c in _proto['transition_cycles'])
-
+            rate_df["q_recovery_pct"] = recovery
+        if _proto.get("transition_cycles"):
+            rate_df["transition_cycles_excluded"] = ";".join(
+                str(c) for c in _proto["transition_cycles"]
+            )
 
         # =================================================================
         # PLOT 1: Capacity vs C-rate bar chart
@@ -4874,71 +5646,96 @@ def rate_capability(electrochemical_data, user_parameters, *, save_location=None
         for _, row in rate_df.iterrows():
             matched = False
             for ur in unique_rates:
-                if (row['c_rate'] is not None and ur['c_rate'] is not None and
-                    abs(row['c_rate'] - ur['c_rate']) / max(ur['c_rate'], 1e-9)
-                    <= CURRENT_GROUPING_TOLERANCE * 2):
+                if (
+                    row["c_rate"] is not None
+                    and ur["c_rate"] is not None
+                    and abs(row["c_rate"] - ur["c_rate"]) / max(ur["c_rate"], 1e-9)
+                    <= CURRENT_GROUPING_TOLERANCE * 2
+                ):
                     # Average with existing
-                    ur['capacities'].append(row['mean_capacity'])
+                    ur["capacities"].append(row["mean_capacity"])
                     matched = True
                     break
             if not matched:
-                unique_rates.append({
-                    'c_rate': row['c_rate'],
-                    'c_rate_label': row['c_rate_label'],
-                    'capacities': [row['mean_capacity']]
-                })
+                unique_rates.append(
+                    {
+                        "c_rate": row["c_rate"],
+                        "c_rate_label": row["c_rate_label"],
+                        "capacities": [row["mean_capacity"]],
+                    }
+                )
 
-        bar_labels = [ur['c_rate_label'] for ur in unique_rates]
-        bar_heights = [np.mean(ur['capacities']) for ur in unique_rates]
-        bar_errors = [np.std(ur['capacities']) if len(ur['capacities']) > 1
-                      else 0 for ur in unique_rates]
+        bar_labels = [ur["c_rate_label"] for ur in unique_rates]
+        bar_heights = [np.mean(ur["capacities"]) for ur in unique_rates]
+        bar_errors = [
+            np.std(ur["capacities"]) if len(ur["capacities"]) > 1 else 0
+            for ur in unique_rates
+        ]
 
         # Colour: highlight recovery rate in green
         bar_colours = []
         for j, ur in enumerate(unique_rates):
-            if (j == len(unique_rates) - 1 and recovery is not None and
-                j > 0):
+            if j == len(unique_rates) - 1 and recovery is not None and j > 0:
                 bar_colours.append(RECOVERY_COLOUR)
             else:
                 bar_colours.append(BAR_COLOUR)
 
-        fig, ax = plt.subplots(figsize=(_plots.figure_width_inches, _plots.figure_height_inches))
+        fig, ax = plt.subplots(
+            figsize=(_plots.figure_width_inches, _plots.figure_height_inches)
+        )
 
         x_pos = np.arange(len(bar_labels))
-        bars = ax.bar(x_pos, bar_heights, yerr=bar_errors,
-                      color=bar_colours, edgecolor='black', linewidth=0.5,
-                      capsize=4, width=0.6, zorder=3)
+        bars = ax.bar(
+            x_pos,
+            bar_heights,
+            yerr=bar_errors,
+            color=bar_colours,
+            edgecolor="black",
+            linewidth=0.5,
+            capsize=4,
+            width=0.6,
+            zorder=3,
+        )
 
         # Add capacity labels on bars
         for bar, height in zip(bars, bar_heights):
-            ax.text(bar.get_x() + bar.get_width() / 2, height + 1,
-                   f'{height:.0f}', ha='center', va='bottom', fontsize=10)
+            ax.text(
+                bar.get_x() + bar.get_width() / 2,
+                height + 1,
+                f"{height:.0f}",
+                ha="center",
+                va="bottom",
+                fontsize=10,
+            )
 
         ax.set_xticks(x_pos)
         ax.set_xticklabels(bar_labels, fontsize=12)
-        ax.set_xlabel('C-rate', fontsize=14)
+        ax.set_xlabel("C-rate", fontsize=14)
         dch_label = _discharge_label(params)
-        ax.set_ylabel(f'{dch_label} capacity / mAh g$^{{-1}}$', fontsize=14)
+        ax.set_ylabel(f"{dch_label} capacity / mAh g$^{{-1}}$", fontsize=14)
         ax.set_ylim(bottom=0, top=max(bar_heights) * 1.15)
-        ax.tick_params(axis='both', labelsize=12, width=1, direction='in',
-                       top=True, right=True)
+        ax.tick_params(
+            axis="both", labelsize=12, width=1, direction="in", top=True, right=True
+        )
         for sp in ax.spines.values():
             sp.set_linewidth(0.8)
         plt.tight_layout()
 
         # Caption
-        rates_str = ', '.join(bar_labels[:-1])
+        rates_str = ", ".join(bar_labels[:-1])
         if len(bar_labels) > 1:
-            rates_str += f' and {bar_labels[-1]}'
+            rates_str += f" and {bar_labels[-1]}"
         else:
             rates_str = bar_labels[0]
 
-        recovery_str = ''
+        recovery_str = ""
         if recovery is not None:
-            recovery_str = (f' The final bar (green) shows capacity '
-                           f'recovery upon returning to '
-                           f'{rate_df.iloc[0]["c_rate_label"]} '
-                           f'({recovery:.1f}% of initial).')
+            recovery_str = (
+                f" The final bar (green) shows capacity "
+                f"recovery upon returning to "
+                f"{rate_df.iloc[0]['c_rate_label']} "
+                f"({recovery:.1f}% of initial)."
+            )
 
         dch_word = _discharge_label(params).lower()
         caption = (
@@ -4951,14 +5748,14 @@ def rate_capability(electrochemical_data, user_parameters, *, save_location=None
         print(bullet(caption, indent=2, label_width=2))
 
         if save_location:
-            fpath = os.path.join(save_location,
-                                f'{name}_rate_capability.{image_format(params)}')
-            fig.savefig(fpath, dpi=300, bbox_inches='tight')
+            fpath = os.path.join(
+                save_location, f"{name}_rate_capability.{image_format(params)}"
+            )
+            fig.savefig(fpath, dpi=300, bbox_inches="tight")
             saved(fpath)
 
         plt.show()
         plt.close(fig)
-
 
         # =================================================================
         # PLOT 2: Capacity vs cycle with rate annotations
@@ -4966,36 +5763,53 @@ def rate_capability(electrochemical_data, user_parameters, *, save_location=None
 
         fig, ax = plt.subplots(figsize=(10, 6))
 
-        ax.plot(merged['Cycle'], merged['Discharge_mAh_g'],
-               color=BAR_COLOUR, marker='o', markersize=5,
-               linestyle='-', linewidth=0.8, zorder=3)
+        ax.plot(
+            merged["Cycle"],
+            merged["Discharge_mAh_g"],
+            color=BAR_COLOUR,
+            marker="o",
+            markersize=5,
+            linestyle="-",
+            linewidth=0.8,
+            zorder=3,
+        )
 
         # Shade rate blocks and label them
         prev_right = None
         for _, row in rate_df.iterrows():
-            left = row['first_cycle'] - 0.5
-            right = row['last_cycle'] + 0.5
+            left = row["first_cycle"] - 0.5
+            right = row["last_cycle"] + 0.5
 
-            ax.axvspan(left, right, alpha=0.06, color='grey')
+            ax.axvspan(left, right, alpha=0.06, color="grey")
 
-            mid_cycle = (row['first_cycle'] + row['last_cycle']) / 2
-            y_pos = ax.get_ylim()[1] * 0.95 if prev_right is None else ax.get_ylim()[1] * 0.95
+            mid_cycle = (row["first_cycle"] + row["last_cycle"]) / 2
+            y_pos = (
+                ax.get_ylim()[1] * 0.95
+                if prev_right is None
+                else ax.get_ylim()[1] * 0.95
+            )
 
-            ax.text(mid_cycle, merged['Discharge_mAh_g'].max() * 1.05,
-                   row['c_rate_label'],
-                   ha='center', va='bottom', fontsize=10,
-                   fontweight='bold', color='#333333')
+            ax.text(
+                mid_cycle,
+                merged["Discharge_mAh_g"].max() * 1.05,
+                row["c_rate_label"],
+                ha="center",
+                va="bottom",
+                fontsize=10,
+                fontweight="bold",
+                color="#333333",
+            )
 
             prev_right = right
 
-        ax.set_xlabel('Cycle number', fontsize=14)
+        ax.set_xlabel("Cycle number", fontsize=14)
         _force_integer_cycles(ax)
-        ax.set_ylabel(f'{dch_label} capacity / mAh g$^{{-1}}$', fontsize=14)
-        ax.set_ylim(bottom=0,
-                    top=merged['Discharge_mAh_g'].max() * 1.15)
+        ax.set_ylabel(f"{dch_label} capacity / mAh g$^{{-1}}$", fontsize=14)
+        ax.set_ylim(bottom=0, top=merged["Discharge_mAh_g"].max() * 1.15)
         ax.set_xlim(left=0)
-        ax.tick_params(axis='both', labelsize=12, width=1, direction='in',
-                       top=True, right=True)
+        ax.tick_params(
+            axis="both", labelsize=12, width=1, direction="in", top=True, right=True
+        )
         for sp in ax.spines.values():
             sp.set_linewidth(0.8)
         plt.tight_layout()
@@ -5009,42 +5823,58 @@ def rate_capability(electrochemical_data, user_parameters, *, save_location=None
         print(bullet(caption, indent=2, label_width=2))
 
         if save_location:
-            fpath = os.path.join(save_location,
-                                f'{name}_rate_capability_cycling.{image_format(params)}')
-            fig.savefig(fpath, dpi=300, bbox_inches='tight')
+            fpath = os.path.join(
+                save_location, f"{name}_rate_capability_cycling.{image_format(params)}"
+            )
+            fig.savefig(fpath, dpi=300, bbox_inches="tight")
             saved(fpath)
 
         plt.show()
-
 
         # --- Export ---
         if save_location:
             # `c_rate_measured` beside the snapped label, because the label
             # is for reading and the number is for computing. See
             # RATE_LABEL_SNAP.
-            rate_df['c_rate_measured'] = rate_df['c_rate']
-            _extra = [c for c in ('c_rate_measured', 'mean_current_A',
-                                  'q_recovery_pct', 'fade_pct_per_cycle',
-                                  'fade_se_pct', 'fade_residual_sd_pct',
-                                  'damage_bound_low_pct',
-                                  'damage_bound_high_pct',
-                                  'damage_bound_is_upper_bound',
-                                  'formation_end_cycle',
-                                  'transition_cycles_excluded')
-                      if c in rate_df.columns]
-            export_df = rate_df[['c_rate_label', 'mean_capacity',
-                                  'std_capacity', 'Rate_Capability_%',
-                                  'n_cycles', 'first_cycle', 'last_cycle']
-                                 + _extra]
-            fpath = os.path.join(save_location,
-                                f'{name}_rate_capability_summary.csv')
+            rate_df["c_rate_measured"] = rate_df["c_rate"]
+            _extra = [
+                c
+                for c in (
+                    "c_rate_measured",
+                    "mean_current_A",
+                    "q_recovery_pct",
+                    "fade_pct_per_cycle",
+                    "fade_se_pct",
+                    "fade_residual_sd_pct",
+                    "damage_bound_low_pct",
+                    "damage_bound_high_pct",
+                    "damage_bound_is_upper_bound",
+                    "formation_end_cycle",
+                    "transition_cycles_excluded",
+                )
+                if c in rate_df.columns
+            ]
+            export_df = rate_df[
+                [
+                    "c_rate_label",
+                    "mean_capacity",
+                    "std_capacity",
+                    "Rate_Capability_%",
+                    "n_cycles",
+                    "first_cycle",
+                    "last_cycle",
+                ]
+                + _extra
+            ]
+            fpath = os.path.join(save_location, f"{name}_rate_capability_summary.csv")
             export_df.to_csv(fpath, index=False)
             saved(fpath)
 
     if not _any_multirate:
-        print("All datasets are single-rate — "
-              "rate capability analysis skipped.")
-        print("(Load multi-rate data to use this analysis, e.g., "
-              "C/10 -> C/5 -> C/2 -> 1C -> C/10 recovery)")
+        print("All datasets are single-rate — rate capability analysis skipped.")
+        print(
+            "(Load multi-rate data to use this analysis, e.g., "
+            "C/10 -> C/5 -> C/2 -> 1C -> C/10 recovery)"
+        )
 
     print(rule())

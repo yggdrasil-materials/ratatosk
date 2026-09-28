@@ -50,21 +50,39 @@ from .style import section, entry, verdict, bullet
 
 from .fitting import FitSpec, fit_half_cycle, fit_many
 
-__all__ = ["voltage_reconstruction",
-           "integral_fidelity", "closure", "closure_interval",
-           "assess_closure", "sample_half_cycles", "describe_partition",
-           "DEFAULT_DEGREES", "degrees_for", "describe_fidelity",
-           "UNATTRIBUTED_QUALIFIED_ABOVE", "MECHANISM_AT_BOUND_ESCALATES",
-           "MECHANISM_AT_BOUND_FRACTION", "reconcile_mechanisms",
-           "assess_resolvability", "describe_resolvability",
-           "classify_mechanism", "MECHANISM_MODEL",
-           "MECHANISM_TWO_PHASE", "MECHANISM_MULTI_TRANSITION",
-           "MECHANISM_SOLID_SOLUTION", "MECHANISM_MIXED",
-           "MECHANISM_SHOULDER_FRACTION",
-           "RESOLVED_CLOSURE_FLOOR", "RESOLVABILITY_RESOLVED",
-           "RESOLVABILITY_QUALIFIED", "RESOLVABILITY_UNRESOLVED",
-           "CLOSURE_SAMPLE_DEFAULT", "RECONSTRUCTION_APE_ABOVE",
-           "RECONSTRUCTION_RMSE_WINDOW_FRACTION", "describe_reconstruction"]
+__all__ = [
+    "voltage_reconstruction",
+    "integral_fidelity",
+    "closure",
+    "closure_interval",
+    "assess_closure",
+    "sample_half_cycles",
+    "describe_partition",
+    "DEFAULT_DEGREES",
+    "degrees_for",
+    "describe_fidelity",
+    "UNATTRIBUTED_QUALIFIED_ABOVE",
+    "MECHANISM_AT_BOUND_ESCALATES",
+    "MECHANISM_AT_BOUND_FRACTION",
+    "reconcile_mechanisms",
+    "assess_resolvability",
+    "describe_resolvability",
+    "classify_mechanism",
+    "MECHANISM_MODEL",
+    "MECHANISM_TWO_PHASE",
+    "MECHANISM_MULTI_TRANSITION",
+    "MECHANISM_SOLID_SOLUTION",
+    "MECHANISM_MIXED",
+    "MECHANISM_SHOULDER_FRACTION",
+    "RESOLVED_CLOSURE_FLOOR",
+    "RESOLVABILITY_RESOLVED",
+    "RESOLVABILITY_QUALIFIED",
+    "RESOLVABILITY_UNRESOLVED",
+    "CLOSURE_SAMPLE_DEFAULT",
+    "RECONSTRUCTION_APE_ABOVE",
+    "RECONSTRUCTION_RMSE_WINDOW_FRACTION",
+    "describe_reconstruction",
+]
 
 DEFAULT_DEGREES = (1, 2, 3)
 
@@ -213,6 +231,7 @@ RECONSTRUCTION_RMSE_WINDOW_FRACTION = 0.05
 # Stage 1: is the derivative itself accounting for the charge?
 # ---------------------------------------------------------------------------
 
+
 def integral_fidelity(voltage, dqdv, measured_capacity):
     """
     integral(|dQ/dV|) dV over the half-cycle, divided by the capacity the
@@ -233,7 +252,7 @@ def integral_fidelity(voltage, dqdv, measured_capacity):
     # raises on it, so it has to be coerced first.
     try:
         cap = float(measured_capacity)
-    except (TypeError, ValueError):
+    except TypeError, ValueError:
         return float("nan")
     if v.size < 2 or not np.isfinite(cap) or cap <= 0:
         return float("nan")
@@ -244,6 +263,7 @@ def integral_fidelity(voltage, dqdv, measured_capacity):
 # ---------------------------------------------------------------------------
 # Stage 2: do the peaks account for the curve?
 # ---------------------------------------------------------------------------
+
 
 def voltage_reconstruction(voltage, dqdv, q_measured, v_measured):
     """
@@ -274,8 +294,13 @@ def voltage_reconstruction(voltage, dqdv, q_measured, v_measured):
     y = np.abs(np.asarray(dqdv, float))
     qm = np.asarray(q_measured, float)
     vm = np.asarray(v_measured, float)
-    out = dict(ape_pct=float("nan"), rmse_V=float("nan"),
-               q_reconstructed=float("nan"), q_measured=float("nan"), n=0)
+    out = dict(
+        ape_pct=float("nan"),
+        rmse_V=float("nan"),
+        q_reconstructed=float("nan"),
+        q_measured=float("nan"),
+        n=0,
+    )
     ok = np.isfinite(v) & np.isfinite(y)
     v, y = v[ok], y[ok]
     okm = np.isfinite(qm) & np.isfinite(vm)
@@ -299,8 +324,7 @@ def voltage_reconstruction(voltage, dqdv, q_measured, v_measured):
     if int(np.sum(keep)) >= 3:
         qm, vm = qm[keep], vm[keep]
     # Cumulative trapezoid: the capacity accumulated up to each voltage.
-    q_rec = np.concatenate([[0.0],
-                            np.cumsum(np.diff(v) * 0.5 * (y[1:] + y[:-1]))])
+    q_rec = np.concatenate([[0.0], np.cumsum(np.diff(v) * 0.5 * (y[1:] + y[:-1]))])
     q_max = float(q_rec[-1])
     out["q_reconstructed"] = q_max
 
@@ -354,8 +378,9 @@ def degrees_for(spec, degrees=DEFAULT_DEGREES):
     return tuple(degrees)
 
 
-def closure_interval(voltage, dqdv, spec: FitSpec, *,
-                     degrees=DEFAULT_DEGREES, key=None):
+def closure_interval(
+    voltage, dqdv, spec: FitSpec, *, degrees=DEFAULT_DEGREES, key=None
+):
     """
     Refit the same data at several baseline degrees; report the spread.
 
@@ -367,24 +392,34 @@ def closure_interval(voltage, dqdv, spec: FitSpec, *,
     vals, r2s, unatt = {}, {}, {}
     for deg in degrees:
         res = fit_half_cycle(
-            voltage, dqdv,
+            voltage,
+            dqdv,
             spec.replace(baseline_degree=deg, tolerance=CLOSURE_TOLERANCE),
-            key=key)
+            key=key,
+        )
         vals[deg] = closure(res) if res["success"] else float("nan")
         r2s[deg] = res["r_squared"] if res["success"] else float("nan")
-        unatt[deg] = (float(res.get("unattributed_fraction", np.nan))
-                      if res["success"] else float("nan"))
+        unatt[deg] = (
+            float(res.get("unattributed_fraction", np.nan))
+            if res["success"]
+            else float("nan")
+        )
 
     finite = [x for x in vals.values() if np.isfinite(x)]
     lo = float(min(finite)) if finite else float("nan")
     hi = float(max(finite)) if finite else float("nan")
     _u = [x for x in unatt.values() if np.isfinite(x)]
-    return dict(key=key, lo=lo, hi=hi,
-                width=(hi - lo) if finite else float("nan"),
-                by_degree=vals, r_squared_by_degree=r2s,
-                unattributed=(float(np.median(_u)) if _u else float("nan")),
-                swept=len(degrees) > 1,
-                n_degrees=len(finite))
+    return dict(
+        key=key,
+        lo=lo,
+        hi=hi,
+        width=(hi - lo) if finite else float("nan"),
+        by_degree=vals,
+        r_squared_by_degree=r2s,
+        unattributed=(float(np.median(_u)) if _u else float("nan")),
+        swept=len(degrees) > 1,
+        n_degrees=len(finite),
+    )
 
 
 # How many half-cycles the closure interval is measured on by default.
@@ -419,8 +454,7 @@ def sample_half_cycles(keys, n=CLOSURE_SAMPLE_DEFAULT):
     return [keys[i] for i in sorted(set(idx.tolist()))]
 
 
-def assess_closure(jobs, *, degrees=DEFAULT_DEGREES, n_jobs=None,
-                   verbose=True):
+def assess_closure(jobs, *, degrees=DEFAULT_DEGREES, n_jobs=None, verbose=True):
     """
     Run `closure_interval` over a sample, in parallel where that pays.
 
@@ -438,16 +472,20 @@ def assess_closure(jobs, *, degrees=DEFAULT_DEGREES, n_jobs=None,
     # THE TOLERANCE TRAVELS ON THE SPEC, not in a module global: these fits
     # run in worker processes, and a value set in the parent never reaches
     # them. `CLOSURE_TOLERANCE = None` leaves each fit on `FIT_TOLERANCE`.
-    flat = [(v, y, spec.replace(baseline_degree=d,
-                                tolerance=CLOSURE_TOLERANCE),
-             ((i, key), d))
-            for i, (v, y, spec, key) in enumerate(jobs)
-            for d in degrees_for(spec, degrees)]
+    flat = [
+        (
+            v,
+            y,
+            spec.replace(baseline_degree=d, tolerance=CLOSURE_TOLERANCE),
+            ((i, key), d),
+        )
+        for i, (v, y, spec, key) in enumerate(jobs)
+        for d in degrees_for(spec, degrees)
+    ]
     # No count printed here: the caller has already said how many half-cycles
     # it sampled and what that costs, and saying it twice in different words
     # is how a console becomes a wall of text.
-    results = fit_many(flat, n_jobs=n_jobs, verbose=verbose,
-                       label="closure")
+    results = fit_many(flat, n_jobs=n_jobs, verbose=verbose, label="closure")
 
     grouped = {}
     for res in results:
@@ -465,31 +503,45 @@ def assess_closure(jobs, *, degrees=DEFAULT_DEGREES, n_jobs=None,
             _r2 = r.get("r_squared", float("nan"))
             return bool(np.isfinite(_r2) and _r2 > CLOSURE_DEGREE_MIN_R2)
 
-        vals = {d: (closure(r) if _usable(d, r) else float("nan"))
-                for d, r in per.items()}
-        n_collapsed = sum(1 for d, r in per.items()
-                          if r["success"] and not _usable(d, r))
+        vals = {
+            d: (closure(r) if _usable(d, r) else float("nan")) for d, r in per.items()
+        }
+        n_collapsed = sum(
+            1 for d, r in per.items() if r["success"] and not _usable(d, r)
+        )
         finite = [x for x in vals.values() if np.isfinite(x)]
         lo = float(min(finite)) if finite else float("nan")
         hi = float(max(finite)) if finite else float("nan")
-        _u = [float(r.get("unattributed_fraction", np.nan))
-              for d, r in per.items() if _usable(d, r)]
+        _u = [
+            float(r.get("unattributed_fraction", np.nan))
+            for d, r in per.items()
+            if _usable(d, r)
+        ]
         _u = [x for x in _u if np.isfinite(x)]
-        _nb = [(int(r.get("n_at_sigma_max", 0)), len(r.get("components", [])))
-               for d, r in per.items() if _usable(d, r)]
+        _nb = [
+            (int(r.get("n_at_sigma_max", 0)), len(r.get("components", [])))
+            for d, r in per.items()
+            if _usable(d, r)
+        ]
         _n_at = sum(a for a, _ in _nb)
         _n_tot = sum(b for _, b in _nb)
-        out.append(dict(key=key, lo=lo, hi=hi,
-                        width=(hi - lo) if finite else float("nan"),
-                        by_degree=vals, r_squared_by_degree=r2s,
-                        n_at_sigma_max=_n_at, n_components=_n_tot,
-                        unattributed=(float(np.median(_u)) if _u
-                                      else float("nan")),
-                        swept=len(per) > 1,
-                        n_degrees=len(finite),
-                        n_degrees_collapsed=n_collapsed))
+        out.append(
+            dict(
+                key=key,
+                lo=lo,
+                hi=hi,
+                width=(hi - lo) if finite else float("nan"),
+                by_degree=vals,
+                r_squared_by_degree=r2s,
+                n_at_sigma_max=_n_at,
+                n_components=_n_tot,
+                unattributed=(float(np.median(_u)) if _u else float("nan")),
+                swept=len(per) > 1,
+                n_degrees=len(finite),
+                n_degrees_collapsed=n_collapsed,
+            )
+        )
     return out
-
 
 
 # ---------------------------------------------------------------------------
@@ -541,9 +593,15 @@ RESOLVABILITY_QUALIFIED = "qualified"
 RESOLVABILITY_UNRESOLVED = "unresolved"
 
 
-def assess_resolvability(jobs, *, shoulder_fraction=None,
-                         n_primaries=None, n_components=None,
-                         degrees=DEFAULT_DEGREES, verbose=True):
+def assess_resolvability(
+    jobs,
+    *,
+    shoulder_fraction=None,
+    n_primaries=None,
+    n_components=None,
+    degrees=DEFAULT_DEGREES,
+    verbose=True,
+):
     """
     Should this dataset be decomposed into peaks at all?
 
@@ -554,19 +612,31 @@ def assess_resolvability(jobs, *, shoulder_fraction=None,
     `shoulder_fraction`, and `reason` — a sentence fit to print.
     """
     if not jobs:
-        return dict(verdict=RESOLVABILITY_UNRESOLVED, width=np.nan,
-                    closure=np.nan, shoulder_fraction=shoulder_fraction,
-                    unattributed=np.nan, swept=False,
-                    at_bound_fraction=np.nan, mechanism_escalated_from=None,
-                    reason="no reference half-cycle to assess",
-                    mechanism=MECHANISM_SOLID_SOLUTION, mechanism_reason="",
-                    model=dict(MECHANISM_MODEL[MECHANISM_SOLID_SOLUTION]))
+        return dict(
+            verdict=RESOLVABILITY_UNRESOLVED,
+            width=np.nan,
+            closure=np.nan,
+            shoulder_fraction=shoulder_fraction,
+            unattributed=np.nan,
+            swept=False,
+            at_bound_fraction=np.nan,
+            mechanism_escalated_from=None,
+            reason="no reference half-cycle to assess",
+            mechanism=MECHANISM_SOLID_SOLUTION,
+            mechanism_reason="",
+            model=dict(MECHANISM_MODEL[MECHANISM_SOLID_SOLUTION]),
+        )
 
     res = assess_closure(jobs, degrees=degrees, verbose=False)
-    widths = np.array([r["width"] for r in res if np.isfinite(r["width"])],
-                      float)
-    mids = np.array([0.5 * (r["lo"] + r["hi"]) for r in res
-                     if np.isfinite(r["lo"]) and np.isfinite(r["hi"])], float)
+    widths = np.array([r["width"] for r in res if np.isfinite(r["width"])], float)
+    mids = np.array(
+        [
+            0.5 * (r["lo"] + r["hi"])
+            for r in res
+            if np.isfinite(r["lo"]) and np.isfinite(r["hi"])
+        ],
+        float,
+    )
     width = float(np.max(widths)) if widths.size else np.nan
     closure = float(np.median(mids)) if mids.size else np.nan
     _un = np.array([r.get("unattributed", np.nan) for r in res], float)
@@ -576,8 +646,10 @@ def assess_resolvability(jobs, *, shoulder_fraction=None,
 
     if not np.isfinite(width) and not np.isfinite(unattributed):
         verdict = RESOLVABILITY_UNRESOLVED
-        reason = ("the reference half-cycle could not be fitted, so there is "
-                  "nothing to decompose")
+        reason = (
+            "the reference half-cycle could not be fitted, so there is "
+            "nothing to decompose"
+        )
     elif not swept and np.isfinite(unattributed):
         # NO BASELINE: the split is not undetermined, because there is no free
         # background for it to be undetermined against. The question that
@@ -585,51 +657,63 @@ def assess_resolvability(jobs, *, shoulder_fraction=None,
         # See UNATTRIBUTED_QUALIFIED_ABOVE.
         if unattributed > UNATTRIBUTED_QUALIFIED_ABOVE:
             verdict = RESOLVABILITY_QUALIFIED
-            reason = (f"the model names {1 - unattributed:.0%} of the charge "
-                      f"in the reference half-cycle and leaves "
-                      f"{unattributed:.0%} unattributed. Every mAh in a "
-                      f"dQ/dV passed through the cell, so that shortfall is a "
-                      f"statement about the decomposition, not a residual: "
-                      f"areas are shares of what was named")
+            reason = (
+                f"the model names {1 - unattributed:.0%} of the charge "
+                f"in the reference half-cycle and leaves "
+                f"{unattributed:.0%} unattributed. Every mAh in a "
+                f"dQ/dV passed through the cell, so that shortfall is a "
+                f"statement about the decomposition, not a residual: "
+                f"areas are shares of what was named"
+            )
         else:
             verdict = RESOLVABILITY_RESOLVED
-            reason = (f"with no free background to trade against, the model "
-                      f"names {1 - unattributed:.0%} of the charge in the "
-                      f"reference half-cycle "
-                      f"({unattributed:+.0%} unattributed)")
+            reason = (
+                f"with no free background to trade against, the model "
+                f"names {1 - unattributed:.0%} of the charge in the "
+                f"reference half-cycle "
+                f"({unattributed:+.0%} unattributed)"
+            )
     elif width > PARTITION_DETERMINED_BELOW:
         verdict = RESOLVABILITY_UNRESOLVED
-        reason = (f"on the reference cycle — the best-behaved half-cycle in "
-                  f"the dataset — the peak/background split moves by {width:.2f} "
-                  f"when only the baseline degree changes, against the "
-                  f"{PARTITION_DETERMINED_BELOW:.2f} at which it stops being "
-                  f"decided by the data. Fitting every cycle will not make "
-                  f"that smaller")
+        reason = (
+            f"on the reference cycle — the best-behaved half-cycle in "
+            f"the dataset — the peak/background split moves by {width:.2f} "
+            f"when only the baseline degree changes, against the "
+            f"{PARTITION_DETERMINED_BELOW:.2f} at which it stops being "
+            f"decided by the data. Fitting every cycle will not make "
+            f"that smaller"
+        )
     elif np.isfinite(closure) and closure < RESOLVED_CLOSURE_FLOOR:
         verdict = RESOLVABILITY_QUALIFIED
-        reason = (f"the split is determined (interval {width:.2f}) but the "
-                  f"peaks account for {closure:.0%} of the curve: real "
-                  f"features on a large genuine background. Areas are "
-                  f"shares of the peaks, not of the cell")
+        reason = (
+            f"the split is determined (interval {width:.2f}) but the "
+            f"peaks account for {closure:.0%} of the curve: real "
+            f"features on a large genuine background. Areas are "
+            f"shares of the peaks, not of the cell"
+        )
     else:
         verdict = RESOLVABILITY_RESOLVED
-        reason = (f"the split holds across baseline degree (interval "
-                  f"{width:.2f}) and the peaks account for {closure:.0%} of "
-                  f"the curve")
+        reason = (
+            f"the split holds across baseline degree (interval "
+            f"{width:.2f}) and the peaks account for {closure:.0%} of "
+            f"the curve"
+        )
 
     _mech, _mech_why = classify_mechanism(
-        shoulder_fraction, width,
-        n_primaries=n_primaries, n_components=n_components)
+        shoulder_fraction, width, n_primaries=n_primaries, n_components=n_components
+    )
 
     # --- the fit gets a say. See MECHANISM_AT_BOUND_ESCALATES -------------
     _n_at = sum(int(r.get("n_at_sigma_max", 0)) for r in res)
     _n_tot = sum(int(r.get("n_components", 0)) for r in res)
     _at_frac = (_n_at / _n_tot) if _n_tot else float("nan")
     _escalated_from = None
-    if (MECHANISM_AT_BOUND_ESCALATES and np.isfinite(_at_frac)
-            and _at_frac >= MECHANISM_AT_BOUND_FRACTION
-            and not MECHANISM_MODEL[_mech].get(
-                "band_ceiling_span_fraction", 0.0)):
+    if (
+        MECHANISM_AT_BOUND_ESCALATES
+        and np.isfinite(_at_frac)
+        and _at_frac >= MECHANISM_AT_BOUND_FRACTION
+        and not MECHANISM_MODEL[_mech].get("band_ceiling_span_fraction", 0.0)
+    ):
         _escalated_from = _mech
         _mech = MECHANISM_MIXED
         _mech_why = (
@@ -639,14 +723,22 @@ def assess_resolvability(jobs, *, shoulder_fraction=None,
             f"peak pinned at its width bound is not a width the data chose — "
             f"it is the only way a sum of peaks can reach charge spread over "
             f"a region. Escalated to MIXED so the model may contain the "
-            f"component that shape needs. Original call: {_mech_why}")
-    out = dict(verdict=verdict, width=width, closure=closure,
-               unattributed=unattributed, swept=swept,
-               at_bound_fraction=_at_frac,
-               mechanism_escalated_from=_escalated_from,
-               shoulder_fraction=shoulder_fraction, reason=reason,
-               mechanism=_mech, mechanism_reason=_mech_why,
-               model=dict(MECHANISM_MODEL[_mech]))
+            f"component that shape needs. Original call: {_mech_why}"
+        )
+    out = dict(
+        verdict=verdict,
+        width=width,
+        closure=closure,
+        unattributed=unattributed,
+        swept=swept,
+        at_bound_fraction=_at_frac,
+        mechanism_escalated_from=_escalated_from,
+        shoulder_fraction=shoulder_fraction,
+        reason=reason,
+        mechanism=_mech,
+        mechanism_reason=_mech_why,
+        model=dict(MECHANISM_MODEL[_mech]),
+    )
     if verbose:
         print(describe_resolvability(out))
     return out
@@ -655,59 +747,107 @@ def assess_resolvability(jobs, *, shoulder_fraction=None,
 def describe_resolvability(a, indent="  "):
     """The resolvability verdict, laid out to be read."""
     L = [indent + section("Are there peaks here to decompose?")]
-    if a.get("shoulder_fraction") is not None and np.isfinite(
-            a["shoulder_fraction"]):
-        L.append(entry("shoulders", f"{a['shoulder_fraction']:.0%}",
-                       "of the detected components are inflections on a "
-                       "flank, not maxima"))
+    if a.get("shoulder_fraction") is not None and np.isfinite(a["shoulder_fraction"]):
+        L.append(
+            entry(
+                "shoulders",
+                f"{a['shoulder_fraction']:.0%}",
+                "of the detected components are inflections on a flank, not maxima",
+            )
+        )
     if a.get("swept") and np.isfinite(a.get("width", np.nan)):
-        L.append(entry("closure interval", f"{a['width']:.2f}",
-                       f"reference half-cycle, baseline degrees "
-                       f"{DEFAULT_DEGREES[0]}-{DEFAULT_DEGREES[-1]}"))
+        L.append(
+            entry(
+                "closure interval",
+                f"{a['width']:.2f}",
+                f"reference half-cycle, baseline degrees "
+                f"{DEFAULT_DEGREES[0]}-{DEFAULT_DEGREES[-1]}",
+            )
+        )
     if np.isfinite(a.get("closure", np.nan)):
-        L.append(entry("charge named", f"{a['closure']:.2f}",
-                       "of the curve accounted for by named components"))
+        L.append(
+            entry(
+                "charge named",
+                f"{a['closure']:.2f}",
+                "of the curve accounted for by named components",
+            )
+        )
     if np.isfinite(a.get("unattributed", np.nan)):
-        L.append(entry("unattributed", f"{a['unattributed']:+.1%}",
-                       "of the cell's charge the model cannot name — "
-                       "reported, never absorbed"))
+        L.append(
+            entry(
+                "unattributed",
+                f"{a['unattributed']:+.1%}",
+                "of the cell's charge the model cannot name — reported, never absorbed",
+            )
+        )
     if not a.get("swept"):
-        L.append(bullet("There is no free background in this model, so there "
-                        "is no peak/background split to be undetermined and "
-                        "no baseline degree to sweep. A HIGH NAMED FRACTION "
-                        "IS NOT BY ITSELF A BETTER DECOMPOSITION: a wide band "
-                        "can absorb a great deal, and five resolved "
-                        "transitions with an honest few percent left over is "
-                        "the better answer. Read it beside the mechanism."))
+        L.append(
+            bullet(
+                "There is no free background in this model, so there "
+                "is no peak/background split to be undetermined and "
+                "no baseline degree to sweep. A HIGH NAMED FRACTION "
+                "IS NOT BY ITSELF A BETTER DECOMPOSITION: a wide band "
+                "can absorb a great deal, and five resolved "
+                "transitions with an honest few percent left over is "
+                "the better answer. Read it beside the mechanism."
+            )
+        )
     v = a.get("verdict")
     if v == RESOLVABILITY_RESOLVED:
         L.append(verdict("ok", "RESOLVED — decompose"))
     elif v == RESOLVABILITY_QUALIFIED:
-        L.append(verdict("caution", "QUALIFIED — decompose, and say what the "
-                                    "areas are a share OF"))
+        L.append(
+            verdict(
+                "caution",
+                "QUALIFIED — decompose, and say what the areas are a share OF",
+            )
+        )
     else:
-        L.append(verdict("bad", "UNRESOLVED — this curve has no peak/"
-                                "background split the data decides"))
+        L.append(
+            verdict(
+                "bad",
+                "UNRESOLVED — this curve has no peak/background split the data decides",
+            )
+        )
     L.append(bullet(a.get("reason", "")))
     if a.get("mechanism"):
-        _m = {"two_phase": "TWO-PHASE — one transition at a fixed potential",
-              "multi_transition": "SERIES OF TRANSITIONS — each one a peak",
-              "solid_solution": "SOLID SOLUTION — a continuum, fitted as bands",
-              "mixed": "MIXED — a solid solution with a transition on it: "
-                       "bands AND peaks"}.get(a["mechanism"], a["mechanism"])
-        L.append(entry("mechanism", a["mechanism"],
-                       (f"escalated from {a['mechanism_escalated_from']}"
-                        if a.get("mechanism_escalated_from") else "")))
+        _m = {
+            "two_phase": "TWO-PHASE — one transition at a fixed potential",
+            "multi_transition": "SERIES OF TRANSITIONS — each one a peak",
+            "solid_solution": "SOLID SOLUTION — a continuum, fitted as bands",
+            "mixed": "MIXED — a solid solution with a transition on it: "
+            "bands AND peaks",
+        }.get(a["mechanism"], a["mechanism"])
+        L.append(
+            entry(
+                "mechanism",
+                a["mechanism"],
+                (
+                    f"escalated from {a['mechanism_escalated_from']}"
+                    if a.get("mechanism_escalated_from")
+                    else ""
+                ),
+            )
+        )
         if np.isfinite(a.get("at_bound_fraction", np.nan)):
-            L.append(entry("at the width ceiling",
-                           f"{a['at_bound_fraction']:.0%}",
-                           "of the reference cycle's components — a peak at "
-                           "its width bound is a band being denied"))
-        L.append(verdict("ok" if a["mechanism"] in
-                         ("two_phase", "multi_transition") else "caution", _m))
+            L.append(
+                entry(
+                    "at the width ceiling",
+                    f"{a['at_bound_fraction']:.0%}",
+                    "of the reference cycle's components — a peak at "
+                    "its width bound is a band being denied",
+                )
+            )
+        L.append(
+            verdict(
+                "ok"
+                if a["mechanism"] in ("two_phase", "multi_transition")
+                else "caution",
+                _m,
+            )
+        )
         L.append(bullet(a.get("mechanism_reason", "")))
     return "\n".join(L)
-
 
 
 # ---------------------------------------------------------------------------
@@ -764,7 +904,7 @@ def describe_resolvability(a, indent="  "):
 # Both thresholds sit in the gap between the measured populations, not at a
 # convenient round number, and both are stated here so the next dataset can
 # move them.
-MECHANISM_SHOULDER_FRACTION = 0.30      # NNM tops out at 0.22, NMC starts 0.34
+MECHANISM_SHOULDER_FRACTION = 0.30  # NNM tops out at 0.22, NMC starts 0.34
 MECHANISM_TWO_PHASE_MAX_COMPONENTS = 2  # one transition, per half-cycle
 
 MECHANISM_TWO_PHASE = "two_phase"
@@ -805,13 +945,13 @@ MECHANISM_MIXED = "mixed"
 BAND_CEILING_SPAN_FRACTION = 0.6
 
 MECHANISM_MODEL = {
-    MECHANISM_TWO_PHASE:        dict(band_ceiling_span_fraction=0.0,
-                                     primaries_only=False),
-    MECHANISM_MULTI_TRANSITION: dict(band_ceiling_span_fraction=0.0,
-                                     primaries_only=False),
-    MECHANISM_SOLID_SOLUTION:   dict(
-        band_ceiling_span_fraction=BAND_CEILING_SPAN_FRACTION,
-        primaries_only=True),
+    MECHANISM_TWO_PHASE: dict(band_ceiling_span_fraction=0.0, primaries_only=False),
+    MECHANISM_MULTI_TRANSITION: dict(
+        band_ceiling_span_fraction=0.0, primaries_only=False
+    ),
+    MECHANISM_SOLID_SOLUTION: dict(
+        band_ceiling_span_fraction=BAND_CEILING_SPAN_FRACTION, primaries_only=True
+    ),
     # MIXED KEEPS ITS SHOULDERS. 1.9.0.56 first shipped this as
     # `primaries_only=True`, copied from `solid_solution`, and it cost a real
     # feature the same day.
@@ -841,14 +981,15 @@ MECHANISM_MODEL = {
     # The shoulder is detected in 10 of the first 12 discharge half-cycles and
     # was being stripped from every one of them. `mixed` means bands AND
     # peaks; taking the peaks' shoulders away contradicts its own name.
-    MECHANISM_MIXED:            dict(
-        band_ceiling_span_fraction=BAND_CEILING_SPAN_FRACTION,
-        primaries_only=False),
+    MECHANISM_MIXED: dict(
+        band_ceiling_span_fraction=BAND_CEILING_SPAN_FRACTION, primaries_only=False
+    ),
 }
 
 
-def classify_mechanism(shoulder_fraction, closure_interval, *,
-                       n_primaries=None, n_components=None):
+def classify_mechanism(
+    shoulder_fraction, closure_interval, *, n_primaries=None, n_components=None
+):
     """Which redox mechanism is this curve, and therefore which model?
 
     Returns `(mechanism, reason)`. Both inputs come from
@@ -871,30 +1012,40 @@ def classify_mechanism(shoulder_fraction, closure_interval, *,
     # dataset's areas may be withheld, and nothing about that changes.
     _resolved = (not np.isfinite(sf)) or sf < MECHANISM_SHOULDER_FRACTION
     if _resolved:
-        _few = (n_components is not None
-                and n_components <= MECHANISM_TWO_PHASE_MAX_COMPONENTS)
+        _few = (
+            n_components is not None
+            and n_components <= MECHANISM_TWO_PHASE_MAX_COMPONENTS
+        )
         if _few:
-            return (MECHANISM_TWO_PHASE,
-                    f"one resolved feature ({n_components} component(s)) and "
-                    f"no shoulders to speak of ({sf:.0%}): a two-phase "
-                    f"transition at a fixed potential")
-        return (MECHANISM_MULTI_TRANSITION,
-                f"{n_components if n_components is not None else 'several'} "
-                f"resolved features and only {sf:.0%} of them bends on a "
-                f"flank: a series of distinct transitions, each one a peak")
+            return (
+                MECHANISM_TWO_PHASE,
+                f"one resolved feature ({n_components} component(s)) and "
+                f"no shoulders to speak of ({sf:.0%}): a two-phase "
+                f"transition at a fixed potential",
+            )
+        return (
+            MECHANISM_MULTI_TRANSITION,
+            f"{n_components if n_components is not None else 'several'} "
+            f"resolved features and only {sf:.0%} of them bends on a "
+            f"flank: a series of distinct transitions, each one a peak",
+        )
 
     # Not resolved as a set of peaks. Is there still a transition in there?
     _has_peaks = bool(n_primaries) and n_primaries >= 1
     if _has_peaks:
-        return (MECHANISM_MIXED,
-                f"{sf:.0%} of the components are bends on a flank and the "
-                f"split moves by {ci:.2f} with the baseline — a solid-solution "
-                f"envelope — but {n_primaries} resolved maxima remain, so a "
-                f"transition sits on top of it. Bands AND peaks")
-    return (MECHANISM_SOLID_SOLUTION,
-            f"{sf:.0%} of the components are bends on a flank and the split "
-            f"moves by {ci:.2f} with the baseline, with no resolved maximum "
-            f"left: a continuum of site energies, and no peaks to find in it")
+        return (
+            MECHANISM_MIXED,
+            f"{sf:.0%} of the components are bends on a flank and the "
+            f"split moves by {ci:.2f} with the baseline — a solid-solution "
+            f"envelope — but {n_primaries} resolved maxima remain, so a "
+            f"transition sits on top of it. Bands AND peaks",
+        )
+    return (
+        MECHANISM_SOLID_SOLUTION,
+        f"{sf:.0%} of the components are bends on a flank and the split "
+        f"moves by {ci:.2f} with the baseline, with no resolved maximum "
+        f"left: a continuum of site energies, and no peaks to find in it",
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -919,8 +1070,12 @@ def classify_mechanism(shoulder_fraction, closure_interval, *,
 # The disagreement is not hidden: every cell's own call is kept in
 # `mechanism_own`, and the run page says which cells were reconciled and from
 # what.
-_MECHANISM_RANK = {MECHANISM_TWO_PHASE: 0, MECHANISM_MULTI_TRANSITION: 1,
-                   MECHANISM_SOLID_SOLUTION: 2, MECHANISM_MIXED: 3}
+_MECHANISM_RANK = {
+    MECHANISM_TWO_PHASE: 0,
+    MECHANISM_MULTI_TRANSITION: 1,
+    MECHANISM_SOLID_SOLUTION: 2,
+    MECHANISM_MIXED: 3,
+}
 
 
 def reconcile_mechanisms(resolvability, compositions, *, verbose=True):
@@ -967,14 +1122,16 @@ def reconcile_mechanisms(resolvability, compositions, *, verbose=True):
                 f"detection miss rather than evidence of absence — and two "
                 f"replicates fitted with different models cannot be pooled, "
                 f"which is what replicates are for. Original: "
-                + str(a.get("mechanism_reason", "")))
+                + str(a.get("mechanism_reason", ""))
+            )
             changed.append((n, own, best))
 
     if verbose and changed:
         print(section("  One material, one model"))
         for n, own, best in changed:
-            print(entry(str(n)[:28], f"{own} -> {best}",
-                        "reconciled across replicates"))
+            print(
+                entry(str(n)[:28], f"{own} -> {best}", "reconciled across replicates")
+            )
     return resolvability
 
 
@@ -1004,80 +1161,125 @@ def describe_partition(intervals, indent="  "):
       accounts for the CELL is `integral_fidelity`, and on a two-phase
       material the answer is no.
     """
-    widths = np.array([iv["width"] for iv in intervals
-                       if np.isfinite(iv["width"])], float)
+    widths = np.array(
+        [iv["width"] for iv in intervals if np.isfinite(iv["width"])], float
+    )
     los = np.array([iv["lo"] for iv in intervals if np.isfinite(iv["lo"])])
     his = np.array([iv["hi"] for iv in intervals if np.isfinite(iv["hi"])])
     n_fail = sum(1 for iv in intervals if not np.isfinite(iv["width"]))
 
-    L = [indent + section("Closure — do the fitted peaks account for the "
-                          "curve?")]
+    L = [indent + section("Closure — do the fitted peaks account for the curve?")]
     if widths.size == 0:
         L.append(verdict("bad", "not measurable"))
         if n_fail:
             L.append(bullet(f"{n_fail} half-cycle(s) never converged"))
         return "\n".join(L)
 
-    runaway = int(np.sum([iv["hi"] > CLOSURE_RUNAWAY_ABOVE
-                          for iv in intervals if np.isfinite(iv["hi"])]))
+    runaway = int(
+        np.sum(
+            [
+                iv["hi"] > CLOSURE_RUNAWAY_ABOVE
+                for iv in intervals
+                if np.isfinite(iv["hi"])
+            ]
+        )
+    )
     lo, hi = float(np.median(los)), float(np.median(his))
     w = float(np.median(widths))
-    q1, q3 = (float(np.percentile(widths, 25)),
-              float(np.percentile(widths, 75)))
+    q1, q3 = (float(np.percentile(widths, 25)), float(np.percentile(widths, 75)))
     n_ok = int(np.sum(widths <= PARTITION_DETERMINED_BELOW))
     frac = n_ok / widths.size
 
-    L.append(entry("closure range", f"{lo:.2f} – {hi:.2f}",
-                   f"median across baseline degrees "
-                   f"{DEFAULT_DEGREES[0]}–{DEFAULT_DEGREES[-1]}"))
-    L.append(entry("interval width", f"{w:.2f}",
-                   f"middle half {q1:.2f} – {q3:.2f}"))
-    L.append(entry("determined", f"{n_ok} of {widths.size}",
-                   f"{frac:.0%} inside {PARTITION_DETERMINED_BELOW:.2f}"))
-    n_collapsed = int(sum(int(iv.get("n_degrees_collapsed") or 0)
-                          for iv in intervals))
+    L.append(
+        entry(
+            "closure range",
+            f"{lo:.2f} – {hi:.2f}",
+            f"median across baseline degrees "
+            f"{DEFAULT_DEGREES[0]}–{DEFAULT_DEGREES[-1]}",
+        )
+    )
+    L.append(entry("interval width", f"{w:.2f}", f"middle half {q1:.2f} – {q3:.2f}"))
+    L.append(
+        entry(
+            "determined",
+            f"{n_ok} of {widths.size}",
+            f"{frac:.0%} inside {PARTITION_DETERMINED_BELOW:.2f}",
+        )
+    )
+    n_collapsed = int(sum(int(iv.get("n_degrees_collapsed") or 0) for iv in intervals))
     if n_collapsed:
-        L.append(entry("degrees dropped", f"{n_collapsed}",
-                       "fit collapsed (R2 <= 0) — not evidence about the "
-                       "split"))
+        L.append(
+            entry(
+                "degrees dropped",
+                f"{n_collapsed}",
+                "fit collapsed (R2 <= 0) — not evidence about the split",
+            )
+        )
 
     if frac >= 0.95:
-        L.append(verdict("ok", "DETERMINED — the split holds across "
-                               "baseline degree"))
+        L.append(verdict("ok", "DETERMINED — the split holds across baseline degree"))
         if n_ok < widths.size:
             # A dataset can sit at exactly 95% and still have a half-cycle
             # withheld. The verdict is where a reader stops, and RUN_SUMMARY
             # then says "1 cycle had their capacity attribution withheld" —
             # which reads as a contradiction unless the tick says it first.
-            L.append(bullet(f"{widths.size - n_ok} half-cycle(s) still "
-                            f"exceed the threshold and have their capacity "
-                            f"share withheld individually."))
-        L.append(bullet("Whether these areas are CAPACITIES is a separate "
-                        "question; see integral fidelity."))
+            L.append(
+                bullet(
+                    f"{widths.size - n_ok} half-cycle(s) still "
+                    f"exceed the threshold and have their capacity "
+                    f"share withheld individually."
+                )
+            )
+        L.append(
+            bullet(
+                "Whether these areas are CAPACITIES is a separate "
+                "question; see integral fidelity."
+            )
+        )
     elif frac >= 0.5:
-        L.append(verdict("caution", "MIXED — holds on most half-cycles, "
-                                    "not all"))
-        L.append(bullet(f"The {widths.size - n_ok} that fail are withheld "
-                        f"individually, not the whole dataset."))
+        L.append(verdict("caution", "MIXED — holds on most half-cycles, not all"))
+        L.append(
+            bullet(
+                f"The {widths.size - n_ok} that fail are withheld "
+                f"individually, not the whole dataset."
+            )
+        )
     else:
         L.append(verdict("bad", "NOT DETERMINED — do not quote attribution"))
-        L.append(bullet("The split depends on the baseline degree chosen, so "
-                        "the areas are an artefact of that choice."))
+        L.append(
+            bullet(
+                "The split depends on the baseline degree chosen, so "
+                "the areas are an artefact of that choice."
+            )
+        )
 
     if runaway:
-        L.append(entry("failed fits", f"{runaway} of {widths.size}",
-                       f"closure > {CLOSURE_RUNAWAY_ABOVE} at some degree"))
-        L.append(bullet("A component ran away and took several times the "
-                        "curve's own area — a failed fit, not a wide "
-                        "interval."))
+        L.append(
+            entry(
+                "failed fits",
+                f"{runaway} of {widths.size}",
+                f"closure > {CLOSURE_RUNAWAY_ABOVE} at some degree",
+            )
+        )
+        L.append(
+            bullet(
+                "A component ran away and took several times the "
+                "curve's own area — a failed fit, not a wide "
+                "interval."
+            )
+        )
     if n_fail:
-        L.append(entry("no fit", f"{n_fail} of {len(intervals)}",
-                       "never converged at any baseline degree"))
+        L.append(
+            entry(
+                "no fit",
+                f"{n_fail} of {len(intervals)}",
+                "never converged at any baseline degree",
+            )
+        )
     return "\n".join(L)
 
 
-def describe_fidelity(fidelity, indent="  ", floor=0.80,
-                      ceiling=1.20):
+def describe_fidelity(fidelity, indent="  ", floor=0.80, ceiling=1.20):
     """
     The other half of the quality question, laid out the same way.
 
@@ -1092,8 +1294,7 @@ def describe_fidelity(fidelity, indent="  ", floor=0.80,
         step = key[1] if isinstance(key, tuple) and len(key) > 1 else str(key)
         if np.isfinite(f):
             per.setdefault(str(step), []).append(float(f))
-    L = [indent + section("Integral fidelity — does the curve account for "
-                          "the cell?")]
+    L = [indent + section("Integral fidelity — does the curve account for the cell?")]
     if not per:
         L.append(verdict("caution", "not measurable"))
         return "\n".join(L)
@@ -1103,39 +1304,55 @@ def describe_fidelity(fidelity, indent="  ", floor=0.80,
         med = float(np.median(per[step]))
         worst = min(worst, med)
         most = max(most, med)
-        L.append(entry(step.lower(), f"{med:.2f}",
-                       f"median over {len(per[step])} half-cycles"))
+        L.append(
+            entry(
+                step.lower(), f"{med:.2f}", f"median over {len(per[step])} half-cycles"
+            )
+        )
     if worst < floor:
-        L.append(verdict("bad", f"AREAS ARE NOT CAPACITIES — below "
-                                f"{floor:.2f}"))
-        L.append(bullet(f"Only {100 * worst:.0f}% of the delivered charge "
-                        f"appears in the dQ/dV curve, so a peak area is a "
-                        f"share of that fraction. On the derivative-free "
-                        f"curve this means charge delivered OUTSIDE the "
-                        f"analysed voltage window — a constant-voltage hold "
-                        f"is the usual reason."))
-        L.append(bullet("Peak POSITIONS and drift do not use the integral "
-                        "and are unaffected."))
+        L.append(verdict("bad", f"AREAS ARE NOT CAPACITIES — below {floor:.2f}"))
+        L.append(
+            bullet(
+                f"Only {100 * worst:.0f}% of the delivered charge "
+                f"appears in the dQ/dV curve, so a peak area is a "
+                f"share of that fraction. On the derivative-free "
+                f"curve this means charge delivered OUTSIDE the "
+                f"analysed voltage window — a constant-voltage hold "
+                f"is the usual reason."
+            )
+        )
+        L.append(
+            bullet(
+                "Peak POSITIONS and drift do not use the integral and are unaffected."
+            )
+        )
     elif most > ceiling:
         # The other half of the docstring's promise. An excess is charge the
         # cell never passed, and nothing physical produces it.
-        L.append(verdict("bad", f"AREAS ARE NOT CAPACITIES — above "
-                                f"{ceiling:.2f}"))
-        L.append(bullet(f"The dQ/dV curve carries {100 * most:.0f}% of the "
-                        f"charge the cycler counted. A curve cannot contain "
-                        f"more charge than the cell delivered, so some of "
-                        f"this area is an artefact — a voltage traversed "
-                        f"twice, or a hold spread across voltages it never "
-                        f"visited."))
-        L.append(bullet("Peak POSITIONS and drift do not use the integral "
-                        "and are unaffected."))
+        L.append(verdict("bad", f"AREAS ARE NOT CAPACITIES — above {ceiling:.2f}"))
+        L.append(
+            bullet(
+                f"The dQ/dV curve carries {100 * most:.0f}% of the "
+                f"charge the cycler counted. A curve cannot contain "
+                f"more charge than the cell delivered, so some of "
+                f"this area is an artefact — a voltage traversed "
+                f"twice, or a hold spread across voltages it never "
+                f"visited."
+            )
+        )
+        L.append(
+            bullet(
+                "Peak POSITIONS and drift do not use the integral and are unaffected."
+            )
+        )
     else:
         L.append(verdict("ok", "the curve accounts for the cell's charge"))
     return "\n".join(L)
 
 
-def describe_reconstruction(records, *, method, window, bin_widths=None,
-                            empty_fraction=None):
+def describe_reconstruction(
+    records, *, method, window, bin_widths=None, empty_fraction=None
+):
     """
     Say whether the curve gives the voltage curve back, and what it cost.
 
@@ -1148,9 +1365,15 @@ def describe_reconstruction(records, *, method, window, bin_widths=None,
     """
     out = []
     if not records:
-        return "\n".join([entry("reconstruction", "not measured",
-                                 "no half-cycle had both a curve and a "
-                                 "capacity column")])
+        return "\n".join(
+            [
+                entry(
+                    "reconstruction",
+                    "not measured",
+                    "no half-cycle had both a curve and a capacity column",
+                )
+            ]
+        )
     ape = float(np.nanmedian([r["ape_pct"] for r in records]))
     rmse = float(np.nanmedian([r["rmse_V"] for r in records]))
     span = float(window[1] - window[0]) if window else float("nan")
@@ -1163,53 +1386,76 @@ def describe_reconstruction(records, *, method, window, bin_widths=None,
         w = np.empty(0)
     if w.size:
         if w.max() - w.min() < 1e-9:
-            out.append(entry("bin width", f"{w.min():g} mV",
-                             "the same on every half-cycle"))
+            out.append(
+                entry("bin width", f"{w.min():g} mV", "the same on every half-cycle")
+            )
         else:
             # The widening is not a fault: a bin narrower than the records
             # themselves cannot be filled, so it is opened up where they are
             # sparse. It is only a fault to REPORT the requested width as
             # though it had been used.
             n_wide = int((w > w.min() + 1e-9).sum())
-            out.append(entry("bin width",
-                             f"{np.median(w):.3g} mV median",
-                             f"{w.min():g}-{w.max():.3g} mV; widened on "
-                             f"{n_wide} of {w.size} half-cycles where the "
-                             f"records were sparser than the bin"))
+            out.append(
+                entry(
+                    "bin width",
+                    f"{np.median(w):.3g} mV median",
+                    f"{w.min():g}-{w.max():.3g} mV; widened on "
+                    f"{n_wide} of {w.size} half-cycles where the "
+                    f"records were sparser than the bin",
+                )
+            )
     if empty_fraction is not None and np.isfinite(empty_fraction):
-        out.append(entry("bins with no charge",
-                         f"{100 * empty_fraction:.0f}%"))
+        out.append(entry("bins with no charge", f"{100 * empty_fraction:.0f}%"))
         if empty_fraction > 0.5:
-            out.append(bullet(
-                "Expected on a flat plateau: the charge is concentrated in a "
-                "few mV and the rest of the window is genuinely empty. The "
-                "bins are not lost data — an empty bin carries zero and "
-                "contributes nothing to any area."))
+            out.append(
+                bullet(
+                    "Expected on a flat plateau: the charge is concentrated in a "
+                    "few mV and the rest of the window is genuinely empty. The "
+                    "bins are not lost data — an empty bin carries zero and "
+                    "contributes nothing to any area."
+                )
+            )
 
-    out.append(entry("reconstruction", f"{ape:.2f}% APE",
-                     f"voltage RMSE {1000 * rmse:.0f} mV"
-                     + (f" = {100 * frac:.1f}% of the window"
-                        if np.isfinite(frac) else "")
-                     + f", median over {len(records)} half-cycles"))
+    out.append(
+        entry(
+            "reconstruction",
+            f"{ape:.2f}% APE",
+            f"voltage RMSE {1000 * rmse:.0f} mV"
+            + (f" = {100 * frac:.1f}% of the window" if np.isfinite(frac) else "")
+            + f", median over {len(records)} half-cycles",
+        )
+    )
 
     bad_ape = ape > RECONSTRUCTION_APE_ABOVE
     bad_rmse = np.isfinite(frac) and frac > RECONSTRUCTION_RMSE_WINDOW_FRACTION
     if bad_ape:
-        out.append(verdict("caution", "the curve does not account for the "
-                                      "cell's charge"))
-        out.append(bullet(
-            "A peak area on this dataset is a share of the fraction that "
-            "survived, not of the cell."
-            + ("" if method == "histogram" else
-               " Try DQDV_COMPUTATION = \"histogram\" in Cell 2.")))
+        out.append(
+            verdict("caution", "the curve does not account for the cell's charge")
+        )
+        out.append(
+            bullet(
+                "A peak area on this dataset is a share of the fraction that "
+                "survived, not of the cell."
+                + (
+                    ""
+                    if method == "histogram"
+                    else ' Try DQDV_COMPUTATION = "histogram" in Cell 2.'
+                )
+            )
+        )
     elif bad_rmse:
-        out.append(verdict("caution", "the curve places charge at voltages "
-                                      "the cell did not visit"))
-        out.append(bullet(
-            f"Capacity is accounted for to {ape:.2f}%, but the voltage axis "
-            f"is out by {100 * frac:.1f}% of the window. Peak centres are "
-            f"the quantity this moves."))
+        out.append(
+            verdict(
+                "caution", "the curve places charge at voltages the cell did not visit"
+            )
+        )
+        out.append(
+            bullet(
+                f"Capacity is accounted for to {ape:.2f}%, but the voltage axis "
+                f"is out by {100 * frac:.1f}% of the window. Peak centres are "
+                f"the quantity this moves."
+            )
+        )
     else:
-        out.append(verdict("ok", "the curve integrates back to the "
-                                 "measured capacity"))
+        out.append(verdict("ok", "the curve integrates back to the measured capacity"))
     return "\n".join(out)

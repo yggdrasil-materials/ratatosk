@@ -27,8 +27,14 @@ from dataclasses import dataclass, field, replace
 import numpy as np
 import pandas as pd
 
-__all__ = ["Dataset", "truncate_cycles", "read_neware", "apply_electrode_convention",
-           "COLUMNS", "file_sha256"]
+__all__ = [
+    "Dataset",
+    "truncate_cycles",
+    "read_neware",
+    "apply_electrode_convention",
+    "COLUMNS",
+    "file_sha256",
+]
 
 # Neware long names -> the short names used throughout. Anything not listed is
 # carried through untouched: Current(A) in particular is needed by the
@@ -41,13 +47,17 @@ COLUMNS = {
     "DChg. Spec. Cap.(mAh/g)": "Discharge_Capacity",
     "dQm/dV(mAh/V.g)": "dQ/dV",
 }
-_NUMERIC = ("Cycle", "Voltage", "Charge_Capacity", "Discharge_Capacity",
-            "dQ/dV")
+_NUMERIC = ("Cycle", "Voltage", "Charge_Capacity", "Discharge_Capacity", "dQ/dV")
 
-_STEP_NAMES = {"CCCV Chg": "Charge", "CCCV CHG": "Charge",
-               "CC Chg": "Charge", "CC CHG": "Charge",
-               "CC DChg": "Discharge", "CC DCHG": "Discharge",
-               "CCCV DChg": "Discharge"}
+_STEP_NAMES = {
+    "CCCV Chg": "Charge",
+    "CCCV CHG": "Charge",
+    "CC Chg": "Charge",
+    "CC CHG": "Charge",
+    "CC DChg": "Discharge",
+    "CC DCHG": "Discharge",
+    "CCCV DChg": "Discharge",
+}
 
 
 def file_sha256(path, block=1 << 20):
@@ -68,6 +78,7 @@ class Dataset:
     came from code that sorted by voltage and then asked a time-ordered
     question.
     """
+
     name: str
     frame: pd.DataFrame
     meta: dict = field(default_factory=dict)
@@ -127,8 +138,10 @@ class Dataset:
             if not {"Cycle", "Step"} <= set(f.columns):
                 cached = {}
             else:
-                cached = {(int(c), str(s)): d for (c, s), d
-                          in f.groupby(["Cycle", "Step"], sort=True)}
+                cached = {
+                    (int(c), str(s)): d
+                    for (c, s), d in f.groupby(["Cycle", "Step"], sort=True)
+                }
             self.__dict__["_half_cycle_cache"] = cached
         return cached
 
@@ -140,8 +153,7 @@ class Dataset:
         # An absent key returns an EMPTY FRAME WITH THE RIGHT COLUMNS, which
         # is what the boolean mask returned and what every caller's
         # `len(df) < n` and `col in df.columns` tests expect.
-        return self._half_cycles.get((int(cycle), str(step)),
-                                     self.clean.iloc[:0])
+        return self._half_cycles.get((int(cycle), str(step)), self.clean.iloc[:0])
 
     # -- the part that matters ---------------------------------------------
 
@@ -154,12 +166,13 @@ class Dataset:
         step), and says so by returning the label's implication rather than
         pretending to know.
         """
-        v = pd.to_numeric(self.half_cycle(cycle, step)["Voltage"],
-                          errors="coerce").values
+        v = pd.to_numeric(
+            self.half_cycle(cycle, step)["Voltage"], errors="coerce"
+        ).values
         v = v[np.isfinite(v)]
         if v.size >= 2:
             net = float(v[-1] - v[0])
-            if abs(net) > 1e-4:                     # one voltage LSB
+            if abs(net) > 1e-4:  # one voltage LSB
                 return 1.0 if net > 0 else -1.0
         # The label fallback must respect the swap. On a negative electrode
         # the half-cycle LABELLED Charge is the one where the voltage falls,
@@ -177,8 +190,11 @@ class Dataset:
         `quality.integral_fidelity`, and using one to define the other would
         make that comparison meaningless.
         """
-        col = ("Charge_Capacity" if str(step).lower().startswith("c")
-               else "Discharge_Capacity")
+        col = (
+            "Charge_Capacity"
+            if str(step).lower().startswith("c")
+            else "Discharge_Capacity"
+        )
         d = self.half_cycle(cycle, step)
         if col not in d.columns:
             return float("nan")
@@ -201,8 +217,9 @@ class Dataset:
         for cyc, st in self.half_cycle_keys():
             if step is not None and st != step:
                 continue
-            v = pd.to_numeric(self.half_cycle(cyc, st)["Voltage"],
-                              errors="coerce").values
+            v = pd.to_numeric(
+                self.half_cycle(cyc, st)["Voltage"], errors="coerce"
+            ).values
             v = v[np.isfinite(v)]
             if v.size < 50:
                 continue
@@ -213,15 +230,21 @@ class Dataset:
             if nz.size:
                 dv.append(nz)
         if not dv:
-            return dict(median_mV=float("nan"), min_mV=float("nan"),
-                        duplicate_fraction=float("nan"))
+            return dict(
+                median_mV=float("nan"),
+                min_mV=float("nan"),
+                duplicate_fraction=float("nan"),
+            )
         allnz = np.concatenate(dv) * 1000.0
-        return dict(median_mV=float(np.median(allnz)),
-                    min_mV=float(allnz.min()),
-                    duplicate_fraction=(zeros / total) if total else float("nan"))
+        return dict(
+            median_mV=float(np.median(allnz)),
+            min_mV=float(allnz.min()),
+            duplicate_fraction=(zeros / total) if total else float("nan"),
+        )
 
 
 # ---------------------------------------------------------------------------
+
 
 def _tidy_steps(df):
     out = df.copy()
@@ -246,17 +269,26 @@ def _apply_electrode_convention(df, electrode_type):
         return df, False
     d = df.copy()
     if {"Charge_Capacity", "Discharge_Capacity"} <= set(d.columns):
-        d = d.rename(columns={"Charge_Capacity": "_swap",
-                              "Discharge_Capacity": "Charge_Capacity"})
+        d = d.rename(
+            columns={
+                "Charge_Capacity": "_swap",
+                "Discharge_Capacity": "Charge_Capacity",
+            }
+        )
         d = d.rename(columns={"_swap": "Discharge_Capacity"})
-    for a, b in (("Chg. Cap.(Ah)", "DChg. Cap.(Ah)"),
-                 ("Chg. Energy(Wh)", "DChg. Energy(Wh)"),
-                 ("Chg. Spec. Energy(mWh/g)", "DChg. Spec. Energy(mWh/g)")):
+    for a, b in (
+        ("Chg. Cap.(Ah)", "DChg. Cap.(Ah)"),
+        ("Chg. Energy(Wh)", "DChg. Energy(Wh)"),
+        ("Chg. Spec. Energy(mWh/g)", "DChg. Spec. Energy(mWh/g)"),
+    ):
         if a in d.columns and b in d.columns:
             d = d.rename(columns={a: "_swap", b: a}).rename(columns={"_swap": b})
     if "Step" in d.columns:
-        d["Step"] = d["Step"].map({"Charge": "Discharge",
-                                   "Discharge": "Charge"}).fillna(d["Step"])
+        d["Step"] = (
+            d["Step"]
+            .map({"Charge": "Discharge", "Discharge": "Charge"})
+            .fillna(d["Step"])
+        )
     for c in ("dQ/dV", "dQ/dV(mAh/V)"):
         if c in d.columns:
             d[c] = -pd.to_numeric(d[c], errors="coerce")
@@ -289,12 +321,17 @@ def apply_electrode_convention(dataset, electrode_type):
             f"{dataset.name!r} was loaded as a negative electrode and its "
             f"half-cycle labels are already swapped; it cannot be restamped "
             f"as {electrode_type!r}. Reload the file with the correct "
-            f"electrode type.")
+            f"electrode type."
+        )
     if str(electrode_type).lower() != "negative":
         return replace(dataset, electrode_type=str(electrode_type))
     df, swapped = _apply_electrode_convention(dataset.frame, electrode_type)
-    return replace(dataset, frame=df.reset_index(drop=True),
-                   electrode_type=str(electrode_type), labels_swapped=swapped)
+    return replace(
+        dataset,
+        frame=df.reset_index(drop=True),
+        electrode_type=str(electrode_type),
+        labels_swapped=swapped,
+    )
 
 
 def truncate_cycles(dataset, max_cycle):
@@ -323,6 +360,7 @@ def preferred_engine():
     """calamine if it is installed, openpyxl otherwise. Asked once per file."""
     try:
         import python_calamine  # noqa: F401
+
         return "calamine"
     except ImportError:
         return "openpyxl"
@@ -343,6 +381,7 @@ def open_workbook(path):
     """
     engine = preferred_engine()
     import warnings as _w
+
     with _w.catch_warnings():
         _w.filterwarnings("ignore", message=".*no default style.*")
         try:
@@ -357,11 +396,21 @@ def open_workbook(path):
                     pass
             raise OSError(
                 f"could not open {os.path.basename(path)} as an Excel "
-                f"workbook ({engine}): {exc}") from exc
+                f"workbook ({engine}): {exc}"
+            ) from exc
 
 
-def read_neware(path, *, name=None, electrode_type="Positive", meta=None,
-                engine=None, usecols=True, verbose=True, book=None):
+def read_neware(
+    path,
+    *,
+    name=None,
+    electrode_type="Positive",
+    meta=None,
+    engine=None,
+    usecols=True,
+    verbose=True,
+    book=None,
+):
     """
     Read one Neware .xlsx export into a `Dataset`.
 
@@ -383,10 +432,16 @@ def read_neware(path, *, name=None, electrode_type="Positive", meta=None,
     source = book if book is not None else path
 
     wanted = list(COLUMNS) + [
-        "Chg. Cap.(Ah)", "DChg. Cap.(Ah)", "Chg. Energy(Wh)",
-        "DChg. Energy(Wh)", "Chg. Spec. Energy(mWh/g)",
-        "DChg. Spec. Energy(mWh/g)", "Current(A)", "Spec. Energy(mWh/g)",
-        "Power(W)", "Time",
+        "Chg. Cap.(Ah)",
+        "DChg. Cap.(Ah)",
+        "Chg. Energy(Wh)",
+        "DChg. Energy(Wh)",
+        "Chg. Spec. Energy(mWh/g)",
+        "DChg. Spec. Energy(mWh/g)",
+        "Current(A)",
+        "Spec. Energy(mWh/g)",
+        "Power(W)",
+        "Time",
     ]
     picker = (lambda c: c in wanted) if usecols else None
 
@@ -397,14 +452,16 @@ def read_neware(path, *, name=None, electrode_type="Positive", meta=None,
     # Scoped, so reading a file does not permanently mute this warning for
     # everything else in the caller's process.
     import warnings as _w
+
     with _w.catch_warnings():
         _w.filterwarnings("ignore", message=".*no default style.*")
         # An open ExcelFile already knows its engine; passing `engine=` with
         # it is a TypeError on pandas, so it is only named for a path.
         _kw = {} if book is not None else {"engine": engine}
         try:
-            raw = pd.read_excel(source, sheet_name="record", header=0,
-                                usecols=picker, **_kw)
+            raw = pd.read_excel(
+                source, sheet_name="record", header=0, usecols=picker, **_kw
+            )
         except Exception:
             raw = pd.read_excel(source, sheet_name="record", header=0, **_kw)
 
@@ -415,12 +472,19 @@ def read_neware(path, *, name=None, electrode_type="Positive", meta=None,
 
     df, swapped = _apply_electrode_convention(df, electrode_type)
 
-    ds = Dataset(name=name, frame=df.reset_index(drop=True),
-                 meta=dict(meta or {}), electrode_type=electrode_type,
-                 labels_swapped=swapped, source_path=str(path),
-                 source_sha256=file_sha256(path))
+    ds = Dataset(
+        name=name,
+        frame=df.reset_index(drop=True),
+        meta=dict(meta or {}),
+        electrode_type=electrode_type,
+        labels_swapped=swapped,
+        source_path=str(path),
+        source_sha256=file_sha256(path),
+    )
     if verbose:
         n_cyc = int(df["Cycle"].nunique()) if "Cycle" in df else 0
-        print(f"      {len(df):,} records, {n_cyc} cycles"
-              + ("  [anode: labels swapped]" if swapped else ""))
+        print(
+            f"      {len(df):,} records, {n_cyc} cycles"
+            + ("  [anode: labels swapped]" if swapped else "")
+        )
     return ds

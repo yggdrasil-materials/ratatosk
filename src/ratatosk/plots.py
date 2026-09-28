@@ -61,23 +61,44 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 import matplotlib.cm as cm
-import matplotlib.colors as mcolors            # noqa: F401  (used by ported code)
+import matplotlib.colors as mcolors  # noqa: F401  (used by ported code)
 import matplotlib.patheffects as path_effects
-import matplotlib.ticker as mticker    # noqa: F401  (used by ported code)
+import matplotlib.ticker as mticker  # noqa: F401  (used by ported code)
 from matplotlib import gridspec
 from matplotlib.colors import Normalize
 
 from . import fitting as _ft
-from .style import (rule, heading, section, entry, verdict, bullet,
-                    image_format, saved, half_cycle_labels)
+from .style import (
+    rule,
+    heading,
+    section,
+    entry,
+    verdict,
+    bullet,
+    image_format,
+    saved,
+    half_cycle_labels,
+)
 
-__all__ = ["plot_dqdv_all_cycles", "plot_dqdv_key_cycles_combined",
-           "plot_dqdv_key_cycles_split", "plot_dqdv_waterfall",
-           "plot_dqdv_heatmap", "plot_preprocessing_qc",
-           "plot_detected_peaks", "plot_fit_quality", "plot_tracked_trends",
-           "plot_delta_v", "plot_capacity_attribution",
-           "as_processed_dqdv", "as_detected_peaks", "as_fit_results",
-           "as_tracked", "as_user_parameters", "set_figure_size"]
+__all__ = [
+    "plot_dqdv_all_cycles",
+    "plot_dqdv_key_cycles_combined",
+    "plot_dqdv_key_cycles_split",
+    "plot_dqdv_waterfall",
+    "plot_dqdv_heatmap",
+    "plot_preprocessing_qc",
+    "plot_detected_peaks",
+    "plot_fit_quality",
+    "plot_tracked_trends",
+    "plot_delta_v",
+    "plot_capacity_attribution",
+    "as_processed_dqdv",
+    "as_detected_peaks",
+    "as_fit_results",
+    "as_tracked",
+    "as_user_parameters",
+    "set_figure_size",
+]
 
 
 # =============================================================================
@@ -108,7 +129,7 @@ def set_figure_size(width_inches=None, height_inches=None):
 # using 400' and then used 400 anyway. 'normal' IS 400, so this asks for what
 # it was always going to get, silently. Set 'bold' or a number if you want
 # heavier titles and your font has the face.
-FIGURE_TITLE_WEIGHT = 'normal'
+FIGURE_TITLE_WEIGHT = "normal"
 
 # --- the multi-peak fit panels -------------------------------------------
 # Where the curve is, for the purpose of framing the panel. The floor is a
@@ -132,8 +153,8 @@ FIGURE_TITLE_WEIGHT = 'normal'
 # the ENVELOPE LINE is what announces the collapse, and a large field of a
 # distinctly different colour competes with it for the eye without adding
 # anything the line does not already say.
-HEATMAP_UNVISITED_COLOUR = '#12121A'
-HEATMAP_ENVELOPE_COLOUR = '#56B4E9'
+HEATMAP_UNVISITED_COLOUR = "#12121A"
+HEATMAP_ENVELOPE_COLOUR = "#56B4E9"
 HEATMAP_ENVELOPE_MIN_BINS = 3.0
 # ...AND a share of the panel. Bins alone let a 38 mV wobble on a 1.25 V axis
 # draw a line hugging the edge and a caption announcing it, which is clutter
@@ -178,16 +199,19 @@ WATERFALL_MAX_LABELS = 12
 # =============================================================================
 
 
-_BAND_NOTE = ("Shaded bands span \u00b11 standard error on the fitted "
-              "parameter, as returned by the least-squares fit; where a band "
-              "is wider than the trend it describes, the parameter is not "
-              "determined by the data.")
+_BAND_NOTE = (
+    "Shaded bands span \u00b11 standard error on the fitted "
+    "parameter, as returned by the least-squares fit; where a band "
+    "is wider than the trend it describes, the parameter is not "
+    "determined by the data."
+)
 
 
 def _caption(text):
     """Print a figure caption in the same house style as the cycling cells."""
     print(section("  Suggested caption"))
     print(bullet(text, indent=2, label_width=2))
+
 
 EXCLUDE_FORMATION_FROM_YLIM = True
 SHORT_HALFCYCLE_THRESHOLD = 0.8
@@ -205,9 +229,17 @@ SHORT_HALFCYCLE_THRESHOLD = 0.8
 # Okabe-Ito, colourblind-safe. The one categorical palette for the whole run;
 # `cycling` imports it rather than restating it, exactly as it does the
 # charge/discharge colours below.
-CATEGORICAL_PALETTE = ['#0072B2', '#E69F00', '#009E73', '#CC79A7',
-                       '#D55E00', '#56B4E9', '#F0E442', '#000000']
-CATEGORICAL_MARKERS = ['o', 's', '^', 'D', 'v', 'P', 'X', 'h']
+CATEGORICAL_PALETTE = [
+    "#0072B2",
+    "#E69F00",
+    "#009E73",
+    "#CC79A7",
+    "#D55E00",
+    "#56B4E9",
+    "#F0E442",
+    "#000000",
+]
+CATEGORICAL_MARKERS = ["o", "s", "^", "D", "v", "P", "X", "h"]
 
 
 def categorical_colours(n):
@@ -226,16 +258,14 @@ def categorical_colours(n):
     with, in order, and cycles beyond eight rather than interpolating.
     """
     n = max(int(n), 1)
-    return [CATEGORICAL_PALETTE[i % len(CATEGORICAL_PALETTE)]
-            for i in range(n)]
+    return [CATEGORICAL_PALETTE[i % len(CATEGORICAL_PALETTE)] for i in range(n)]
 
 
 def categorical_markers(n):
     """The matching marker shapes, so a series is identified by SHAPE as well
     as colour — the part that survives greyscale printing."""
     n = max(int(n), 1)
-    return [CATEGORICAL_MARKERS[i % len(CATEGORICAL_MARKERS)]
-            for i in range(n)]
+    return [CATEGORICAL_MARKERS[i % len(CATEGORICAL_MARKERS)] for i in range(n)]
 
 
 # THE THREE PEAK KINDS, from the same palette as everything else.
@@ -247,15 +277,15 @@ def categorical_markers(n):
 # NMC111 cell A draws three shoulders against four primaries in one panel.
 # Vermillion, bluish-green and reddish-purple are separable under both
 # deuteranopia and protanopia and differ in lightness for greyscale.
-PEAK_KIND_COLOURS = {'primary': '#D55E00',      # Okabe-Ito vermillion
-                     'shoulder': '#009E73',     # Okabe-Ito bluish green
-                     'truncated': '#CC79A7'}    # Okabe-Ito reddish purple
-PEAK_KIND_EDGES = {'primary': '#8C3D00',
-                   'shoulder': '#006146',
-                   'truncated': '#8A4A6E'}
+PEAK_KIND_COLOURS = {
+    "primary": "#D55E00",  # Okabe-Ito vermillion
+    "shoulder": "#009E73",  # Okabe-Ito bluish green
+    "truncated": "#CC79A7",
+}  # Okabe-Ito reddish purple
+PEAK_KIND_EDGES = {"primary": "#8C3D00", "shoulder": "#006146", "truncated": "#8A4A6E"}
 
-COLOUR_CHARGE = '#0072B2'        # Okabe-Ito blue
-COLOUR_DISCHARGE = '#D55E00'     # Okabe-Ito vermillion
+COLOUR_CHARGE = "#0072B2"  # Okabe-Ito blue
+COLOUR_DISCHARGE = "#D55E00"  # Okabe-Ito vermillion
 
 # The old names, kept so nothing outside breaks.
 DEFAULT_CHARGE_COLOUR = COLOUR_CHARGE
@@ -266,6 +296,7 @@ DEFAULT_DISCHARGE_COLOUR = COLOUR_DISCHARGE
 # nothing is hidden from the reader. WATERFALL_OVERLAP sets how much a trace
 # may be overlapped by its neighbour: 0.0 is a fully separated stack, 0.9 a
 # dense ridgeline.
+
 
 def _protocol_window(params, fallback=None):
     """The window the cell was CYCLED between, for a caption.
@@ -285,10 +316,9 @@ def _protocol_window(params, fallback=None):
     hi = (params or {}).get("voltage_upper_V")
     try:
         lo, hi = float(lo), float(hi)
-    except (TypeError, ValueError):
+    except TypeError, ValueError:
         return fallback
-    return (lo, hi) if np.isfinite(lo) and np.isfinite(hi) and hi > lo \
-        else fallback
+    return (lo, hi) if np.isfinite(lo) and np.isfinite(hi) and hi > lo else fallback
 
 
 def _get_display_name(name, params, all_params):
@@ -309,23 +339,24 @@ def _get_display_name(name, params, all_params):
     Usage in all plotting cells:
         composition = _get_display_name(name, params, user_parameters)
     """
-    composition = params.get('composition', name)
+    composition = params.get("composition", name)
     # Prefer the identifier confirmed in Cell 3 over re-parsing the
     # filename. The stored value is what the operator actually agreed to.
-    _cid = str(params.get('cell_id', '') or '').strip()
-    same_comp = [n for n, p in all_params.items()
-                 if p.get('composition') == composition]
+    _cid = str(params.get("cell_id", "") or "").strip()
+    same_comp = [
+        n for n, p in all_params.items() if p.get("composition") == composition
+    ]
     if len(same_comp) > 1:
         if _cid:
             return f"{composition} (Cell {_cid})"
         # --- Pattern 1: single letter between underscores (_A_, _B_) ---
-        match = re.search(r'_([A-Za-z])_', name)
+        match = re.search(r"_([A-Za-z])_", name)
         if match:
             return f"{composition} (Cell {match.group(1).upper()})"
 
         # --- Pattern 2: find the numeric token that distinguishes files ---
         # Extract all digit groups from each filename in the triplicate set
-        all_tokens = {n: re.findall(r'\d+', n) for n in same_comp}
+        all_tokens = {n: re.findall(r"\d+", n) for n in same_comp}
         my_tokens = all_tokens.get(name, [])
 
         if my_tokens:
@@ -333,8 +364,7 @@ def _get_display_name(name, params, all_params):
             # one whose value differs across the triplicate filenames
             n_tokens = min(len(t) for t in all_tokens.values())
             for pos in range(n_tokens):
-                values_at_pos = {t[pos] for t in all_tokens.values()
-                                 if len(t) > pos}
+                values_at_pos = {t[pos] for t in all_tokens.values() if len(t) > pos}
                 if len(values_at_pos) > 1:
                     # This position varies — it's the cell identifier
                     return f"{composition} (Cell {my_tokens[pos]})"
@@ -391,18 +421,17 @@ def _charge_label(params):
     return half_cycle_labels(params)[0]
 
 
-def _apply_pub_style(ax, xlabel='Voltage / V',
-                      ylabel='dQ/dV / mAh V$^{-1}$ g$^{-1}$'):
+def _apply_pub_style(ax, xlabel="Voltage / V", ylabel="dQ/dV / mAh V$^{-1}$ g$^{-1}$"):
     ax.set_xlabel(xlabel, fontsize=13)
     ax.set_ylabel(ylabel, fontsize=13)
-    ax.tick_params(axis='both', labelsize=11, width=0.8, direction='in',
-                   top=True, right=True)
+    ax.tick_params(
+        axis="both", labelsize=11, width=0.8, direction="in", top=True, right=True
+    )
     for spine in ax.spines.values():
         spine.set_linewidth(0.8)
 
 
-def _detect_short_halfcycles(data, step,
-                              threshold=SHORT_HALFCYCLE_THRESHOLD):
+def _detect_short_halfcycles(data, step, threshold=SHORT_HALFCYCLE_THRESHOLD):
     """
     Split the half-cycles of one step into usable and too-short.
 
@@ -423,7 +452,7 @@ def _detect_short_halfcycles(data, step,
     ranges = {}
     for (cyc, s), df in data.items():
         if s == step:
-            ranges[cyc] = df['Voltage'].max() - df['Voltage'].min()
+            ranges[cyc] = df["Voltage"].max() - df["Voltage"].min()
 
     if not ranges:
         return [], []
@@ -457,25 +486,31 @@ def _waterfall_label_cycles(cycles, max_labels=WATERFALL_MAX_LABELS):
     return chosen
 
 
-def plot_dqdv_all_cycles(processed_dqdv, user_parameters,
-                          exclude_formation=EXCLUDE_FORMATION_FROM_YLIM,
-                          save_location=None, file_format=None):
+def plot_dqdv_all_cycles(
+    processed_dqdv,
+    user_parameters,
+    exclude_formation=EXCLUDE_FORMATION_FROM_YLIM,
+    save_location=None,
+    file_format=None,
+):
     for name, result in processed_dqdv.items():
         params = user_parameters.get(name, {})
         composition = _get_display_name(name, params, user_parameters)
-        colour_palette = params.get('colour_palette', 'viridis_r')
-        data = result['data']
+        colour_palette = params.get("colour_palette", "viridis_r")
+        data = result["data"]
 
         all_cycles = sorted(set(c for c, s in data.keys()))
 
-        complete_c, short_c = _detect_short_halfcycles(data, 'Charge')
-        complete_d, short_d = _detect_short_halfcycles(data, 'Discharge')
+        complete_c, short_c = _detect_short_halfcycles(data, "Charge")
+        complete_d, short_d = _detect_short_halfcycles(data, "Discharge")
         short_all = set(short_c + short_d)
         plot_cycles = [c for c in all_cycles if c not in short_all]
 
         if short_all:
-            print(f"  Note: excluding short cycle(s) "
-                  f"{sorted(short_all)} from all-cycle overlay")
+            print(
+                f"  Note: excluding short cycle(s) "
+                f"{sorted(short_all)} from all-cycle overlay"
+            )
 
         if not plot_cycles:
             print(f"  WARNING: No complete cycles for {name}")
@@ -491,23 +526,33 @@ def plot_dqdv_all_cycles(processed_dqdv, user_parameters,
         for cycle in plot_cycles:
             colour = cmap(norm(cycle))
 
-            if (cycle, 'Charge') in data:
-                df_c = data[(cycle, 'Charge')]
-                ax.plot(df_c['Voltage'], df_c['dQ/dV_processed'],
-                       color=colour, linewidth=0.7, alpha=0.8)
+            if (cycle, "Charge") in data:
+                df_c = data[(cycle, "Charge")]
+                ax.plot(
+                    df_c["Voltage"],
+                    df_c["dQ/dV_processed"],
+                    color=colour,
+                    linewidth=0.7,
+                    alpha=0.8,
+                )
                 if not (exclude_formation and cycle == 1):
-                    ylim_vals.extend(df_c['dQ/dV_processed'].values)
+                    ylim_vals.extend(df_c["dQ/dV_processed"].values)
 
-            if (cycle, 'Discharge') in data:
-                df_d = data[(cycle, 'Discharge')]
-                ax.plot(df_d['Voltage'], df_d['dQ/dV_processed'],
-                       color=colour, linewidth=0.7, alpha=0.8)
+            if (cycle, "Discharge") in data:
+                df_d = data[(cycle, "Discharge")]
+                ax.plot(
+                    df_d["Voltage"],
+                    df_d["dQ/dV_processed"],
+                    color=colour,
+                    linewidth=0.7,
+                    alpha=0.8,
+                )
                 if not (exclude_formation and cycle == 1):
-                    ylim_vals.extend(df_d['dQ/dV_processed'].values)
+                    ylim_vals.extend(df_d["dQ/dV_processed"].values)
 
-        ax.axhline(y=0, color='grey', linewidth=0.5, linestyle='-')
+        ax.axhline(y=0, color="grey", linewidth=0.5, linestyle="-")
         _apply_pub_style(ax)
-        ax.set_title(f'{composition} — dQ/dV (all cycles)', fontsize=13)
+        ax.set_title(f"{composition} — dQ/dV (all cycles)", fontsize=13)
 
         if ylim_vals:
             ymin, ymax = min(ylim_vals), max(ylim_vals)
@@ -517,16 +562,15 @@ def plot_dqdv_all_cycles(processed_dqdv, user_parameters,
         sm = cm.ScalarMappable(cmap=cmap, norm=norm)
         sm.set_array([])
         cbar = fig.colorbar(sm, ax=ax, pad=0.02, aspect=30)
-        cbar.set_label('Cycle number', fontsize=12)
+        cbar.set_label("Cycle number", fontsize=12)
         cbar.ax.tick_params(labelsize=10)
 
         plt.tight_layout()
 
         # The cycling window for the caption; the analysis
         # axis is not what the cell was cycled between.
-        v_min, v_max = _protocol_window(
-            params, fallback=result['voltage_range'])
-        charge_rate = params.get('charge_rate_c', 'the specified')
+        v_min, v_max = _protocol_window(params, fallback=result["voltage_range"])
+        charge_rate = params.get("charge_rate_c", "the specified")
         # "ALL N CYCLES" IS ONLY TRUE IF NONE WERE DROPPED. Short half-cycles
         # are excluded from this overlay a hundred lines above, announced on
         # the console and nowhere else — on NNM cell A that is 93 of 220
@@ -534,10 +578,12 @@ def plot_dqdv_all_cycles(processed_dqdv, user_parameters,
         # written for pasting into a manuscript that says "all 127
         # galvanostatic cycles". A caption is a claim about the figure.
         _excluded = len(all_cycles) - len(plot_cycles)
-        _cov = (f"for all {len(plot_cycles)} galvanostatic cycles of "
-                if not _excluded else
-                f"for {len(plot_cycles)} of the {len(all_cycles)} "
-                f"galvanostatic cycles of ")
+        _cov = (
+            f"for all {len(plot_cycles)} galvanostatic cycles of "
+            if not _excluded
+            else f"for {len(plot_cycles)} of the {len(all_cycles)} "
+            f"galvanostatic cycles of "
+        )
         caption = (
             f"Figure X. Differential capacity (dQ/dV) vs. voltage "
             + _cov
@@ -546,10 +592,13 @@ def plot_dqdv_all_cycles(processed_dqdv, user_parameters,
             f"correspond to {_charge_label(params).lower()} and "
             f"negative values to {_discharge_label(params).lower()}. "
             f"Colour indicates cycle number as shown in the colourbar."
-            + (f" {_excluded} cycle(s) whose charge or discharge half-cycle "
-               f"did not span the analysed window are not shown; they are in "
-               f"the processed-dQ/dV table."
-               if _excluded else "")
+            + (
+                f" {_excluded} cycle(s) whose charge or discharge half-cycle "
+                f"did not span the analysed window are not shown; they are in "
+                f"the processed-dQ/dV table."
+                if _excluded
+                else ""
+            )
         )
         # A half-cycle Cell 5 judged was not a measurement is KEPT in the
         # figure deliberately — seeing where the run has got to is the point —
@@ -563,29 +612,35 @@ def plot_dqdv_all_cycles(processed_dqdv, user_parameters,
                 f"{', '.join(str(c) for c in _inc)} "
                 f"{'were' if len(_inc) > 1 else 'was'} incomplete at export "
                 f"and {'are' if len(_inc) > 1 else 'is'} shown for "
-                f"completeness only.")
+                f"completeness only."
+            )
         _caption(caption)
 
         if save_location:
             fpath = os.path.join(
                 save_location,
-                f'{name}_dQdV_all_cycles.{image_format(params, file_format)}')
-            fig.savefig(fpath, dpi=300, bbox_inches='tight')
+                f"{name}_dQdV_all_cycles.{image_format(params, file_format)}",
+            )
+            fig.savefig(fpath, dpi=300, bbox_inches="tight")
             saved(fpath)
 
         plt.show()
         plt.close(fig)
 
 
-def plot_dqdv_key_cycles_combined(processed_dqdv, user_parameters,
-                                   exclude_formation=EXCLUDE_FORMATION_FROM_YLIM,
-                                   save_location=None, file_format=None):
+def plot_dqdv_key_cycles_combined(
+    processed_dqdv,
+    user_parameters,
+    exclude_formation=EXCLUDE_FORMATION_FROM_YLIM,
+    save_location=None,
+    file_format=None,
+):
     for name, result in processed_dqdv.items():
         params = user_parameters.get(name, {})
-        key_cycles = params.get('key_cycles', DEFAULT_KEY_CYCLES)
+        key_cycles = params.get("key_cycles", DEFAULT_KEY_CYCLES)
         composition = _get_display_name(name, params, user_parameters)
-        colour_palette = params.get('colour_palette', 'viridis_r')
-        data = result['data']
+        colour_palette = params.get("colour_palette", "viridis_r")
+        data = result["data"]
 
         available_cycles = sorted(set(c for c, s in data.keys()))
         key_cycles = [c for c in key_cycles if c in available_cycles]
@@ -604,25 +659,35 @@ def plot_dqdv_key_cycles_combined(processed_dqdv, user_parameters,
         for cycle in key_cycles:
             colour = cmap(norm(cycle))
 
-            if (cycle, 'Charge') in data:
-                df_c = data[(cycle, 'Charge')]
-                ax.plot(df_c['Voltage'], df_c['dQ/dV_processed'],
-                       color=colour, linewidth=1.2, alpha=0.9,
-                       linestyle='-')
+            if (cycle, "Charge") in data:
+                df_c = data[(cycle, "Charge")]
+                ax.plot(
+                    df_c["Voltage"],
+                    df_c["dQ/dV_processed"],
+                    color=colour,
+                    linewidth=1.2,
+                    alpha=0.9,
+                    linestyle="-",
+                )
                 if not (exclude_formation and cycle == 1):
-                    ylim_vals.extend(df_c['dQ/dV_processed'].values)
+                    ylim_vals.extend(df_c["dQ/dV_processed"].values)
 
-            if (cycle, 'Discharge') in data:
-                df_d = data[(cycle, 'Discharge')]
-                ax.plot(df_d['Voltage'], df_d['dQ/dV_processed'],
-                       color=colour, linewidth=1.2, alpha=0.9,
-                       linestyle='-')
+            if (cycle, "Discharge") in data:
+                df_d = data[(cycle, "Discharge")]
+                ax.plot(
+                    df_d["Voltage"],
+                    df_d["dQ/dV_processed"],
+                    color=colour,
+                    linewidth=1.2,
+                    alpha=0.9,
+                    linestyle="-",
+                )
                 if not (exclude_formation and cycle == 1):
-                    ylim_vals.extend(df_d['dQ/dV_processed'].values)
+                    ylim_vals.extend(df_d["dQ/dV_processed"].values)
 
-        ax.axhline(y=0, color='grey', linewidth=0.5, linestyle='-')
+        ax.axhline(y=0, color="grey", linewidth=0.5, linestyle="-")
         _apply_pub_style(ax)
-        ax.set_title(f'{composition} — dQ/dV (key cycles)', fontsize=13)
+        ax.set_title(f"{composition} — dQ/dV (key cycles)", fontsize=13)
 
         if ylim_vals:
             ymin, ymax = min(ylim_vals), max(ylim_vals)
@@ -633,26 +698,30 @@ def plot_dqdv_key_cycles_combined(processed_dqdv, user_parameters,
             sm = cm.ScalarMappable(cmap=cmap, norm=norm)
             sm.set_array([])
             cbar = fig.colorbar(sm, ax=ax, pad=0.02, aspect=30)
-            cbar.set_label('Cycle number', fontsize=12)
+            cbar.set_label("Cycle number", fontsize=12)
             cbar.ax.tick_params(labelsize=10)
         else:
             from matplotlib.lines import Line2D
+
             handles = [
-                Line2D([0], [0], color=cmap(norm(c)), linewidth=1.5,
-                       label=f'Cycle {int(c)}')
+                Line2D(
+                    [0],
+                    [0],
+                    color=cmap(norm(c)),
+                    linewidth=1.5,
+                    label=f"Cycle {int(c)}",
+                )
                 for c in key_cycles
             ]
-            ax.legend(handles=handles, fontsize=9, framealpha=0.7,
-                     loc='best')
+            ax.legend(handles=handles, fontsize=9, framealpha=0.7, loc="best")
 
         plt.tight_layout()
 
-        cycles_str = ', '.join(str(int(c)) for c in key_cycles)
+        cycles_str = ", ".join(str(int(c)) for c in key_cycles)
         # The cycling window for the caption; the analysis
         # axis is not what the cell was cycled between.
-        v_min, v_max = _protocol_window(
-            params, fallback=result['voltage_range'])
-        charge_rate = params.get('charge_rate_c', 'the specified')
+        v_min, v_max = _protocol_window(params, fallback=result["voltage_range"])
+        charge_rate = params.get("charge_rate_c", "the specified")
         caption = (
             f"Figure X. Differential capacity (dQ/dV) vs. voltage "
             f"for selected cycles ({cycles_str}) of {composition}, "
@@ -663,36 +732,45 @@ def plot_dqdv_key_cycles_combined(processed_dqdv, user_parameters,
         )
         # See the same note on `plot_dqdv_all_cycles`: a key-cycle figure can
         # include an incomplete cycle too, if the operator listed it.
-        _inc = sorted(int(c) for c in (params.get("incomplete_cycles") or ())
-                      if int(c) in set(int(x) for x in key_cycles))
+        _inc = sorted(
+            int(c)
+            for c in (params.get("incomplete_cycles") or ())
+            if int(c) in set(int(x) for x in key_cycles)
+        )
         if _inc:
             caption += (
                 f" Cycle{'s' if len(_inc) > 1 else ''} "
                 f"{', '.join(str(c) for c in _inc)} "
                 f"{'were' if len(_inc) > 1 else 'was'} incomplete at export "
                 f"and {'are' if len(_inc) > 1 else 'is'} shown for "
-                f"completeness only.")
+                f"completeness only."
+            )
         _caption(caption)
 
         if save_location:
             fpath = os.path.join(
                 save_location,
-                f'{name}_dQdV_key_cycles.{image_format(params, file_format)}')
-            fig.savefig(fpath, dpi=300, bbox_inches='tight')
+                f"{name}_dQdV_key_cycles.{image_format(params, file_format)}",
+            )
+            fig.savefig(fpath, dpi=300, bbox_inches="tight")
             saved(fpath)
 
         plt.show()
         plt.close(fig)
 
 
-def plot_dqdv_key_cycles_split(processed_dqdv, user_parameters,
-                                exclude_formation=EXCLUDE_FORMATION_FROM_YLIM,
-                                save_location=None, file_format=None):
+def plot_dqdv_key_cycles_split(
+    processed_dqdv,
+    user_parameters,
+    exclude_formation=EXCLUDE_FORMATION_FROM_YLIM,
+    save_location=None,
+    file_format=None,
+):
     for name, result in processed_dqdv.items():
         params = user_parameters.get(name, {})
-        key_cycles = params.get('key_cycles', DEFAULT_KEY_CYCLES)
+        key_cycles = params.get("key_cycles", DEFAULT_KEY_CYCLES)
         composition = _get_display_name(name, params, user_parameters)
-        data = result['data']
+        data = result["data"]
 
         available_cycles = sorted(set(c for c, s in data.keys()))
         key_cycles = [c for c in key_cycles if c in available_cycles]
@@ -702,47 +780,56 @@ def plot_dqdv_key_cycles_split(processed_dqdv, user_parameters,
 
         # Two side-by-side panels: full journal width, shorter height
         fig, (ax_charge, ax_discharge) = plt.subplots(
-            1, 2, figsize=(figure_width_inches, figure_height_inches * 0.75),
-            sharey=False)
-        fig.suptitle(f'{composition}', fontsize=14, fontweight=FIGURE_TITLE_WEIGHT)
+            1,
+            2,
+            figsize=(figure_width_inches, figure_height_inches * 0.75),
+            sharey=False,
+        )
+        fig.suptitle(f"{composition}", fontsize=14, fontweight=FIGURE_TITLE_WEIGHT)
 
         norm = Normalize(vmin=min(key_cycles), vmax=max(key_cycles))
-        cmap_charge = plt.colormaps['Blues']
-        cmap_discharge = plt.colormaps['Oranges']
+        cmap_charge = plt.colormaps["Blues"]
+        cmap_discharge = plt.colormaps["Oranges"]
 
-        ylim_data = {'Charge': [], 'Discharge': []}
+        ylim_data = {"Charge": [], "Discharge": []}
 
         for cycle in key_cycles:
             intensity = 0.3 + 0.7 * norm(cycle)
 
-            if (cycle, 'Charge') in data:
-                df_c = data[(cycle, 'Charge')]
+            if (cycle, "Charge") in data:
+                df_c = data[(cycle, "Charge")]
                 ax_charge.plot(
-                    df_c['Voltage'], df_c['dQ/dV_processed'],
+                    df_c["Voltage"],
+                    df_c["dQ/dV_processed"],
                     color=cmap_charge(intensity),
-                    linewidth=1.2, label=f'Cycle {cycle}')
+                    linewidth=1.2,
+                    label=f"Cycle {cycle}",
+                )
                 if not (exclude_formation and cycle == 1):
-                    ylim_data['Charge'].extend(
-                        df_c['dQ/dV_processed'].values)
+                    ylim_data["Charge"].extend(df_c["dQ/dV_processed"].values)
 
-            if (cycle, 'Discharge') in data:
-                df_d = data[(cycle, 'Discharge')]
+            if (cycle, "Discharge") in data:
+                df_d = data[(cycle, "Discharge")]
                 ax_discharge.plot(
-                    df_d['Voltage'], df_d['dQ/dV_processed'],
+                    df_d["Voltage"],
+                    df_d["dQ/dV_processed"],
                     color=cmap_discharge(intensity),
-                    linewidth=1.2, label=f'Cycle {cycle}')
+                    linewidth=1.2,
+                    label=f"Cycle {cycle}",
+                )
                 if not (exclude_formation and cycle == 1):
-                    ylim_data['Discharge'].extend(
-                        df_d['dQ/dV_processed'].values)
+                    ylim_data["Discharge"].extend(df_d["dQ/dV_processed"].values)
 
         chg_t = _charge_label(params)
         dch_t = _discharge_label(params)
-        for ax, title, step in [(ax_charge, chg_t, 'Charge'),
-                                 (ax_discharge, dch_t, 'Discharge')]:
+        for ax, title, step in [
+            (ax_charge, chg_t, "Charge"),
+            (ax_discharge, dch_t, "Discharge"),
+        ]:
             _apply_pub_style(ax)
             ax.set_title(title, fontsize=12)
-            ax.legend(fontsize=8, framealpha=0.7, loc='best')
-            ax.axhline(y=0, color='grey', linewidth=0.5, linestyle='-')
+            ax.legend(fontsize=8, framealpha=0.7, loc="best")
+            ax.axhline(y=0, color="grey", linewidth=0.5, linestyle="-")
 
             if ylim_data[step]:
                 ymin = min(ylim_data[step])
@@ -755,19 +842,26 @@ def plot_dqdv_key_cycles_split(processed_dqdv, user_parameters,
         if save_location:
             fpath = os.path.join(
                 save_location,
-                f'{name}_dQdV_key_cycles_split.{image_format(params, file_format)}')
-            fig.savefig(fpath, dpi=300, bbox_inches='tight')
+                f"{name}_dQdV_key_cycles_split.{image_format(params, file_format)}",
+            )
+            fig.savefig(fpath, dpi=300, bbox_inches="tight")
             saved(fpath)
 
         plt.show()
         plt.close(fig)
 
 
-def plot_dqdv_waterfall(processed_dqdv, user_parameters, step='Charge',
-                         every_n=1, offset_scale=None,
-                         overlap=WATERFALL_OVERLAP,
-                         max_height_in=WATERFALL_MAX_HEIGHT_IN,
-                         save_location=None, file_format=None):
+def plot_dqdv_waterfall(
+    processed_dqdv,
+    user_parameters,
+    step="Charge",
+    every_n=1,
+    offset_scale=None,
+    overlap=WATERFALL_OVERLAP,
+    max_height_in=WATERFALL_MAX_HEIGHT_IN,
+    save_location=None,
+    file_format=None,
+):
     """
     Stacked-offset dQ/dV traces, one per cycle.
 
@@ -787,18 +881,22 @@ def plot_dqdv_waterfall(processed_dqdv, user_parameters, step='Charge',
     for name, result in processed_dqdv.items():
         params = user_parameters.get(name, {})
         composition = _get_display_name(name, params, user_parameters)
-        data = result['data']
+        data = result["data"]
 
         complete, short = _detect_short_halfcycles(data, step)
         if short:
-            print(f"  Note: excluding short {step.lower()} cycle(s) "
-                  f"{short} from waterfall")
+            print(
+                f"  Note: excluding short {step.lower()} cycle(s) "
+                f"{short} from waterfall"
+            )
 
         cycles_to_plot = complete[::every_n]
         if every_n > 1:
             omitted = [c for c in complete if c not in set(cycles_to_plot)]
-            print(f"  every_n={every_n}: plotting {len(cycles_to_plot)} of "
-                  f"{len(complete)} cycles. Omitted: {omitted}")
+            print(
+                f"  every_n={every_n}: plotting {len(cycles_to_plot)} of "
+                f"{len(complete)} cycles. Omitted: {omitted}"
+            )
 
         if not cycles_to_plot:
             print(f"  WARNING: No {step} data found for {name}.")
@@ -810,7 +908,7 @@ def plot_dqdv_waterfall(processed_dqdv, user_parameters, step='Charge',
         amplitudes = []
         for cyc in cycles_to_plot:
             if (cyc, step) in data:
-                vals = data[(cyc, step)]['dQ/dV_processed']
+                vals = data[(cyc, step)]["dQ/dV_processed"]
                 amplitudes.append(float(vals.max() - vals.min()))
         median_amp = float(np.median(amplitudes)) if amplitudes else 1.0
 
@@ -822,26 +920,28 @@ def plot_dqdv_waterfall(processed_dqdv, user_parameters, step='Charge',
 
         # --- Figure height, bounded --------------------------------
         wanted_h = n_cycles * WATERFALL_HEIGHT_PER_CYCLE_IN
-        _lo = min(max(WATERFALL_MIN_HEIGHT_IN, figure_height_inches),
-                  max_height_in)
+        _lo = min(max(WATERFALL_MIN_HEIGHT_IN, figure_height_inches), max_height_in)
         fig_h = float(np.clip(wanted_h, _lo, max_height_in))
         if wanted_h > max_height_in and n_cycles > WATERFALL_DENSE_NOTE_ABOVE:
-            print(f"  {n_cycles} cycles in {fig_h:.1f} in: traces overlap "
-                  f"by {overlap:.0%}. All cycles are shown. Raise "
-                  f"max_height_in for a taller figure, or use the "
-                  f"heatmap for a compact overview.")
+            print(
+                f"  {n_cycles} cycles in {fig_h:.1f} in: traces overlap "
+                f"by {overlap:.0%}. All cycles are shown. Raise "
+                f"max_height_in for a taller figure, or use the "
+                f"heatmap for a compact overview."
+            )
 
         fig, ax = plt.subplots(figsize=(figure_width_inches, fig_h))
 
-        cmap = plt.colormaps['viridis_r']
-        norm = Normalize(vmin=min(cycles_to_plot),
-                         vmax=max(cycles_to_plot))
+        cmap = plt.colormaps["viridis_r"]
+        norm = Normalize(vmin=min(cycles_to_plot), vmax=max(cycles_to_plot))
 
         dense = n_cycles > 25
         line_w = 0.6 if dense else 0.9
-        effects = ([path_effects.withStroke(linewidth=line_w + 1.1,
-                                            foreground='white')]
-                   if dense else None)
+        effects = (
+            [path_effects.withStroke(linewidth=line_w + 1.1, foreground="white")]
+            if dense
+            else None
+        )
 
         label_cycles = _waterfall_label_cycles(cycles_to_plot)
         v_lo, v_hi = np.inf, -np.inf
@@ -853,37 +953,51 @@ def plot_dqdv_waterfall(processed_dqdv, user_parameters, step='Charge',
             offset = i * pitch
             colour = cmap(norm(cycle))
 
-            ax.plot(df['Voltage'], df['dQ/dV_processed'] + offset,
-                    color=colour, linewidth=line_w, alpha=1.0,
-                    zorder=2 + i, path_effects=effects,
-                    solid_capstyle='round')
+            ax.plot(
+                df["Voltage"],
+                df["dQ/dV_processed"] + offset,
+                color=colour,
+                linewidth=line_w,
+                alpha=1.0,
+                zorder=2 + i,
+                path_effects=effects,
+                solid_capstyle="round",
+            )
 
-            v_lo = min(v_lo, float(df['Voltage'].min()))
-            v_hi = max(v_hi, float(df['Voltage'].max()))
+            v_lo = min(v_lo, float(df["Voltage"].min()))
+            v_hi = max(v_hi, float(df["Voltage"].max()))
 
             if cycle in label_cycles:
-                ax.text(float(df['Voltage'].max()), offset,
-                        f' {cycle}', fontsize=8, va='center', ha='left',
-                        color=colour, zorder=2 + n_cycles + i,
-                        clip_on=False)
+                ax.text(
+                    float(df["Voltage"].max()),
+                    offset,
+                    f" {cycle}",
+                    fontsize=8,
+                    va="center",
+                    ha="left",
+                    color=colour,
+                    zorder=2 + n_cycles + i,
+                    clip_on=False,
+                )
 
         # Room on the right for the cycle labels
         if np.isfinite(v_lo) and np.isfinite(v_hi) and v_hi > v_lo:
             ax.set_xlim(v_lo, v_hi + 0.06 * (v_hi - v_lo))
 
-        _apply_pub_style(
-            ax, ylabel=f'dQ/dV (offset) / mAh V$^{{-1}}$ g$^{{-1}}$')
-        step_display = (_charge_label(params) if step == 'Charge'
-                        else _discharge_label(params))
+        _apply_pub_style(ax, ylabel=f"dQ/dV (offset) / mAh V$^{{-1}}$ g$^{{-1}}$")
+        step_display = (
+            _charge_label(params) if step == "Charge" else _discharge_label(params)
+        )
         ax.set_title(
-            f'{composition} — {step_display} dQ/dV waterfall '
-            f'({n_cycles} cycles)', fontsize=13)
+            f"{composition} — {step_display} dQ/dV waterfall ({n_cycles} cycles)",
+            fontsize=13,
+        )
         ax.set_yticks([])
 
         sm = cm.ScalarMappable(cmap=cmap, norm=norm)
         sm.set_array([])
         cbar = fig.colorbar(sm, ax=ax, shrink=0.6, aspect=30, pad=0.08)
-        cbar.set_label('Cycle number', fontsize=11)
+        cbar.set_label("Cycle number", fontsize=11)
 
         # --- HOW FAR DOES THE TALLEST TRACE REACH? ---------------------
         # The pitch is a fraction of the MEDIAN amplitude, which is what keeps
@@ -903,50 +1017,71 @@ def plot_dqdv_waterfall(processed_dqdv, user_parameters, step='Charge',
         _amp = {}
         for cyc in cycles_to_plot:
             if (cyc, step) in data:
-                _v = data[(cyc, step)]['dQ/dV_processed']
+                _v = data[(cyc, step)]["dQ/dV_processed"]
                 _amp[int(cyc)] = float(_v.max() - _v.min())
         if _amp and pitch > 0 and median_amp > 0:
             _tall = max(_amp, key=_amp.get)
             _ratio = _amp[_tall] / median_amp
             _lanes = _amp[_tall] / pitch
             _over = max(0, int(np.ceil(_lanes)) - 1)
-            fig.text(0.01, -0.01,
-                     f"Traces are offset by {pitch / median_amp:.0%} of the "
-                     f"median amplitude, so a median trace spans "
-                     f"{median_amp / pitch:.1f} rows. The tallest (cycle "
-                     f"{_tall}) is {_ratio:.1f}x the median and is drawn "
-                     f"through the {_over} row(s) above it — a feature seen "
-                     f"there may belong to a lower cycle. The heatmap does "
-                     f"not offset.",
-                     fontsize=7, style="italic", va="top", wrap=True)
+            fig.text(
+                0.01,
+                -0.01,
+                f"Traces are offset by {pitch / median_amp:.0%} of the "
+                f"median amplitude, so a median trace spans "
+                f"{median_amp / pitch:.1f} rows. The tallest (cycle "
+                f"{_tall}) is {_ratio:.1f}x the median and is drawn "
+                f"through the {_over} row(s) above it — a feature seen "
+                f"there may belong to a lower cycle. The heatmap does "
+                f"not offset.",
+                fontsize=7,
+                style="italic",
+                va="top",
+                wrap=True,
+            )
             if _ratio > 1.5:
-                _big = sorted((c for c, a in _amp.items()
-                               if a / median_amp > 1.5),
-                              key=lambda c: -_amp[c])
-                print(f"  {step}: cycle {_tall} is {_ratio:.1f}x the median "
-                      f"trace and reaches {_over} row(s) above its own"
-                      + (f" ({len(_big)} trace(s) over 1.5x: "
-                         + ", ".join(str(c) for c in _big[:8])
-                         + (" ..." if len(_big) > 8 else "") + ")"
-                         if len(_big) > 1 else "")
-                      + ". Use the heatmap to place a feature exactly.")
+                _big = sorted(
+                    (c for c, a in _amp.items() if a / median_amp > 1.5),
+                    key=lambda c: -_amp[c],
+                )
+                print(
+                    f"  {step}: cycle {_tall} is {_ratio:.1f}x the median "
+                    f"trace and reaches {_over} row(s) above its own"
+                    + (
+                        f" ({len(_big)} trace(s) over 1.5x: "
+                        + ", ".join(str(c) for c in _big[:8])
+                        + (" ..." if len(_big) > 8 else "")
+                        + ")"
+                        if len(_big) > 1
+                        else ""
+                    )
+                    + ". Use the heatmap to place a feature exactly."
+                )
 
         plt.tight_layout()
 
         if save_location:
             fpath = os.path.join(
                 save_location,
-                f'{name}_dQdV_waterfall_{step}.{image_format(params, file_format)}')
-            fig.savefig(fpath, dpi=300, bbox_inches='tight')
+                f"{name}_dQdV_waterfall_{step}.{image_format(params, file_format)}",
+            )
+            fig.savefig(fpath, dpi=300, bbox_inches="tight")
             saved(fpath)
 
         plt.show()
         plt.close(fig)
 
 
-def plot_dqdv_heatmap(processed_dqdv, user_parameters, step='Charge',
-                       v_bins=200, save_location=None, file_format=None,
-                       envelope=True, suffix=''):
+def plot_dqdv_heatmap(
+    processed_dqdv,
+    user_parameters,
+    step="Charge",
+    v_bins=200,
+    save_location=None,
+    file_format=None,
+    envelope=True,
+    suffix="",
+):
     """
     dQ/dV against voltage and cycle, as a heat map.
 
@@ -960,16 +1095,16 @@ def plot_dqdv_heatmap(processed_dqdv, user_parameters, step='Charge',
     for name, result in processed_dqdv.items():
         params = user_parameters.get(name, {})
         composition = _get_display_name(name, params, user_parameters)
-        data = result['data']
+        data = result["data"]
         # The cycling window for the caption; the analysis
         # axis is not what the cell was cycled between.
-        v_min, v_max = _protocol_window(
-            params, fallback=result['voltage_range'])
+        v_min, v_max = _protocol_window(params, fallback=result["voltage_range"])
 
         complete, short = _detect_short_halfcycles(data, step)
         if short:
-            print(f"  Note: excluding short {step.lower()} cycle(s) "
-                  f"{short} from heatmap")
+            print(
+                f"  Note: excluding short {step.lower()} cycle(s) {short} from heatmap"
+            )
 
         cycles = complete
         if not cycles:
@@ -986,8 +1121,7 @@ def plot_dqdv_heatmap(processed_dqdv, user_parameters, step='Charge',
         # below the first measured point was painted as a flat band of colour
         # that no measurement supports. Both faults are silent, and both are
         # present on every dataset in every run on disk.
-        _vals = [data[(c, step)]['Voltage'].values
-                 for c in cycles if (c, step) in data]
+        _vals = [data[(c, step)]["Voltage"].values for c in cycles if (c, step) in data]
         _vals = [v[np.isfinite(v)] for v in _vals]
         _vals = [v for v in _vals if v.size]
         if _vals:
@@ -1006,8 +1140,8 @@ def plot_dqdv_heatmap(processed_dqdv, user_parameters, step='Charge',
             if (cycle, step) not in data:
                 continue
             df = data[(cycle, step)]
-            _v = df['Voltage'].values
-            _y = df['dQ/dV_processed'].values
+            _v = df["Voltage"].values
+            _y = df["dQ/dV_processed"].values
             _m = np.isfinite(_v) & np.isfinite(_y)
             if _m.sum() < 2:
                 continue
@@ -1021,13 +1155,14 @@ def plot_dqdv_heatmap(processed_dqdv, user_parameters, step='Charge',
 
         fig, ax = plt.subplots(figsize=(figure_width_inches, figure_height_inches))
 
-        plot_data = (np.abs(heatmap_data) if step == 'Discharge'
-                     else heatmap_data)
+        plot_data = np.abs(heatmap_data) if step == "Discharge" else heatmap_data
         # An all-NaN panel is possible now that unvisited voltages are NaN
         # rather than a repeated endpoint, and `nanpercentile` raises on one.
         if not np.isfinite(plot_data).any():
-            print(f"  {name}: no {step.lower()} data in the analysed window, "
-                  f"heatmap skipped")
+            print(
+                f"  {name}: no {step.lower()} data in the analysed window, "
+                f"heatmap skipped"
+            )
             plt.close(fig)
             continue
         vmax_clim = np.nanpercentile(plot_data, 98)
@@ -1056,7 +1191,7 @@ def plot_dqdv_heatmap(processed_dqdv, user_parameters, step='Charge',
         # does, because it has a shape you can read off a scale, and it costs
         # no panel area. Nothing is fabricated: the cells behind the envelope
         # are masked, not filled.
-        _note_room = 0.0        # reserved only if the envelope note is drawn
+        _note_room = 0.0  # reserved only if the envelope note is drawn
         _n_missing = int(np.isnan(plot_data).sum())
 
         # DECIDED BEFORE THE COLOURS ARE CHOSEN, because the tint on the
@@ -1071,15 +1206,21 @@ def plot_dqdv_heatmap(processed_dqdv, user_parameters, step='Charge',
         _bw = float(v_edges[1] - v_edges[0])
         _hi_env = np.array([np.nanmax(v) if v.size else np.nan for v in _vals])
         _lo_env = np.array([np.nanmin(v) if v.size else np.nan for v in _vals])
-        _spread = max(np.nanmax(_hi_env) - np.nanmin(_hi_env),
-                      np.nanmax(_lo_env) - np.nanmin(_lo_env))
+        _spread = max(
+            np.nanmax(_hi_env) - np.nanmin(_hi_env),
+            np.nanmax(_lo_env) - np.nanmin(_lo_env),
+        )
         _panel = float(v_edges[-1] - v_edges[0])
-        _worth = bool(envelope and _n_missing and np.isfinite(_spread)
-                      and _spread > HEATMAP_ENVELOPE_MIN_BINS * _bw
-                      and _panel > 0
-                      and _spread / _panel > HEATMAP_ENVELOPE_MIN_FRACTION)
+        _worth = bool(
+            envelope
+            and _n_missing
+            and np.isfinite(_spread)
+            and _spread > HEATMAP_ENVELOPE_MIN_BINS * _bw
+            and _panel > 0
+            and _spread / _panel > HEATMAP_ENVELOPE_MIN_FRACTION
+        )
 
-        _cmap = plt.get_cmap('inferno').copy()
+        _cmap = plt.get_cmap("inferno").copy()
         # `envelope=False` IS "as it was before", not "as it is now, minus the
         # line". The point of the second file is a panel with nothing on it to
         # explain — so the unvisited cells take the colormap's own zero colour
@@ -1090,9 +1231,14 @@ def plot_dqdv_heatmap(processed_dqdv, user_parameters, step='Charge',
         # files differ in what they SAY and never in what was measured.
         _cmap.set_bad(HEATMAP_UNVISITED_COLOUR if _worth else _cmap(0.0))
         im = ax.pcolormesh(
-            v_centres, cycles, np.ma.masked_invalid(plot_data),
-            cmap=_cmap, shading='auto',
-            vmin=0, vmax=vmax_clim)
+            v_centres,
+            cycles,
+            np.ma.masked_invalid(plot_data),
+            cmap=_cmap,
+            shading="auto",
+            vmin=0,
+            vmax=vmax_clim,
+        )
 
         # The envelope itself. A cell whose every half-cycle covers the same
         # span has a straight line at each edge and does not need it; `_worth`
@@ -1100,10 +1246,16 @@ def plot_dqdv_heatmap(processed_dqdv, user_parameters, step='Charge',
         if _worth:
             for _e in (_hi_env, _lo_env):
                 if np.nanmax(_e) - np.nanmin(_e) <= _bw:
-                    continue          # that edge is flat; drawing it is clutter
-                ax.step(_e, cycles, where='mid',
-                        color=HEATMAP_ENVELOPE_COLOUR, linewidth=1.3,
-                        solid_joinstyle='miter', zorder=6)
+                    continue  # that edge is flat; drawing it is clutter
+                ax.step(
+                    _e,
+                    cycles,
+                    where="mid",
+                    color=HEATMAP_ENVELOPE_COLOUR,
+                    linewidth=1.3,
+                    solid_joinstyle="miter",
+                    zorder=6,
+                )
             # BELOW the axes, and WRAPPED. Anywhere inside them collides with
             # either the peak (left) or the envelope itself (right), and a note
             # that obscures the thing it explains is worse than no note. It has
@@ -1118,42 +1270,53 @@ def plot_dqdv_heatmap(processed_dqdv, user_parameters, step='Charge',
             # Balanced across two lines: `bbox_inches='tight'` grows the
             # canvas to fit the widest line, so a long first line widens the
             # saved image and shrinks the axes inside it.
-            _env_note = (f'Blue line: the edge of the voltage range the cell '
-                         f'traversed on that cycle,\nmoving '
-                         f'{1000 * _spread:.0f} mV over this record. Outside '
-                         f'it the cell did not go — unmeasured, not zero.')
-            fig.text(0.5, 0.105, _env_note, ha='center', va='top',
-                     fontsize=8.5, style='italic', color='#444444',
-                     linespacing=1.4)
+            _env_note = (
+                f"Blue line: the edge of the voltage range the cell "
+                f"traversed on that cycle,\nmoving "
+                f"{1000 * _spread:.0f} mV over this record. Outside "
+                f"it the cell did not go — unmeasured, not zero."
+            )
+            fig.text(
+                0.5,
+                0.105,
+                _env_note,
+                ha="center",
+                va="top",
+                fontsize=8.5,
+                style="italic",
+                color="#444444",
+                linespacing=1.4,
+            )
             _note_room = 0.12
 
-        cbar_label = '|dQ/dV|' if step == 'Discharge' else 'dQ/dV'
+        cbar_label = "|dQ/dV|" if step == "Discharge" else "dQ/dV"
         cbar = fig.colorbar(im, ax=ax, shrink=0.8, pad=0.02)
-        cbar.set_label(
-            f'{cbar_label} / mAh V$^{{-1}}$ g$^{{-1}}$', fontsize=11)
+        cbar.set_label(f"{cbar_label} / mAh V$^{{-1}}$ g$^{{-1}}$", fontsize=11)
 
-        _apply_pub_style(ax, ylabel='Cycle number')
-        step_display = (_charge_label(params) if step == 'Charge'
-                        else _discharge_label(params))
-        ax.set_title(f'{composition} — {step_display} dQ/dV evolution',
-                     fontsize=13)
+        _apply_pub_style(ax, ylabel="Cycle number")
+        step_display = (
+            _charge_label(params) if step == "Charge" else _discharge_label(params)
+        )
+        ax.set_title(f"{composition} — {step_display} dQ/dV evolution", fontsize=13)
 
         fig.tight_layout(rect=(0, _note_room, 1, 1))
 
         if save_location:
             fpath = os.path.join(
                 save_location,
-                f'{name}_dQdV_heatmap_{step}{suffix}'
-                f'.{image_format(params, file_format)}')
-            fig.savefig(fpath, dpi=300, bbox_inches='tight')
+                f"{name}_dQdV_heatmap_{step}{suffix}"
+                f".{image_format(params, file_format)}",
+            )
+            fig.savefig(fpath, dpi=300, bbox_inches="tight")
             saved(fpath)
 
         plt.show()
         plt.close(fig)
 
 
-def plot_preprocessing_qc(processed_dqdv, user_parameters, cycle=1, *,
-                          save_location=None, file_format=None):
+def plot_preprocessing_qc(
+    processed_dqdv, user_parameters, cycle=1, *, save_location=None, file_format=None
+):
     """Raw against processed, for one cycle.
 
     `save_location` is new. This was the ONLY plot function in the module
@@ -1165,53 +1328,73 @@ def plot_preprocessing_qc(processed_dqdv, user_parameters, cycle=1, *,
     for name, result in processed_dqdv.items():
         params = user_parameters.get(name, {})
         composition = _get_display_name(name, params, user_parameters)
-        data = result['data']
+        data = result["data"]
 
         # Two side-by-side panels: full journal width, shorter height
         fig, (ax_c, ax_d) = plt.subplots(
-            1, 2, figsize=(figure_width_inches, figure_height_inches * 0.75))
-        fig.suptitle(
-            f'{composition} — Cycle {cycle} preprocessing QC',
-            fontsize=13)
+            1, 2, figsize=(figure_width_inches, figure_height_inches * 0.75)
+        )
+        fig.suptitle(f"{composition} — Cycle {cycle} preprocessing QC", fontsize=13)
 
         chg_t = _charge_label(params)
         dch_t = _discharge_label(params)
-        for ax, step, title in [(ax_c, 'Charge', chg_t),
-                                 (ax_d, 'Discharge', dch_t)]:
+        for ax, step, title in [(ax_c, "Charge", chg_t), (ax_d, "Discharge", dch_t)]:
             if (cycle, step) not in data:
-                ax.text(0.5, 0.5, f'No {step} data\nfor cycle {cycle}',
-                        transform=ax.transAxes, ha='center',
-                        va='center', fontsize=12, color='grey')
+                ax.text(
+                    0.5,
+                    0.5,
+                    f"No {step} data\nfor cycle {cycle}",
+                    transform=ax.transAxes,
+                    ha="center",
+                    va="center",
+                    fontsize=12,
+                    color="grey",
+                )
                 ax.set_title(title, fontsize=12)
                 continue
 
             df = data[(cycle, step)]
-            ax.plot(df['Voltage'], df['dQ/dV_raw'],
-                    color='grey', alpha=0.5, linewidth=0.8,
-                    label='Raw')
-            ax.plot(df['Voltage'], df['dQ/dV_processed'],
-                    color='#0072B2', linewidth=1.3,
-                    label='Processed')
+            ax.plot(
+                df["Voltage"],
+                df["dQ/dV_raw"],
+                color="grey",
+                alpha=0.5,
+                linewidth=0.8,
+                label="Raw",
+            )
+            ax.plot(
+                df["Voltage"],
+                df["dQ/dV_processed"],
+                color="#0072B2",
+                linewidth=1.3,
+                label="Processed",
+            )
 
             _apply_pub_style(ax)
             ax.set_title(title, fontsize=12)
             ax.legend(fontsize=9, framealpha=0.7)
-            ax.axhline(y=0, color='grey', linewidth=0.4, linestyle='-')
+            ax.axhline(y=0, color="grey", linewidth=0.4, linestyle="-")
 
         plt.tight_layout()
         if save_location:
             fpath = os.path.join(
                 save_location,
-                f'{name}_preprocessing_qc.{image_format(params, file_format)}')
-            fig.savefig(fpath, dpi=300, bbox_inches='tight')
+                f"{name}_preprocessing_qc.{image_format(params, file_format)}",
+            )
+            fig.savefig(fpath, dpi=300, bbox_inches="tight")
             saved(fpath)
         plt.show()
         plt.close(fig)
 
 
-def plot_detected_peaks(processed_dqdv, detected_peaks, user_parameters,
-                         cycles_to_show=None, save_location=None,
-                         file_format=None):
+def plot_detected_peaks(
+    processed_dqdv,
+    detected_peaks,
+    user_parameters,
+    cycles_to_show=None,
+    save_location=None,
+    file_format=None,
+):
     """
     Annotated dQ/dV plots with detected peaks marked.
     Markers:
@@ -1223,20 +1406,22 @@ def plot_detected_peaks(processed_dqdv, detected_peaks, user_parameters,
 
     for name in processed_dqdv:
         result = processed_dqdv[name]
-        det    = detected_peaks[name]
+        det = detected_peaks[name]
         params = user_parameters.get(name, {})
         composition = _get_display_name(name, params, user_parameters)
-        ref_cycle   = det['reference_cycle']
-        data        = result['data']
+        ref_cycle = det["reference_cycle"]
+        data = result["data"]
 
         available = sorted(set(c for c, s in data.keys()))
         # Which cycles have BOTH half-cycles present (a complete cycle).
         _steps_by_cycle = {}
-        for (c, s) in data.keys():
+        for c, s in data.keys():
             _steps_by_cycle.setdefault(c, set()).add(s)
         complete_cycles = sorted(
-            c for c, steps in _steps_by_cycle.items()
-            if {'Charge', 'Discharge'} <= steps)
+            c
+            for c, steps in _steps_by_cycle.items()
+            if {"Charge", "Discharge"} <= steps
+        )
         if cycles_to_show is None:
             # Show the user's key cycles (those that exist in this
             # dataset), and always add the reference cycle and the last
@@ -1245,8 +1430,7 @@ def plot_detected_peaks(processed_dqdv, detected_peaks, user_parameters,
             # last cycle is often incomplete (odd half-cycle count), so
             # fall back to the last complete one rather than plotting a
             # half-cycle on its own.
-            key_cycles = params.get('key_cycles',
-                                    DEFAULT_KEY_CYCLES)
+            key_cycles = params.get("key_cycles", DEFAULT_KEY_CYCLES)
             wanted = [c for c in key_cycles if c in available]
             wanted.append(ref_cycle)
             if complete_cycles:
@@ -1255,35 +1439,35 @@ def plot_detected_peaks(processed_dqdv, detected_peaks, user_parameters,
                 wanted.append(available[-1])
             cycles_to_show_actual = sorted(set(wanted))
         else:
-            cycles_to_show_actual = [c for c in cycles_to_show
-                                      if c in available]
+            cycles_to_show_actual = [c for c in cycles_to_show if c in available]
 
         n_show = len(cycles_to_show_actual)
-        fig, axes = plt.subplots(n_show, 2, figsize=(13, 4 * n_show),
-                                  squeeze=False)
-        fig.suptitle(f'{composition} — detected peaks', fontsize=14,
-                     fontweight=FIGURE_TITLE_WEIGHT)
+        fig, axes = plt.subplots(n_show, 2, figsize=(13, 4 * n_show), squeeze=False)
+        fig.suptitle(
+            f"{composition} — detected peaks",
+            fontsize=14,
+            fontweight=FIGURE_TITLE_WEIGHT,
+        )
 
         for row, cycle in enumerate(cycles_to_show_actual):
-            for col, step in enumerate(['Charge', 'Discharge']):
+            for col, step in enumerate(["Charge", "Discharge"]):
                 ax = axes[row, col]
                 if (cycle, step) not in data:
                     ax.set_visible(False)
                     continue
 
                 df = data[(cycle, step)]
-                v, dq = df['Voltage'].values, df['dQ/dV_processed'].values
-                is_ref = (cycle == ref_cycle)
-                clr = COLOUR_CHARGE if step == 'Charge' else COLOUR_DISCHARGE
-                ax.plot(v, dq, color=clr, linewidth=1.5 if is_ref else 1.0,
-                        alpha=0.9)
+                v, dq = df["Voltage"].values, df["dQ/dV_processed"].values
+                is_ref = cycle == ref_cycle
+                clr = COLOUR_CHARGE if step == "Charge" else COLOUR_DISCHARGE
+                ax.plot(v, dq, color=clr, linewidth=1.5 if is_ref else 1.0, alpha=0.9)
 
-                peaks = det['peaks'].get((cycle, step), pd.DataFrame())
+                peaks = det["peaks"].get((cycle, step), pd.DataFrame())
                 if not peaks.empty:
-                    primary   = peaks[~peaks['is_shoulder'] & ~peaks['is_truncated']]
-                    shoulders = peaks[peaks['is_shoulder']]
-                    truncated = peaks[peaks['is_truncated']]
-                    mk = '^' if step == 'Charge' else 'v'
+                    primary = peaks[~peaks["is_shoulder"] & ~peaks["is_truncated"]]
+                    shoulders = peaks[peaks["is_shoulder"]]
+                    truncated = peaks[peaks["is_truncated"]]
+                    mk = "^" if step == "Charge" else "v"
 
                     # THE MARKER GOES ON THE CURVE THAT IS DRAWN. It used to
                     # be placed at `height_original`, which is the height on
@@ -1299,68 +1483,97 @@ def plot_detected_peaks(processed_dqdv, detected_peaks, user_parameters,
                     # the columns mean, so this cannot drift again if the
                     # processing changes.
                     def _on_curve(sub):
-                        return np.interp(np.asarray(sub['voltage'], float),
-                                         v, dq)
+                        return np.interp(np.asarray(sub["voltage"], float), v, dq)
 
                     if not primary.empty:
-                        ax.scatter(primary['voltage'], _on_curve(primary),
-                                   color=PEAK_KIND_COLOURS['primary'], s=50,
-                                   zorder=5, marker=mk,
-                                   edgecolors=PEAK_KIND_EDGES['primary'],
-                                   linewidths=0.5)
+                        ax.scatter(
+                            primary["voltage"],
+                            _on_curve(primary),
+                            color=PEAK_KIND_COLOURS["primary"],
+                            s=50,
+                            zorder=5,
+                            marker=mk,
+                            edgecolors=PEAK_KIND_EDGES["primary"],
+                            linewidths=0.5,
+                        )
                     if not shoulders.empty:
-                        ax.scatter(shoulders['voltage'], _on_curve(shoulders),
-                                   color=PEAK_KIND_COLOURS['shoulder'], s=50,
-                                   zorder=5, marker='s',
-                                   edgecolors=PEAK_KIND_EDGES['shoulder'],
-                                   linewidths=0.5)
+                        ax.scatter(
+                            shoulders["voltage"],
+                            _on_curve(shoulders),
+                            color=PEAK_KIND_COLOURS["shoulder"],
+                            s=50,
+                            zorder=5,
+                            marker="s",
+                            edgecolors=PEAK_KIND_EDGES["shoulder"],
+                            linewidths=0.5,
+                        )
                     if not truncated.empty:
-                        ax.scatter(truncated['voltage'], _on_curve(truncated),
-                                   color=PEAK_KIND_COLOURS['truncated'], s=60,
-                                   zorder=5, marker='D',
-                                   edgecolors=PEAK_KIND_EDGES['truncated'],
-                                   linewidths=0.5)
+                        ax.scatter(
+                            truncated["voltage"],
+                            _on_curve(truncated),
+                            color=PEAK_KIND_COLOURS["truncated"],
+                            s=60,
+                            zorder=5,
+                            marker="D",
+                            edgecolors=PEAK_KIND_EDGES["truncated"],
+                            linewidths=0.5,
+                        )
                     for _, pk in peaks.iterrows():
-                        if pk['is_truncated']:
-                            clr_a = PEAK_KIND_EDGES['truncated']
-                        elif pk['is_shoulder']:
-                            clr_a = PEAK_KIND_EDGES['shoulder']
+                        if pk["is_truncated"]:
+                            clr_a = PEAK_KIND_EDGES["truncated"]
+                        elif pk["is_shoulder"]:
+                            clr_a = PEAK_KIND_EDGES["shoulder"]
                         else:
-                            clr_a = PEAK_KIND_EDGES['primary']
+                            clr_a = PEAK_KIND_EDGES["primary"]
                         ax.annotate(
-                            f'{int(pk["peak_id"])}',
-                            (pk['voltage'],
-                             float(np.interp(float(pk['voltage']), v, dq))),
-                            textcoords='offset points',
-                            xytext=(0, 12 if step == 'Charge' else -14),
-                            ha='center', fontsize=9, fontweight='bold',
-                            color=clr_a
+                            f"{int(pk['peak_id'])}",
+                            (
+                                pk["voltage"],
+                                float(np.interp(float(pk["voltage"]), v, dq)),
+                            ),
+                            textcoords="offset points",
+                            xytext=(0, 12 if step == "Charge" else -14),
+                            ha="center",
+                            fontsize=9,
+                            fontweight="bold",
+                            color=clr_a,
                         )
 
-                n_p  = len(peaks)
-                n_sh = peaks['is_shoulder'].sum()  if not peaks.empty else 0
-                n_tr = peaks['is_truncated'].sum() if not peaks.empty else 0
+                n_p = len(peaks)
+                n_sh = peaks["is_shoulder"].sum() if not peaks.empty else 0
+                n_tr = peaks["is_truncated"].sum() if not peaks.empty else 0
                 extras = []
-                if n_sh: extras.append(f'{n_sh} shoulder')
-                if n_tr: extras.append(f'{n_tr} truncated')
-                label = f'{n_p} peaks' + (f' ({", ".join(extras)})' if extras else '')
-                suffix = ' (REFERENCE)' if is_ref else ''
-                ax.set_title(f'Cycle {cycle} — {step}{suffix}', fontsize=11)
-                ax.set_xlabel('Voltage / V', fontsize=11)
-                ax.set_ylabel('dQ/dV / mAh V$^{-1}$ g$^{-1}$', fontsize=11)
-                ax.tick_params(axis='both', labelsize=10, direction='in',
-                              top=True, right=True)
-                ax.axhline(y=0, color='grey', linewidth=0.4)
-                ax.text(0.02, 0.95, label, transform=ax.transAxes,
-                       fontsize=9, va='top', ha='left',
-                       bbox=dict(boxstyle='round,pad=0.3',
-                                facecolor='white', alpha=0.8))
+                if n_sh:
+                    extras.append(f"{n_sh} shoulder")
+                if n_tr:
+                    extras.append(f"{n_tr} truncated")
+                label = f"{n_p} peaks" + (f" ({', '.join(extras)})" if extras else "")
+                suffix = " (REFERENCE)" if is_ref else ""
+                ax.set_title(f"Cycle {cycle} — {step}{suffix}", fontsize=11)
+                ax.set_xlabel("Voltage / V", fontsize=11)
+                ax.set_ylabel("dQ/dV / mAh V$^{-1}$ g$^{-1}$", fontsize=11)
+                ax.tick_params(
+                    axis="both", labelsize=10, direction="in", top=True, right=True
+                )
+                ax.axhline(y=0, color="grey", linewidth=0.4)
+                ax.text(
+                    0.02,
+                    0.95,
+                    label,
+                    transform=ax.transAxes,
+                    fontsize=9,
+                    va="top",
+                    ha="left",
+                    bbox=dict(boxstyle="round,pad=0.3", facecolor="white", alpha=0.8),
+                )
 
         plt.tight_layout()
         if save_location:
-            fpath = os.path.join(save_location,
-                                f'{name}_detected_peaks.{image_format(params, file_format)}')
-            fig.savefig(fpath, dpi=300, bbox_inches='tight')
+            fpath = os.path.join(
+                save_location,
+                f"{name}_detected_peaks.{image_format(params, file_format)}",
+            )
+            fig.savefig(fpath, dpi=300, bbox_inches="tight")
             saved(fpath)
         plt.show()
         plt.close(fig)
@@ -1375,39 +1588,51 @@ def plot_detected_peaks(processed_dqdv, detected_peaks, user_parameters,
         # table was fabricated and nothing said so.
         print(f"\n  Reference peak summary (Cycle {ref_cycle}):")
         _any_estimated = False
-        for step in ['Charge', 'Discharge']:
-            rp = det['reference_peaks'][step]
+        for step in ["Charge", "Discharge"]:
+            rp = det["reference_peaks"][step]
             if rp is not None and not rp.empty:
                 print(f"\n  {step}:")
-                print(f"  {'Peak':>4}  {'Voltage/V':>10}  {'Height':>10}  "
-                      f"{'Prominence':>12}  {'FWHM/mV':>8}  {'Type':>12}")
+                print(
+                    f"  {'Peak':>4}  {'Voltage/V':>10}  {'Height':>10}  "
+                    f"{'Prominence':>12}  {'FWHM/mV':>8}  {'Type':>12}"
+                )
                 for _, pk in rp.iterrows():
-                    if pk['is_truncated']:
-                        ptype = 'truncated'
-                    elif pk['is_shoulder']:
-                        ptype = 'shoulder'
+                    if pk["is_truncated"]:
+                        ptype = "truncated"
+                    elif pk["is_shoulder"]:
+                        ptype = "shoulder"
                     else:
-                        ptype = 'primary'
-                    est = bool(pk.get('prominence_estimated', False))
+                        ptype = "primary"
+                    est = bool(pk.get("prominence_estimated", False))
                     _any_estimated = _any_estimated or est
-                    prom = (f"~{pk['prominence']:.3f}" if est
-                            else f"{pk['prominence']:.3f}")
-                    _w = float(pk['width_V']) * 1000.0
-                    width = ("--" if (not np.isfinite(_w) or _w <= 0.0)
-                             else f"{_w:.1f}")
-                    print(f"  {int(pk['peak_id']):>4}  {pk['voltage']:>10.4f}  "
-                          f"{pk['height']:>10.3f}  {prom:>12}  "
-                          f"{width:>8}  {ptype:>12}")
+                    prom = (
+                        f"~{pk['prominence']:.3f}" if est else f"{pk['prominence']:.3f}"
+                    )
+                    _w = float(pk["width_V"]) * 1000.0
+                    width = "--" if (not np.isfinite(_w) or _w <= 0.0) else f"{_w:.1f}"
+                    print(
+                        f"  {int(pk['peak_id']):>4}  {pk['voltage']:>10.4f}  "
+                        f"{pk['height']:>10.3f}  {prom:>12}  "
+                        f"{width:>8}  {ptype:>12}"
+                    )
         if _any_estimated:
-            print("\n  ~ prominence NOT measured — a shoulder is not a local "
-                  "maximum, so this is a\n    placeholder of 0.1 x height, and "
-                  "it is what ranks the peak if the list is\n    capped. "
-                  "-- width not measured, for the same reason.")
+            print(
+                "\n  ~ prominence NOT measured — a shoulder is not a local "
+                "maximum, so this is a\n    placeholder of 0.1 x height, and "
+                "it is what ranks the peak if the list is\n    capped. "
+                "-- width not measured, for the same reason."
+            )
 
 
-def plot_fit_quality(processed_dqdv, detected_peaks, fit_results,
-                      user_parameters, cycles_to_show=None,
-                      save_location=None, file_format=None):
+def plot_fit_quality(
+    processed_dqdv,
+    detected_peaks,
+    fit_results,
+    user_parameters,
+    cycles_to_show=None,
+    save_location=None,
+    file_format=None,
+):
     """
     Show fitted curves overlaid on data with individual components
     and Rietveld-style residual panels.
@@ -1422,66 +1647,65 @@ def plot_fit_quality(processed_dqdv, detected_peaks, fit_results,
     cycle (if any) for honest quality assessment.
     """
     for name in fit_results:
-        data = processed_dqdv[name]['data']
+        data = processed_dqdv[name]["data"]
         det = detected_peaks[name]
-        fits = fit_results[name]['fits']
-        fs = fit_results[name]['fit_summary']
+        fits = fit_results[name]["fits"]
+        fs = fit_results[name]["fit_summary"]
         params = user_parameters.get(name, {})
         composition = _get_display_name(name, params, user_parameters)
-        key_cycles = params.get('key_cycles', DEFAULT_KEY_CYCLES)
-        ref_cycle = det['reference_cycle']
+        key_cycles = params.get("key_cycles", DEFAULT_KEY_CYCLES)
+        ref_cycle = det["reference_cycle"]
 
         if cycles_to_show is None:
             available = sorted(set(c for c, s in data.keys()))
-            cycles_to_show_actual = sorted(set(
-                [c for c in key_cycles if c in available][:5]
-            ))
-            if (ref_cycle not in cycles_to_show_actual and
-                ref_cycle in available):
-                cycles_to_show_actual = sorted(set(
-                    cycles_to_show_actual + [ref_cycle]
-                ))
+            cycles_to_show_actual = sorted(
+                set([c for c in key_cycles if c in available][:5])
+            )
+            if ref_cycle not in cycles_to_show_actual and ref_cycle in available:
+                cycles_to_show_actual = sorted(set(cycles_to_show_actual + [ref_cycle]))
 
             # Add worst-fitting converged cycle for honest QC
-            converged = fs[fs['success'] == True]
+            converged = fs[fs["success"] == True]
             if not converged.empty:
-                worst = converged.loc[converged['r_squared'].idxmin()]
-                worst_cycle = int(worst['cycle'])
+                worst = converged.loc[converged["r_squared"].idxmin()]
+                worst_cycle = int(worst["cycle"])
                 if worst_cycle not in cycles_to_show_actual:
-                    cycles_to_show_actual = sorted(set(
-                        cycles_to_show_actual + [worst_cycle]
-                    ))
-                    print(f"  Including cycle {worst_cycle} "
-                          f"(lowest R² = {worst['r_squared']:.4f}, "
-                          f"{worst['step']}) for QC")
+                    cycles_to_show_actual = sorted(
+                        set(cycles_to_show_actual + [worst_cycle])
+                    )
+                    print(
+                        f"  Including cycle {worst_cycle} "
+                        f"(lowest R² = {worst['r_squared']:.4f}, "
+                        f"{worst['step']}) for QC"
+                    )
                 else:
                     # Worst already shown — find worst unseen
-                    unseen = converged[
-                        ~converged['cycle'].isin(cycles_to_show_actual)
-                    ]
+                    unseen = converged[~converged["cycle"].isin(cycles_to_show_actual)]
                     if not unseen.empty:
-                        worst2 = unseen.loc[
-                            unseen['r_squared'].idxmin()]
-                        w2_cycle = int(worst2['cycle'])
-                        cycles_to_show_actual = sorted(set(
-                            cycles_to_show_actual + [w2_cycle]
-                        ))
-                        print(f"  Including cycle {w2_cycle} "
-                              f"(lowest unseen R² = "
-                              f"{worst2['r_squared']:.4f}, "
-                              f"{worst2['step']}) for QC")
+                        worst2 = unseen.loc[unseen["r_squared"].idxmin()]
+                        w2_cycle = int(worst2["cycle"])
+                        cycles_to_show_actual = sorted(
+                            set(cycles_to_show_actual + [w2_cycle])
+                        )
+                        print(
+                            f"  Including cycle {w2_cycle} "
+                            f"(lowest unseen R² = "
+                            f"{worst2['r_squared']:.4f}, "
+                            f"{worst2['step']}) for QC"
+                        )
 
             # Also include one failed cycle if any exist
-            failed = fs[fs['success'] == False]
+            failed = fs[fs["success"] == False]
             if not failed.empty:
-                fail_cycle = int(failed['cycle'].iloc[0])
-                fail_step = failed['step'].iloc[0]
+                fail_cycle = int(failed["cycle"].iloc[0])
+                fail_step = failed["step"].iloc[0]
                 if fail_cycle not in cycles_to_show_actual:
-                    cycles_to_show_actual = sorted(set(
-                        cycles_to_show_actual + [fail_cycle]
-                    ))
-                    print(f"  Including cycle {fail_cycle} "
-                          f"(FAILED, {fail_step}) for QC")
+                    cycles_to_show_actual = sorted(
+                        set(cycles_to_show_actual + [fail_cycle])
+                    )
+                    print(
+                        f"  Including cycle {fail_cycle} (FAILED, {fail_step}) for QC"
+                    )
         else:
             cycles_to_show_actual = cycles_to_show
 
@@ -1491,17 +1715,20 @@ def plot_fit_quality(processed_dqdv, detected_peaks, fit_results,
         fig = plt.figure(figsize=(13, 5.0 * n_show))
 
         outer_gs = gridspec.GridSpec(
-            n_show, 1, figure=fig,
-            hspace=0.35, top=0.95, bottom=0.04
+            n_show, 1, figure=fig, hspace=0.35, top=0.95, bottom=0.04
         )
 
         for row, cycle in enumerate(cycles_to_show_actual):
             inner_gs = gridspec.GridSpecFromSubplotSpec(
-                2, 2, subplot_spec=outer_gs[row],
-                height_ratios=[5, 1], hspace=0.05, wspace=0.3
+                2,
+                2,
+                subplot_spec=outer_gs[row],
+                height_ratios=[5, 1],
+                hspace=0.05,
+                wspace=0.3,
             )
 
-            for col, step in enumerate(['Charge', 'Discharge']):
+            for col, step in enumerate(["Charge", "Discharge"]):
                 ax = fig.add_subplot(inner_gs[0, col])
                 ax_res = fig.add_subplot(inner_gs[1, col], sharex=ax)
 
@@ -1511,32 +1738,37 @@ def plot_fit_quality(processed_dqdv, detected_peaks, fit_results,
                     continue
 
                 df = data[(cycle, step)]
-                voltage = df['Voltage'].values
-                dqdv = df['dQ/dV_processed'].values
+                voltage = df["Voltage"].values
+                dqdv = df["dQ/dV_processed"].values
 
-                colour = COLOUR_CHARGE if step == 'Charge' else COLOUR_DISCHARGE
-                ax.plot(voltage, dqdv, color='grey', linewidth=1.0,
-                        alpha=0.6, label='Data')
+                colour = COLOUR_CHARGE if step == "Charge" else COLOUR_DISCHARGE
+                ax.plot(
+                    voltage, dqdv, color="grey", linewidth=1.0, alpha=0.6, label="Data"
+                )
 
                 fit = fits.get((cycle, step))
-                if (fit is not None and
-                    fit.get('lmfit_result') is not None):
-                    result = fit['lmfit_result']
+                if fit is not None and fit.get("lmfit_result") is not None:
+                    result = fit["lmfit_result"]
 
                     best_fit = result.best_fit
-                    if step == 'Discharge':
+                    if step == "Discharge":
                         best_fit = -best_fit
 
-                    ax.plot(voltage, best_fit, color=colour,
-                            linewidth=1.5, label='Composite fit')
+                    ax.plot(
+                        voltage,
+                        best_fit,
+                        color=colour,
+                        linewidth=1.5,
+                        label="Composite fit",
+                    )
 
                     # Individual components
                     comps = result.eval_components(x=voltage)
                     for comp_name, comp_vals in comps.items():
-                        if step == 'Discharge':
+                        if step == "Discharge":
                             comp_vals = -comp_vals
 
-                        if 'bg_' in comp_name:
+                        if "bg_" in comp_name:
                             # Only if there IS one. With no free background
                             # the component is identically zero, and a flat
                             # line at zero labelled "Baseline" tells the
@@ -1544,46 +1776,65 @@ def plot_fit_quality(processed_dqdv, detected_peaks, fit_results,
                             if float(np.nanmax(np.abs(comp_vals))) <= 0.0:
                                 continue
                             _drew_baseline = True
-                            ax.plot(voltage, comp_vals, 'k--',
-                                   linewidth=0.8, alpha=0.5,
-                                   label='Baseline')
+                            ax.plot(
+                                voltage,
+                                comp_vals,
+                                "k--",
+                                linewidth=0.8,
+                                alpha=0.5,
+                                label="Baseline",
+                            )
                         else:
-                            ax.fill_between(voltage, comp_vals,
-                                           alpha=0.15, color=colour)
-                            ax.plot(voltage, comp_vals, color=colour,
-                                   linewidth=0.6, alpha=0.5,
-                                   linestyle='--')
+                            ax.fill_between(
+                                voltage, comp_vals, alpha=0.15, color=colour
+                            )
+                            ax.plot(
+                                voltage,
+                                comp_vals,
+                                color=colour,
+                                linewidth=0.6,
+                                alpha=0.5,
+                                linestyle="--",
+                            )
 
-                    is_ref = (cycle == ref_cycle)
-                    suffix = ' (REF)' if is_ref else ''
+                    is_ref = cycle == ref_cycle
+                    suffix = " (REF)" if is_ref else ""
                     ax.text(
-                        0.02, 0.95,
-                        f'R² = {fit["r_squared"]:.4f}{suffix}',
-                        transform=ax.transAxes, fontsize=9,
-                        va='top', ha='left',
-                        bbox=dict(boxstyle='round,pad=0.3',
-                                 facecolor='white', alpha=0.8)
+                        0.02,
+                        0.95,
+                        f"R² = {fit['r_squared']:.4f}{suffix}",
+                        transform=ax.transAxes,
+                        fontsize=9,
+                        va="top",
+                        ha="left",
+                        bbox=dict(
+                            boxstyle="round,pad=0.3", facecolor="white", alpha=0.8
+                        ),
                     )
 
                     # Difference plot
-                    residuals = fit['residuals']
+                    residuals = fit["residuals"]
                     if residuals is not None:
-                        if step == 'Discharge':
+                        if step == "Discharge":
                             residuals = -residuals
-                        ax_res.plot(voltage, residuals,
-                                   color=colour, linewidth=0.6,
-                                   alpha=0.7)
-                        ax_res.axhline(y=0, color='grey',
-                                      linewidth=0.4)
-                        ax_res.fill_between(voltage, residuals,
-                                           alpha=0.1, color=colour)
+                        ax_res.plot(
+                            voltage, residuals, color=colour, linewidth=0.6, alpha=0.7
+                        )
+                        ax_res.axhline(y=0, color="grey", linewidth=0.4)
+                        ax_res.fill_between(voltage, residuals, alpha=0.1, color=colour)
 
-                elif fit is not None and not fit.get('success', False):
+                elif fit is not None and not fit.get("success", False):
                     ax.text(
-                        0.5, 0.5, 'FIT FAILED',
-                        transform=ax.transAxes, fontsize=14,
-                        ha='center', va='center',
-                        color='red', fontweight='bold', alpha=0.5
+                        0.5,
+                        0.5,
+                        "FIT FAILED",
+                        transform=ax.transAxes,
+                        fontsize=14,
+                        ha="center",
+                        va="center",
+                        color="red",
+                        fontweight="bold",
+                        alpha=0.5,
                     )
 
                 # THE PANEL SHOWS THE FEATURE, NOT THE WHOLE WINDOW.
@@ -1605,12 +1856,15 @@ def plot_fit_quality(processed_dqdv, detected_peaks, fit_results,
                     _mx = float(np.nanmax(_amp)) if _amp.size else 0.0
                     if _mx > 0:
                         _keep = np.asarray(voltage, float)[
-                            _amp >= PEAK_FIT_XLIM_FLOOR * _mx]
+                            _amp >= PEAK_FIT_XLIM_FLOOR * _mx
+                        ]
                         if _keep.size:
                             _lo, _hi = float(_keep.min()), float(_keep.max())
-                            _pad = max(PEAK_FIT_XLIM_PAD * (_hi - _lo),
-                                       0.5 * (PEAK_FIT_XLIM_MIN_V - (_hi - _lo)),
-                                       0.0)
+                            _pad = max(
+                                PEAK_FIT_XLIM_PAD * (_hi - _lo),
+                                0.5 * (PEAK_FIT_XLIM_MIN_V - (_hi - _lo)),
+                                0.0,
+                            )
                             _v0 = float(np.nanmin(voltage))
                             _v1 = float(np.nanmax(voltage))
                             _lo, _hi = max(_v0, _lo - _pad), min(_v1, _hi + _pad)
@@ -1620,31 +1874,35 @@ def plot_fit_quality(processed_dqdv, detected_peaks, fit_results,
                     pass
 
                 # Fit panel formatting
-                ax.set_title(f'Cycle {cycle} — {step}', fontsize=11)
-                ax.set_ylabel('dQ/dV / mAh V$^{-1}$ g$^{-1}$',
-                             fontsize=11)
-                ax.tick_params(axis='both', labelsize=10, direction='in',
-                              top=True, right=True)
-                ax.axhline(y=0, color='grey', linewidth=0.4)
-                ax.legend(fontsize=8, loc='best')
+                ax.set_title(f"Cycle {cycle} — {step}", fontsize=11)
+                ax.set_ylabel("dQ/dV / mAh V$^{-1}$ g$^{-1}$", fontsize=11)
+                ax.tick_params(
+                    axis="both", labelsize=10, direction="in", top=True, right=True
+                )
+                ax.axhline(y=0, color="grey", linewidth=0.4)
+                ax.legend(fontsize=8, loc="best")
                 plt.setp(ax.get_xticklabels(), visible=False)
 
                 # Residual panel formatting
-                ax_res.set_xlabel('Voltage / V', fontsize=11)
-                ax_res.set_ylabel('Resid.', fontsize=9)
-                ax_res.tick_params(axis='both', labelsize=9,
-                                  direction='in', top=True, right=True)
+                ax_res.set_xlabel("Voltage / V", fontsize=11)
+                ax_res.set_ylabel("Resid.", fontsize=9)
+                ax_res.tick_params(
+                    axis="both", labelsize=9, direction="in", top=True, right=True
+                )
                 for sp in ax_res.spines.values():
                     sp.set_linewidth(0.6)
 
-        fig.suptitle(f'{composition} — multi-peak fits', fontsize=14,
-                     fontweight=FIGURE_TITLE_WEIGHT)
+        fig.suptitle(
+            f"{composition} — multi-peak fits",
+            fontsize=14,
+            fontweight=FIGURE_TITLE_WEIGHT,
+        )
 
         if save_location:
             fpath = os.path.join(
-                save_location, f'{name}_peak_fits.{image_format(params, file_format)}'
+                save_location, f"{name}_peak_fits.{image_format(params, file_format)}"
             )
-            fig.savefig(fpath, dpi=300, bbox_inches='tight')
+            fig.savefig(fpath, dpi=300, bbox_inches="tight")
             saved(fpath)
 
         _caption(
@@ -1653,20 +1911,22 @@ def plot_fit_quality(processed_dqdv, detected_peaks, fit_results,
             f"{len(cycles_to_show_actual)} representative cycles. Grey points "
             f"are the processed data, the solid line the summed model, "
             f"filled curves the individual named components"
-            + (" and the dashed line the polynomial baseline"
-               if _drew_baseline else
-               "; the model carries no free background, so every part of "
-               "the curve shown is charge attributed to a named component "
-               "or reported as unattributed")
+            + (
+                " and the dashed line the polynomial baseline"
+                if _drew_baseline
+                else "; the model carries no free background, so every part of "
+                "the curve shown is charge attributed to a named component "
+                "or reported as unattributed"
+            )
             + f". Each panel is annotated with its "
             f"coefficient of determination; the lower trace of each pair is "
             f"the residual, on the same voltage axis. Fitted parameters for "
             f"every cycle are tabulated in "
-            f"{name}_fitted_parameters.csv.")
+            f"{name}_fitted_parameters.csv."
+        )
 
         plt.show()
         plt.close(fig)
-
 
 
 # --- is a peak AREA a capacity on this dataset? ----------------------------
@@ -1691,8 +1951,7 @@ def _areas_are_capacities(summary, step=None):
     return _ok, _reason
 
 
-def plot_tracked_trends(tracked, user_parameters,
-                         save_location=None, file_format=None):
+def plot_tracked_trends(tracked, user_parameters, save_location=None, file_format=None):
     """
     Three-panel trend plots: centre voltage, peak area, FWHM vs cycle.
 
@@ -1703,71 +1962,90 @@ def plot_tracked_trends(tracked, user_parameters,
     for name, tr in tracked.items():
         params = user_parameters.get(name, {})
         composition = _get_display_name(name, params, user_parameters)
-        tdf = tr['tracked_df']
-        ghost_peaks = tr.get('ghost_peaks', set())
-        _summary = tr.get('summary') or {}
+        tdf = tr["tracked_df"]
+        ghost_peaks = tr.get("ghost_peaks", set())
+        _summary = tr.get("summary") or {}
 
-        for step in ['Charge', 'Discharge']:
-            step_df = tdf[
-                (tdf['step'] == step) & (tdf['status'] == 'tracked')
-            ]
+        for step in ["Charge", "Discharge"]:
+            step_df = tdf[(tdf["step"] == step) & (tdf["status"] == "tracked")]
             if step_df.empty:
                 continue
 
             # Exclude ghost peaks from trend plots
-            plot_ids = sorted([
-                pid for pid in step_df['tracked_peak_id'].unique()
-                if (step, int(pid)) not in ghost_peaks
-            ])
+            plot_ids = sorted(
+                [
+                    pid
+                    for pid in step_df["tracked_peak_id"].unique()
+                    if (step, int(pid)) not in ghost_peaks
+                ]
+            )
             if not plot_ids:
                 continue
             colours = categorical_colours(len(plot_ids))
 
-            fig, (ax1, ax2, ax3) = plt.subplots(
-                3, 1, figsize=(10, 10), sharex=True)
-            fig.suptitle(f'{composition} — {step} peak evolution',
-                        fontsize=14, fontweight=FIGURE_TITLE_WEIGHT)
+            fig, (ax1, ax2, ax3) = plt.subplots(3, 1, figsize=(10, 10), sharex=True)
+            fig.suptitle(
+                f"{composition} — {step} peak evolution",
+                fontsize=14,
+                fontweight=FIGURE_TITLE_WEIGHT,
+            )
             _n_band_clipped = 0
             _split_seen = False
 
             for i, pid in enumerate(plot_ids):
-                pk = step_df[
-                    step_df['tracked_peak_id'] == pid
-                ].sort_values('cycle')
+                pk = step_df[step_df["tracked_peak_id"] == pid].sort_values("cycle")
 
-                ref_v = pk['reference_voltage'].iloc[0]
-                is_sh = pk['is_shoulder'].iloc[0]
-                is_tr = pk.get('is_truncated', pd.Series([False])).iloc[0]
-                label = f'Peak {pid} ({ref_v:.3f} V)'
+                ref_v = pk["reference_voltage"].iloc[0]
+                is_sh = pk["is_shoulder"].iloc[0]
+                is_tr = pk.get("is_truncated", pd.Series([False])).iloc[0]
+                label = f"Peak {pid} ({ref_v:.3f} V)"
                 if is_sh:
-                    label += ' [sh]'
+                    label += " [sh]"
                 if is_tr:
-                    label += ' [trunc]'
-                clr    = colours[i]
-                marker = 's' if is_sh else 'o'
+                    label += " [trunc]"
+                clr = colours[i]
+                marker = "s" if is_sh else "o"
 
-                if 'reliable' in pk.columns:
-                    pk_good = pk[pk['reliable']]
-                    pk_bad  = pk[~pk['reliable']]
+                if "reliable" in pk.columns:
+                    pk_good = pk[pk["reliable"]]
+                    pk_bad = pk[~pk["reliable"]]
                 else:
                     pk_good = pk
-                    pk_bad  = pk.iloc[0:0]
+                    pk_bad = pk.iloc[0:0]
 
                 for ax, col, ylabel in [
-                    (ax1, 'centre',         'Centre voltage / V'),
-                    (ax2, 'amplitude_area', 'Peak area (∝ capacity)'),
-                    (ax3, 'fwhm',           'FWHM / mV'),
+                    (ax1, "centre", "Centre voltage / V"),
+                    (ax2, "amplitude_area", "Peak area (∝ capacity)"),
+                    (ax3, "fwhm", "FWHM / mV"),
                 ]:
-                    scale = 1000 if col == 'fwhm' else 1
-                    ax.plot(pk['cycle'], pk[col] * scale,
-                            color=clr, linewidth=0.5, alpha=0.3)
-                    ax.plot(pk_good['cycle'], pk_good[col] * scale,
-                            color=clr, marker=marker, markersize=4,
-                            linewidth=0, label=label)
+                    scale = 1000 if col == "fwhm" else 1
+                    ax.plot(
+                        pk["cycle"],
+                        pk[col] * scale,
+                        color=clr,
+                        linewidth=0.5,
+                        alpha=0.3,
+                    )
+                    ax.plot(
+                        pk_good["cycle"],
+                        pk_good[col] * scale,
+                        color=clr,
+                        marker=marker,
+                        markersize=4,
+                        linewidth=0,
+                        label=label,
+                    )
                     if not pk_bad.empty:
-                        ax.plot(pk_bad['cycle'], pk_bad[col] * scale,
-                                color=clr, marker=marker, markersize=4,
-                                linewidth=0, fillstyle='none', alpha=0.35)
+                        ax.plot(
+                            pk_bad["cycle"],
+                            pk_bad[col] * scale,
+                            color=clr,
+                            marker=marker,
+                            markersize=4,
+                            linewidth=0,
+                            fillstyle="none",
+                            alpha=0.35,
+                        )
                     # A +/-1 sigma envelope on all three panels. Until
                     # 1.9.0.4 only the centre carried one, although the fit
                     # returns a standard error for every parameter and
@@ -1778,20 +2056,24 @@ def plot_tracked_trends(tracked, user_parameters,
                     # them invites the reader to believe a wobble that the
                     # fit itself calls noise.
                     _err_col, _err_scale, _clip = {
-                        'centre':         ('centre_stderr',    1.0,
-                                           TREND_BAND_CLIP_V),
-                        'amplitude_area': ('amplitude_stderr', 1.0, None),
-                        'fwhm':           ('sigma_stderr',     2.0,
-                                           TREND_BAND_CLIP_V),
+                        "centre": ("centre_stderr", 1.0, TREND_BAND_CLIP_V),
+                        "amplitude_area": ("amplitude_stderr", 1.0, None),
+                        "fwhm": ("sigma_stderr", 2.0, TREND_BAND_CLIP_V),
                     }[col]
-                    if (_err_col in pk_good.columns and not pk_good.empty
-                            and pk_good[_err_col].notna().any()
-                            and len(pk_good) >= 2):
+                    if (
+                        _err_col in pk_good.columns
+                        and not pk_good.empty
+                        and pk_good[_err_col].notna().any()
+                        and len(pk_good) >= 2
+                    ):
                         se = pk_good[_err_col].fillna(0) * _err_scale
-                        if col == 'fwhm' and 'sigma_r_stderr' in pk_good.columns \
-                                and pk_good['sigma_r_stderr'].notna().any():
+                        if (
+                            col == "fwhm"
+                            and "sigma_r_stderr" in pk_good.columns
+                            and pk_good["sigma_r_stderr"].notna().any()
+                        ):
                             _split_seen = True
-                        if col == 'fwhm' and 'sigma_r_stderr' in pk_good.columns:
+                        if col == "fwhm" and "sigma_r_stderr" in pk_good.columns:
                             # FWHM IS NO LONGER 2 x SIGMA. With a split
                             # lineshape it is sigma + sigma_r, so its error is
                             # the two errors ADDED — not in quadrature: the
@@ -1801,10 +2083,9 @@ def plot_tracked_trends(tracked, user_parameters,
                             # pair. On LTO, where k is about 9, the old
                             # 2 x sigma_stderr drew a band five times too
                             # narrow.
-                            _sr = pk_good['sigma_r_stderr']
+                            _sr = pk_good["sigma_r_stderr"]
                             if _sr.notna().any():
-                                se = (pk_good['sigma_stderr'].fillna(0)
-                                      + _sr.fillna(0))
+                                se = pk_good["sigma_stderr"].fillna(0) + _sr.fillna(0)
                         if _clip is not None:
                             # Clipped for display: one unconverged cycle
                             # otherwise draws a triangle across the panel.
@@ -1821,12 +2102,11 @@ def plot_tracked_trends(tracked, user_parameters,
                         else:
                             # No natural ceiling on an area, so clip to the
                             # peak's own median area instead of a constant.
-                            _med = float(pk_good['amplitude_area'].abs()
-                                         .median())
+                            _med = float(pk_good["amplitude_area"].abs().median())
                             if np.isfinite(_med) and _med > 0:
                                 se = se.clip(upper=_med)
                         _lo = (pk_good[col] - se) * scale
-                        if col in ('fwhm', 'amplitude_area'):
+                        if col in ("fwhm", "amplitude_area"):
                             # A NEGATIVE WIDTH IS NOT A LOWER BOUND. On LTO
                             # cell C cycle 10 `sigma_stderr` (3.603e-3)
                             # exceeded `sigma` (3.000e-3) — a component
@@ -1837,61 +2117,80 @@ def plot_tracked_trends(tracked, user_parameters,
                             # the flag that says WHY belongs in the table.
                             _lo = _lo.clip(lower=0.0)
                         ax.fill_between(
-                            pk_good['cycle'], _lo,
+                            pk_good["cycle"],
+                            _lo,
                             (pk_good[col] + se) * scale,
-                            alpha=0.15, color=clr)
+                            alpha=0.15,
+                            color=clr,
+                        )
 
             _cap_ok, _cap_why = _areas_are_capacities(_summary, step)
             for ax, ylabel in [
-                (ax1, 'Centre voltage / V'),
-                (ax2, 'Peak area (∝ capacity)' if _cap_ok
-                 else 'Peak area / mAh V⁻¹ g⁻¹ (NOT a capacity)'),
-                (ax3, 'FWHM / mV'),
+                (ax1, "Centre voltage / V"),
+                (
+                    ax2,
+                    "Peak area (∝ capacity)"
+                    if _cap_ok
+                    else "Peak area / mAh V⁻¹ g⁻¹ (NOT a capacity)",
+                ),
+                (ax3, "FWHM / mV"),
             ]:
                 ax.set_ylabel(ylabel, fontsize=12)
-                ax.tick_params(axis='both', labelsize=10, direction='in',
-                              top=True, right=True)
-                ax.legend(fontsize=8, loc='best', framealpha=0.7)
+                ax.tick_params(
+                    axis="both", labelsize=10, direction="in", top=True, right=True
+                )
+                ax.legend(fontsize=8, loc="best", framealpha=0.7)
                 for sp in ax.spines.values():
                     sp.set_linewidth(0.8)
-            ax3.set_xlabel('Cycle number', fontsize=12)
+            ax3.set_xlabel("Cycle number", fontsize=12)
             _force_integer_cycles(ax3)
 
             plt.tight_layout()
             if save_location:
-                fpath = os.path.join(save_location,
-                    f'{name}_peak_trends_{step}.{image_format(params, file_format)}')
-                fig.savefig(fpath, dpi=300, bbox_inches='tight')
+                fpath = os.path.join(
+                    save_location,
+                    f"{name}_peak_trends_{step}.{image_format(params, file_format)}",
+                )
+                fig.savefig(fpath, dpi=300, bbox_inches="tight")
                 saved(fpath)
             _caption(
                 f"Figure X. Evolution of the fitted {step.lower()} peaks of "
                 f"{composition} with cycle number: (a) peak centre, (b) peak "
-                + ("area, which is proportional to the capacity stored by "
-                   "that process, " if _cap_ok else
-                   "area — which on this dataset is NOT proportional to the "
-                   "capacity stored by that process"
-                   + (f" ({_cap_why})" if _cap_why else "")
-                   + ", so the panel shows how the fitted area changes and "
-                     "not how much charge the process carried, ")
+                + (
+                    "area, which is proportional to the capacity stored by "
+                    "that process, "
+                    if _cap_ok
+                    else "area — which on this dataset is NOT proportional to the "
+                    "capacity stored by that process"
+                    + (f" ({_cap_why})" if _cap_why else "")
+                    + ", so the panel shows how the fitted area changes and "
+                    "not how much charge the process carried, "
+                )
                 + f"and (c) full width at half maximum. Filled "
                 f"markers are cycles in which the fit met the reliability "
                 f"criteria; open markers are cycles in which it did not, and "
                 f"are shown for completeness but excluded from the trends. "
                 + f"{_BAND_NOTE} "
-                + ("The width band is the standard errors on sigma and "
-                   "sigma_r ADDED, since this model's FWHM is their sum and "
-                   "the two are tied by one ratio, so a quadrature sum would "
-                   "understate a correlated pair."
-                   if _split_seen else
-                   "The width band is twice the standard error on sigma, "
-                   "since FWHM = 2\u03c3 exactly for the symmetric form of "
-                   "this model.")
-                + (f" The centre and width bands are capped at \u00b1"
-                   f"{1000 * TREND_BAND_CLIP_V:.0f} mV for legibility; "
-                   f"{_n_band_clipped} point(s) have a larger standard error "
-                   f"than that and are drawn narrower than they are. The "
-                   f"unclipped values are in the tracked-peaks table."
-                   if _n_band_clipped else ""))
+                + (
+                    "The width band is the standard errors on sigma and "
+                    "sigma_r ADDED, since this model's FWHM is their sum and "
+                    "the two are tied by one ratio, so a quadrature sum would "
+                    "understate a correlated pair."
+                    if _split_seen
+                    else "The width band is twice the standard error on sigma, "
+                    "since FWHM = 2\u03c3 exactly for the symmetric form of "
+                    "this model."
+                )
+                + (
+                    f" The centre and width bands are capped at \u00b1"
+                    f"{1000 * TREND_BAND_CLIP_V:.0f} mV for legibility; "
+                    f"{_n_band_clipped} point(s) have a larger standard error "
+                    f"than that and are drawn narrower than they are. The "
+                    f"unclipped values are in the tracked-peaks table."
+                    if _n_band_clipped
+                    else ""
+                )
+            )
             plt.show()
             plt.close(fig)
 
@@ -1904,45 +2203,53 @@ def _build_ref_voltage_lookup(tracked_peaks, name):
     every cycle, causing nan labels).
     """
     lookup = {}
-    ref_peaks = tracked_peaks[name]['reference_peaks']
-    for step in ['Charge', 'Discharge']:
+    ref_peaks = tracked_peaks[name]["reference_peaks"]
+    for step in ["Charge", "Discharge"]:
         rp = ref_peaks.get(step, pd.DataFrame())
         if rp is not None and not rp.empty:
             for _, pk in rp.iterrows():
-                key = (step, int(pk['peak_id']))
-                lookup[key] = pk['voltage']
+                key = (step, int(pk["peak_id"]))
+                lookup[key] = pk["voltage"]
     return lookup
 
 
-def plot_delta_v(delta_v_results, user_parameters,
-                  save_location=None, file_format=None):
+def plot_delta_v(
+    delta_v_results, user_parameters, save_location=None, file_format=None
+):
     """Plot ΔV evolution with error bands and linear trend."""
     for name, dvr in delta_v_results.items():
         params = user_parameters.get(name, {})
         composition = _get_display_name(name, params, user_parameters)
-        dv_df = dvr['delta_v_df']
-        dv_changes = dvr.get('delta_v_changes', {})
+        dv_df = dvr["delta_v_df"]
+        dv_changes = dvr.get("delta_v_changes", {})
 
         if dv_df.empty:
             continue
 
-        pair_labels = sorted(dv_df['pair_label'].unique())
+        pair_labels = sorted(dv_df["pair_label"].unique())
         colours = categorical_colours(len(pair_labels))
 
         fig, ax = plt.subplots(figsize=(figure_width_inches, figure_height_inches))
 
         _n_clipped = 0
         for i, label in enumerate(pair_labels):
-            pd_pair = dv_df[dv_df['pair_label'] == label].sort_values('cycle')
-            rate_str = (f' (net {dv_changes[label][0]:+.0f} mV)'
-                       if label in dv_changes else '')
+            pd_pair = dv_df[dv_df["pair_label"] == label].sort_values("cycle")
+            rate_str = (
+                f" (net {dv_changes[label][0]:+.0f} mV)" if label in dv_changes else ""
+            )
 
-            ax.plot(pd_pair['cycle'], pd_pair['delta_v_mV'],
-                   color=colours[i], marker='o', markersize=5,
-                   linewidth=1.2, label=f'{label}{rate_str}')
+            ax.plot(
+                pd_pair["cycle"],
+                pd_pair["delta_v_mV"],
+                color=colours[i],
+                marker="o",
+                markersize=5,
+                linewidth=1.2,
+                label=f"{label}{rate_str}",
+            )
 
-            if pd_pair['delta_v_stderr_mV'].notna().any():
-                se = pd_pair['delta_v_stderr_mV'].fillna(0)
+            if pd_pair["delta_v_stderr_mV"].notna().any():
+                se = pd_pair["delta_v_stderr_mV"].fillna(0)
                 # CLIPPED FOR DISPLAY, AND THE FIGURE SAYS SO. The cap keeps
                 # one absurd standard error from flattening the whole panel —
                 # P3 cell C carries a `delta_v_stderr_mV` of 498245 — but the
@@ -1953,33 +2260,42 @@ def plot_delta_v(delta_v_results, user_parameters,
                 # silence about it is not.
                 _n_clipped += int((se > DELTA_V_BAND_CLIP_MV).sum())
                 se = se.clip(upper=DELTA_V_BAND_CLIP_MV)
-                ax.fill_between(pd_pair['cycle'],
-                    pd_pair['delta_v_mV'] - se,
-                    pd_pair['delta_v_mV'] + se,
-                    alpha=0.15, color=colours[i])
+                ax.fill_between(
+                    pd_pair["cycle"],
+                    pd_pair["delta_v_mV"] - se,
+                    pd_pair["delta_v_mV"] + se,
+                    alpha=0.15,
+                    color=colours[i],
+                )
 
-        ax.set_xlabel('Cycle number', fontsize=13)
+        ax.set_xlabel("Cycle number", fontsize=13)
         _force_integer_cycles(ax)
-        ax.set_ylabel('ΔV (charge − discharge) / mV', fontsize=13)
-        ax.set_title(f'{composition} — polarisation evolution (ΔV)',
-                    fontsize=14)
+        ax.set_ylabel("ΔV (charge − discharge) / mV", fontsize=13)
+        ax.set_title(f"{composition} — polarisation evolution (ΔV)", fontsize=14)
         if _n_clipped:
-            ax.text(0.99, 0.02,
-                    f'shaded band capped at ±{DELTA_V_BAND_CLIP_MV:.0f} mV; '
-                    f'{_n_clipped} point(s) have a larger standard error',
-                    transform=ax.transAxes, ha='right', va='bottom',
-                    fontsize=8, style='italic', alpha=0.8)
-        ax.tick_params(axis='both', labelsize=11, direction='in',
-                      top=True, right=True)
+            ax.text(
+                0.99,
+                0.02,
+                f"shaded band capped at ±{DELTA_V_BAND_CLIP_MV:.0f} mV; "
+                f"{_n_clipped} point(s) have a larger standard error",
+                transform=ax.transAxes,
+                ha="right",
+                va="bottom",
+                fontsize=8,
+                style="italic",
+                alpha=0.8,
+            )
+        ax.tick_params(axis="both", labelsize=11, direction="in", top=True, right=True)
         ax.legend(fontsize=9, framealpha=0.7)
         for sp in ax.spines.values():
             sp.set_linewidth(0.8)
 
         plt.tight_layout()
         if save_location:
-            fpath = os.path.join(save_location,
-                                f'{name}_delta_v.{image_format(params, file_format)}')
-            fig.savefig(fpath, dpi=300, bbox_inches='tight')
+            fpath = os.path.join(
+                save_location, f"{name}_delta_v.{image_format(params, file_format)}"
+            )
+            fig.savefig(fpath, dpi=300, bbox_inches="tight")
             saved(fpath)
         _caption(
             f"Figure X. Polarisation of {composition}, expressed as the "
@@ -1990,19 +2306,23 @@ def plot_delta_v(delta_v_results, user_parameters,
             f"rising internal "
             f"resistance. {_BAND_NOTE} Here the band is the two centre "
             f"errors added in quadrature, since \u0394V is their difference."
-            + (f" The shaded band is capped at \u00b1"
-               f"{DELTA_V_BAND_CLIP_MV:.0f} mV for legibility; "
-               f"{_n_clipped} point(s) have a larger standard error than "
-               f"that and are drawn narrower than they are. The unclipped "
-               f"values are in the delta-V table."
-               if _n_clipped else ""))
+            + (
+                f" The shaded band is capped at \u00b1"
+                f"{DELTA_V_BAND_CLIP_MV:.0f} mV for legibility; "
+                f"{_n_clipped} point(s) have a larger standard error than "
+                f"that and are drawn narrower than they are. The unclipped "
+                f"values are in the delta-V table."
+                if _n_clipped
+                else ""
+            )
+        )
         plt.show()
         plt.close(fig)
 
 
-def plot_capacity_attribution(attribution, tracked_peaks,
-                               user_parameters,
-                               save_location=None, file_format=None):
+def plot_capacity_attribution(
+    attribution, tracked_peaks, user_parameters, save_location=None, file_format=None
+):
     """
     Two-panel capacity attribution: absolute areas + stacked fractions.
     Uses fixed reference voltage lookup for consistent labels.
@@ -2016,42 +2336,55 @@ def plot_capacity_attribution(attribution, tracked_peaks,
             if adf.empty:
                 continue
 
-            frac_cols = sorted([c for c in adf.columns
-                                if c.startswith('peak')
-                                and c.endswith('_fraction')])
+            frac_cols = sorted(
+                [
+                    c
+                    for c in adf.columns
+                    if c.startswith("peak") and c.endswith("_fraction")
+                ]
+            )
             if not frac_cols:
                 continue
 
             # Build labels from reference lookup
             peak_info = []
             for col in frac_cols:
-                pid_str = col.replace('_fraction', '')
-                pid = int(pid_str.replace('peak', ''))
+                pid_str = col.replace("_fraction", "")
+                pid = int(pid_str.replace("peak", ""))
                 ref_v = ref_v_lookup.get((step, pid), np.nan)
-                ref_str = f'{ref_v:.3f}' if pd.notna(ref_v) else '?'
+                ref_str = f"{ref_v:.3f}" if pd.notna(ref_v) else "?"
                 peak_info.append((pid, pid_str, ref_str, col))
 
             colours = categorical_colours(len(peak_info))
 
             # Two vertically stacked panels: journal width, taller
             fig, (ax1, ax2) = plt.subplots(
-                2, 1,
+                2,
+                1,
                 figsize=(figure_width_inches, figure_height_inches * 1.5),
-                sharex=True)
+                sharex=True,
+            )
             fig.suptitle(
-                f'{composition} — {step} capacity attribution',
-                fontsize=14, fontweight=FIGURE_TITLE_WEIGHT)
+                f"{composition} — {step} capacity attribution",
+                fontsize=14,
+                fontweight=FIGURE_TITLE_WEIGHT,
+            )
 
             # Panel 1: Absolute areas
             for i, (pid, pid_str, ref_str, frac_col) in enumerate(peak_info):
-                area_col = f'{pid_str}_area'
+                area_col = f"{pid_str}_area"
                 if area_col in adf.columns:
                     valid = adf[adf[area_col].notna()]
                     if not valid.empty:
-                        ax1.plot(valid['cycle'], valid[area_col],
-                                color=colours[i], marker='o', markersize=4,
-                                linewidth=1,
-                                label=f'Peak {pid} ({ref_str} V)')
+                        ax1.plot(
+                            valid["cycle"],
+                            valid[area_col],
+                            color=colours[i],
+                            marker="o",
+                            markersize=4,
+                            linewidth=1,
+                            label=f"Peak {pid} ({ref_str} V)",
+                        )
 
             # THE SAME GATE THE TREND FIGURE APPLIES. `plot_tracked_trends`
             # asks `_areas_are_capacities` before it writes this label, and
@@ -2064,11 +2397,15 @@ def plot_capacity_attribution(attribution, tracked_peaks,
             # a peak area is not a capacity", and its two figures in one folder
             # read "NOT a capacity" and "(∝ capacity)".
             _cap_ok, _cap_why = _areas_are_capacities(
-                (tracked_peaks.get(name) or {}).get('summary') or {}, step)
-            ax1.set_ylabel('Peak area (∝ capacity)' if _cap_ok
-                           else 'Peak area / mAh V⁻¹ g⁻¹ (NOT a capacity)',
-                           fontsize=12)
-            ax1.legend(fontsize=8, loc='best', framealpha=0.7)
+                (tracked_peaks.get(name) or {}).get("summary") or {}, step
+            )
+            ax1.set_ylabel(
+                "Peak area (∝ capacity)"
+                if _cap_ok
+                else "Peak area / mAh V⁻¹ g⁻¹ (NOT a capacity)",
+                fontsize=12,
+            )
+            ax1.legend(fontsize=8, loc="best", framealpha=0.7)
 
             # Panel 2: Stacked fractions
             # WITHHELD IS NOT ZERO. `capacity_attribution` writes NaN for a
@@ -2104,50 +2441,71 @@ def plot_capacity_attribution(attribution, tracked_peaks,
                 _miss = int(_plotted[frac_col].isna().sum())
                 _cells_withheld += _miss
                 fracs = _plotted[frac_col].fillna(0).values * 100
-                ax2.bar(_plotted['cycle'], fracs, bottom=bottoms,
-                       color=colours[i], alpha=0.8, width=0.8,
-                       label=(f'Peak {pid} ({ref_str} V)'
-                              + (f' — withheld on {_miss}/{len(_plotted)}'
-                                 if _miss else '')))
+                ax2.bar(
+                    _plotted["cycle"],
+                    fracs,
+                    bottom=bottoms,
+                    color=colours[i],
+                    alpha=0.8,
+                    width=0.8,
+                    label=(
+                        f"Peak {pid} ({ref_str} V)"
+                        + (f" — withheld on {_miss}/{len(_plotted)}" if _miss else "")
+                    ),
+                )
                 bottoms += fracs
             if _n_withheld or _cells_withheld:
                 _msg = []
                 if _n_withheld:
                     _msg.append(f"{_n_withheld} of {len(adf)} cycles withheld")
                 if _cells_withheld:
-                    _msg.append(f"{_cells_withheld} of {_cells} peak-cycle "
-                                f"shares withheld and drawn as zero")
-                ax2.text(0.5, 0.5,
-                         ("\n".join(_msg) + " —\nthe peak/background split is "
-                          "not\ndetermined by the data"
-                          if not len(_plotted) else "; ".join(_msg)),
-                         transform=ax2.transAxes, ha='center',
-                         va='center' if not len(_plotted) else 'top',
-                         fontsize=10 if not len(_plotted) else 8,
-                         color='#666666',
-                         bbox=dict(boxstyle='round,pad=0.4',
-                                   facecolor='white', alpha=0.85,
-                                   edgecolor='#999999'))
+                    _msg.append(
+                        f"{_cells_withheld} of {_cells} peak-cycle "
+                        f"shares withheld and drawn as zero"
+                    )
+                ax2.text(
+                    0.5,
+                    0.5,
+                    (
+                        "\n".join(_msg) + " —\nthe peak/background split is "
+                        "not\ndetermined by the data"
+                        if not len(_plotted)
+                        else "; ".join(_msg)
+                    ),
+                    transform=ax2.transAxes,
+                    ha="center",
+                    va="center" if not len(_plotted) else "top",
+                    fontsize=10 if not len(_plotted) else 8,
+                    color="#666666",
+                    bbox=dict(
+                        boxstyle="round,pad=0.4",
+                        facecolor="white",
+                        alpha=0.85,
+                        edgecolor="#999999",
+                    ),
+                )
 
-            ax2.set_ylabel('Capacity fraction vs reference total / %',
-                           fontsize=12)
-            ax2.set_xlabel('Cycle number', fontsize=12)
-            ax2.axhline(100, color='0.4', linewidth=0.8, linestyle='--')
+            ax2.set_ylabel("Capacity fraction vs reference total / %", fontsize=12)
+            ax2.set_xlabel("Cycle number", fontsize=12)
+            ax2.axhline(100, color="0.4", linewidth=0.8, linestyle="--")
             _stack_top = float(np.nanmax(bottoms)) if len(bottoms) else 100.0
             ax2.set_ylim(0, max(110, _stack_top * 1.05))
-            ax2.legend(fontsize=8, loc='upper right', framealpha=0.7)
+            ax2.legend(fontsize=8, loc="upper right", framealpha=0.7)
 
             for ax in [ax1, ax2]:
-                ax.tick_params(axis='both', labelsize=10, direction='in',
-                              top=True, right=True)
+                ax.tick_params(
+                    axis="both", labelsize=10, direction="in", top=True, right=True
+                )
                 for sp in ax.spines.values():
                     sp.set_linewidth(0.8)
 
             plt.tight_layout()
             if save_location:
-                fpath = os.path.join(save_location,
-                    f'{name}_capacity_attribution_{step}.{image_format(params, file_format)}')
-                fig.savefig(fpath, dpi=300, bbox_inches='tight')
+                fpath = os.path.join(
+                    save_location,
+                    f"{name}_capacity_attribution_{step}.{image_format(params, file_format)}",
+                )
+                fig.savefig(fpath, dpi=300, bbox_inches="tight")
                 saved(fpath)
             _caption(
                 f"Figure X. Capacity attribution for the {step.lower()} of "
@@ -2161,15 +2519,22 @@ def plot_capacity_attribution(attribution, tracked_peaks,
                 f"attribution is not determined by the data are withheld "
                 f"rather than plotted; see the closure interval recorded in "
                 f"{name}_fitted_parameters.csv."
-                + (f" A withheld share for an individual peak in a cycle that "
-                   f"is otherwise plotted cannot be left out of a stacked bar, "
-                   f"so it is drawn at zero height; {_cells_withheld} of "
-                   f"{_cells} peak-cycle shares here are withheld rather than "
-                   f"measured, and the legend gives the count per peak."
-                   if _cells_withheld else "")
-                + ("" if _cap_ok else
-                   f" The areas in panel (a) are NOT capacities on this "
-                   f"dataset" + (f" — {_cap_why}" if _cap_why else "") + "."))
+                + (
+                    f" A withheld share for an individual peak in a cycle that "
+                    f"is otherwise plotted cannot be left out of a stacked bar, "
+                    f"so it is drawn at zero height; {_cells_withheld} of "
+                    f"{_cells} peak-cycle shares here are withheld rather than "
+                    f"measured, and the legend gives the count per peak."
+                    if _cells_withheld
+                    else ""
+                )
+                + (
+                    ""
+                    if _cap_ok
+                    else f" The areas in panel (a) are NOT capacities on this "
+                    f"dataset" + (f" — {_cap_why}" if _cap_why else "") + "."
+                )
+            )
             plt.show()
             plt.close(fig)
 
@@ -2179,8 +2544,8 @@ def plot_capacity_attribution(attribution, tracked_peaks,
 # =============================================================================
 # This is the only new code in this module. Everything above is 1.8.7's.
 
-def as_processed_dqdv(dataset, signals, params=None, *, window=None,
-                      profile=None):
+
+def as_processed_dqdv(dataset, signals, params=None, *, window=None, profile=None):
     """
     `{name: {'data': {(cycle, step): DataFrame}, 'voltage_range': (lo, hi),
               'parameters_used': {...}}}` — Module 1's shape.
@@ -2193,35 +2558,47 @@ def as_processed_dqdv(dataset, signals, params=None, *, window=None,
     for (cycle, step), sig in signals.items():
         if sig.voltage.size == 0:
             continue
-        data[(int(cycle), str(step))] = pd.DataFrame({
-            "Voltage": sig.voltage,
-            "dQ/dV_raw": sig.dqdv_raw,
-            "dQ/dV_processed": sig.dqdv,
-        })
+        data[(int(cycle), str(step))] = pd.DataFrame(
+            {
+                "Voltage": sig.voltage,
+                "dQ/dV_raw": sig.dqdv_raw,
+                "dQ/dV_processed": sig.dqdv,
+            }
+        )
     if window is None:
         allv = [d["Voltage"] for d in data.values()]
-        window = ((float(min(v.min() for v in allv)),
-                   float(max(v.max() for v in allv))) if allv
-                  else (np.nan, np.nan))
+        window = (
+            (float(min(v.min() for v in allv)), float(max(v.max() for v in allv)))
+            if allv
+            else (np.nan, np.nan)
+        )
     used = dict(params or {})
     if profile is not None:
-        used.setdefault("profile_class", profile.get("class")
-                        if isinstance(profile, dict) else profile)
-    return {dataset.name: {"data": data, "voltage_range": tuple(window),
-                           "parameters_used": used}}
+        used.setdefault(
+            "profile_class",
+            profile.get("class") if isinstance(profile, dict) else profile,
+        )
+    return {
+        dataset.name: {
+            "data": data,
+            "voltage_range": tuple(window),
+            "parameters_used": used,
+        }
+    }
 
 
 def as_detected_peaks(detection):
     """`{name: {'peaks', 'reference_cycle', 'reference_peaks', ...}}` —
     Module 3's shape."""
-    return {detection.name: {
-        "peaks": detection.peaks,
-        "reference_cycle": detection.reference_cycle,
-        "reference_cycle_reason": detection.reference_reason,
-        "reference_peaks": detection.reference_peaks,
-        "parameters_used": (detection.spec.as_dict() if detection.spec
-                            else {}),
-    }}
+    return {
+        detection.name: {
+            "peaks": detection.peaks,
+            "reference_cycle": detection.reference_cycle,
+            "reference_cycle_reason": detection.reference_reason,
+            "reference_peaks": detection.reference_peaks,
+            "parameters_used": (detection.spec.as_dict() if detection.spec else {}),
+        }
+    }
 
 
 class _FitView:
@@ -2233,6 +2610,7 @@ class _FitView:
     the stored parameters through lmfit's own model classes. No refit, and no
     `ModelResult` anywhere near a process boundary — see the module docstring.
     """
+
     __slots__ = ("_result", "_voltage", "_comps", "best_fit")
 
     def __init__(self, result, voltage):
@@ -2246,10 +2624,11 @@ class _FitView:
             comps = self._comps
         else:
             x = np.asarray(x, float)
-            comps = (self._comps
-                     if (x.shape == self._voltage.shape
-                         and np.array_equal(x, self._voltage))
-                     else _ft.evaluate(self._result, x))
+            comps = (
+                self._comps
+                if (x.shape == self._voltage.shape and np.array_equal(x, self._voltage))
+                else _ft.evaluate(self._result, x)
+            )
         return {k: v for k, v in comps.items() if k != "total"}
 
 
@@ -2265,14 +2644,15 @@ def as_fit_results(fit_results, signals, params_df=None, name=""):
             continue
         cycle, step = int(key[0]), str(key[1])
         sig = signals.get((cycle, step))
-        view = (_FitView(fr, sig.voltage)
-                if (fr.get("success") and sig is not None
-                    and sig.voltage.size) else None)
+        view = (
+            _FitView(fr, sig.voltage)
+            if (fr.get("success") and sig is not None and sig.voltage.size)
+            else None
+        )
         # The `sig is not None` guard above is undone by reading sig.dqdv
         # here, and the value is discarded three lines down when view is
         # None anyway — so the branch could only ever raise.
-        resid = (None if view is None
-                 else np.abs(sig.dqdv) - view.best_fit)
+        resid = None if view is None else np.abs(sig.dqdv) - view.best_fit
         fits[(cycle, step)] = {
             "success": bool(fr.get("success")),
             "parameters": fr.get("components", []),
@@ -2283,38 +2663,56 @@ def as_fit_results(fit_results, signals, params_df=None, name=""):
             # the difference panel keeps its sign.
             "residuals": (resid if view is not None else None),
         }
-        summary.append(dict(dataset=name, cycle=cycle, step=step,
-                            # `success`, not `fit_success`: plot_fit_quality
-                            # selects its worst converged and its failed
-                            # half-cycles from this column by that name.
-                            success=bool(fr.get("success")),
-                            r_squared=fr.get("r_squared", np.nan),
-                            reduced_chi_sq=fr.get("redchi", np.nan),
-                            n_peaks=len(fr.get("components", [])),
-                            seconds=fr.get("seconds", np.nan)))
-    return {name: {"fits": fits,
-                   "parameters_df": (params_df if params_df is not None
-                                     else pd.DataFrame()),
-                   "fit_summary": pd.DataFrame(summary)}}
+        summary.append(
+            dict(
+                dataset=name,
+                cycle=cycle,
+                step=step,
+                # `success`, not `fit_success`: plot_fit_quality
+                # selects its worst converged and its failed
+                # half-cycles from this column by that name.
+                success=bool(fr.get("success")),
+                r_squared=fr.get("r_squared", np.nan),
+                reduced_chi_sq=fr.get("redchi", np.nan),
+                n_peaks=len(fr.get("components", [])),
+                seconds=fr.get("seconds", np.nan),
+            )
+        )
+    return {
+        name: {
+            "fits": fits,
+            "parameters_df": (params_df if params_df is not None else pd.DataFrame()),
+            "fit_summary": pd.DataFrame(summary),
+        }
+    }
 
 
 def as_tracked(tracking):
     """`{name: {'tracked_df', 'summary', 'reference_peaks', ...}}` —
     Module 5's shape."""
-    return {tracking.name: {
-        "tracked_df": tracking.tracked_df,
-        "summary": tracking.summary,
-        "reference_peaks": tracking.reference_peaks,
-        "reference_cycle": tracking.reference_cycle,
-        "ghost_peaks": tracking.ghost_peaks,
-        "cell_discontinuity": tracking.cell_discontinuity,
-    }}
+    return {
+        tracking.name: {
+            "tracked_df": tracking.tracked_df,
+            "summary": tracking.summary,
+            "reference_peaks": tracking.reference_peaks,
+            "reference_cycle": tracking.reference_cycle,
+            "ghost_peaks": tracking.ghost_peaks,
+            "cell_discontinuity": tracking.cell_discontinuity,
+        }
+    }
 
 
-def as_user_parameters(dataset, *, composition=None, cell_id=None,
-                       key_cycles=None, colour_palette="viridis_r",
-                       battery_chemistry="Li-ion", charge_rate_c=None,
-                       **extra):
+def as_user_parameters(
+    dataset,
+    *,
+    composition=None,
+    cell_id=None,
+    key_cycles=None,
+    colour_palette="viridis_r",
+    battery_chemistry="Li-ion",
+    charge_rate_c=None,
+    **extra,
+):
     """
     The subset of Cell 3's parameters the plotting code actually reads:
     `composition`, `cell_id`, `key_cycles`, `colour_palette`,
@@ -2324,15 +2722,16 @@ def as_user_parameters(dataset, *, composition=None, cell_id=None,
     it is a fact about how the file was read, not a preference.
     """
     p = dict(
-        composition=composition or dataset.meta.get("composition",
-                                                    dataset.name),
+        composition=composition or dataset.meta.get("composition", dataset.name),
         cell_id=cell_id or dataset.meta.get("cell_id", ""),
         key_cycles=list(key_cycles) if key_cycles else list(DEFAULT_KEY_CYCLES),
         colour_palette=colour_palette,
         battery_chemistry=battery_chemistry,
-        charge_rate_c=(charge_rate_c if charge_rate_c is not None
-                       else dataset.meta.get("charge_rate_c",
-                                             "the specified")),
+        charge_rate_c=(
+            charge_rate_c
+            if charge_rate_c is not None
+            else dataset.meta.get("charge_rate_c", "the specified")
+        ),
         anode_labels_swapped=bool(getattr(dataset, "labels_swapped", False)),
         electrode_type=getattr(dataset, "electrode_type", "Positive"),
     )

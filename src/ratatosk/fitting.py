@@ -61,15 +61,29 @@ from scipy.special import erf
 
 from .style import entry, verdict, bullet, section
 
-__all__ = ["FitSpec", "spec_for_profile", "shoulder_parents",
-           "calibrate_shape",
-           "build_model",
-           "fit_half_cycle", "fit_many", "evaluate", "fit_quality",
-           "band_regions", "reconcile_band_sets", "_describe_band_set", "residual_excess_regions",
-           "plan_workers", "release_workers",
-           "measure_worker_cost_mb", "memory_budget_workers",
-           "PARALLEL_MIN_SECONDS", "PARALLEL_MAX_WORKERS", "FIT_TOLERANCE",
-           "WORKER_MEMORY_HEADROOM"]
+__all__ = [
+    "FitSpec",
+    "spec_for_profile",
+    "shoulder_parents",
+    "calibrate_shape",
+    "build_model",
+    "fit_half_cycle",
+    "fit_many",
+    "evaluate",
+    "fit_quality",
+    "band_regions",
+    "reconcile_band_sets",
+    "_describe_band_set",
+    "residual_excess_regions",
+    "plan_workers",
+    "release_workers",
+    "measure_worker_cost_mb",
+    "memory_budget_workers",
+    "PARALLEL_MIN_SECONDS",
+    "PARALLEL_MAX_WORKERS",
+    "FIT_TOLERANCE",
+    "WORKER_MEMORY_HEADROOM",
+]
 
 # Below this estimated total, run serially. Measured on Windows/Anaconda: a
 # loky pool costs ~5-8 s to start, so anything under a minute loses.
@@ -120,7 +134,7 @@ WORKER_PROBE = True
 # reads. Deleted before the fit, recomputed after (see `_derived`).
 DROP_DERIVED = True
 
-_FWHM_FACTOR = 2.0          # PseudoVoigtModel: fwhm = 2 * sigma
+_FWHM_FACTOR = 2.0  # PseudoVoigtModel: fwhm = 2 * sigma
 # sigma_gaussian = sigma / sqrt(2 ln 2), so the Gaussian and the Lorentzian
 # halves of a pseudo-Voigt share one FWHM. See rect_pseudo_voigt.
 _SIGMA_G_FACTOR = np.sqrt(2.0 * np.log(2.0))
@@ -175,9 +189,9 @@ _TINY = 1.0e-15
 # one sharp two-phase peak -- residual seeding pushed the named charge to
 # 103.1%, components summing to more than the cell delivered.
 BAND_FROM_RESIDUAL = True
-BAND_RESIDUAL_MIN_SHARE = 0.02      # of the half-cycle's charge
-BAND_RESIDUAL_MAX = 2               # bands added per half-cycle
-BAND_RESIDUAL_MIN_SPAN_MV = 100.0   # a band narrower than this is a peak
+BAND_RESIDUAL_MIN_SHARE = 0.02  # of the half-cycle's charge
+BAND_RESIDUAL_MAX = 2  # bands added per half-cycle
+BAND_RESIDUAL_MIN_SPAN_MV = 100.0  # a band narrower than this is a peak
 
 # --- ONE SET OF BANDS FOR THE DATASET, NOT ONE PER HALF-CYCLE -------------
 # Seeding a band from THIS half-cycle's unattributed charge fixes the fit and
@@ -209,9 +223,9 @@ BAND_RESIDUAL_MIN_SPAN_MV = 100.0   # a band narrower than this is a peak
 #
 # The recurrence is plainly there to find: the 4.19 V discharge band appears
 # in 86% and 75% of half-cycles with a 6-9 mV spread.
-BAND_REGION_SAMPLE = 12          # half-cycles used to establish the set
+BAND_REGION_SAMPLE = 12  # half-cycles used to establish the set
 BAND_REGION_TOLERANCE_MV = 80.0  # two excess regions this close are the same
-BAND_REGION_MIN_OCCUPANCY = 0.34 # ...and it must recur in this share of them
+BAND_REGION_MIN_OCCUPANCY = 0.34  # ...and it must recur in this share of them
 # --- RECORDED NEGATIVE: DO NOT POOL BAND REGIONS ACROSS REPLICATES -------
 # `reconcile_mechanisms` pools the MECHANISM across the replicates of a
 # material, and pooling the band regions the same way looks like the obvious
@@ -249,7 +263,7 @@ BAND_REGION_MIN_OCCUPANCY = 0.34 # ...and it must recur in this share of them
 #
 # The code below is kept and the constant disables it, because the next person
 # to have this idea should find the measurement rather than repeat it.
-BAND_REGION_SHARED_OCCUPANCY = 1.01   # > 1 disables propagation entirely
+BAND_REGION_SHARED_OCCUPANCY = 1.01  # > 1 disables propagation entirely
 
 
 def residual_excess_regions(voltage, residual, *, min_span_mV=None):
@@ -264,8 +278,9 @@ def residual_excess_regions(voltage, residual, *, min_span_mV=None):
     r = np.asarray(residual, float)
     if v.size < 4 or r.size != v.size:
         return []
-    min_span_mV = (BAND_RESIDUAL_MIN_SPAN_MV if min_span_mV is None
-                   else float(min_span_mV))
+    min_span_mV = (
+        BAND_RESIDUAL_MIN_SPAN_MV if min_span_mV is None else float(min_span_mV)
+    )
     pos = np.isfinite(r) & (r > 0)
     out, i = [], 0
     while i < pos.size:
@@ -277,10 +292,15 @@ def residual_excess_regions(voltage, residual, *, min_span_mV=None):
             j += 1
         span_mV = (v[j] - v[i]) * 1000.0
         if span_mV >= min_span_mV and j > i:
-            out.append(dict(lo=float(v[i]), hi=float(v[j]),
-                            centre=float(0.5 * (v[i] + v[j])),
-                            span_mV=float(span_mV),
-                            area=float(trapezoid(r[i:j + 1], v[i:j + 1]))))
+            out.append(
+                dict(
+                    lo=float(v[i]),
+                    hi=float(v[j]),
+                    centre=float(0.5 * (v[i] + v[j])),
+                    span_mV=float(span_mV),
+                    area=float(trapezoid(r[i : j + 1], v[i : j + 1])),
+                )
+            )
         i = j + 1
     return sorted(out, key=lambda d: -d["area"])
 
@@ -332,8 +352,16 @@ def residual_excess_regions(voltage, residual, *, min_span_mV=None):
 BAND_REGION_FROM_AT_BOUND = True
 
 
-def band_regions(jobs, *, n=None, tolerance_mV=None, min_occupancy=None,
-                 min_share=None, n_jobs=None, verbose=True):
+def band_regions(
+    jobs,
+    *,
+    n=None,
+    tolerance_mV=None,
+    min_occupancy=None,
+    min_share=None,
+    n_jobs=None,
+    verbose=True,
+):
     """
     The dataset's band regions, established once. See BAND_REGION_SAMPLE.
 
@@ -349,12 +377,14 @@ def band_regions(jobs, *, n=None, tolerance_mV=None, min_occupancy=None,
     which is the right answer for a two-phase cell and is what LTO gets.
     """
     n = int(BAND_REGION_SAMPLE if n is None else n)
-    tol = float(BAND_REGION_TOLERANCE_MV if tolerance_mV is None
-                else tolerance_mV) / 1000.0
-    min_occ = float(BAND_REGION_MIN_OCCUPANCY if min_occupancy is None
-                    else min_occupancy)
-    min_share = float(BAND_RESIDUAL_MIN_SHARE if min_share is None
-                      else min_share)
+    tol = (
+        float(BAND_REGION_TOLERANCE_MV if tolerance_mV is None else tolerance_mV)
+        / 1000.0
+    )
+    min_occ = float(
+        BAND_REGION_MIN_OCCUPANCY if min_occupancy is None else min_occupancy
+    )
+    min_share = float(BAND_RESIDUAL_MIN_SHARE if min_share is None else min_share)
     out = {}
     if not jobs:
         return out
@@ -362,8 +392,9 @@ def band_regions(jobs, *, n=None, tolerance_mV=None, min_occupancy=None,
     # sample fits would be spent finding tails it will never use. LTO's
     # residual does produce candidate spans (1.87 V charge, 1.78 V discharge)
     # and every one of them is the flank of its single two-phase peak.
-    if not any(float(getattr(sp, "band_ceiling", 0.0) or 0.0) > 0
-               for _v, _y, sp, _k in jobs):
+    if not any(
+        float(getattr(sp, "band_ceiling", 0.0) or 0.0) > 0 for _v, _y, sp, _k in jobs
+    ):
         return out
 
     by_step = {}
@@ -379,10 +410,20 @@ def band_regions(jobs, *, n=None, tolerance_mV=None, min_occupancy=None,
             sample = list(items)
         # Peaks only: bands off, and no per-half-cycle seeding, so the excess
         # measured is what the PEAKS cannot account for.
-        batch = [(v, y, sp.replace(band_width_max=0.0, band_ceiling=0.0,
-                                   band_from_residual=False,
-                                   band_seeds=()), k)
-                 for v, y, sp, k in sample]
+        batch = [
+            (
+                v,
+                y,
+                sp.replace(
+                    band_width_max=0.0,
+                    band_ceiling=0.0,
+                    band_from_residual=False,
+                    band_seeds=(),
+                ),
+                k,
+            )
+            for v, y, sp, k in sample
+        ]
         res = fit_many(batch, n_jobs=n_jobs, verbose=False, label="band regions")
 
         found = []
@@ -408,8 +449,11 @@ def band_regions(jobs, *, n=None, tolerance_mV=None, min_occupancy=None,
                 _smax = float(r.get("sigma_max") or 0.0)
                 for _c in r.get("components", ()):
                     _sg = abs(float(_c.get("sigma", np.nan)))
-                    if not (_smax > 0 and np.isfinite(_sg)
-                            and _sg >= _smax * SIGMA_BOUND_PROXIMITY_COMPLEMENT):
+                    if not (
+                        _smax > 0
+                        and np.isfinite(_sg)
+                        and _sg >= _smax * SIGMA_BOUND_PROXIMITY_COMPLEMENT
+                    ):
                         continue
                     _a = abs(float(_c.get("amplitude_area", 0.0) or 0.0))
                     if area > 0 and _a / area < min_share:
@@ -417,9 +461,17 @@ def band_regions(jobs, *, n=None, tolerance_mV=None, min_occupancy=None,
                     _ctr = float(_c.get("centre", np.nan))
                     if not np.isfinite(_ctr):
                         continue
-                    found.append(dict(lo=_ctr - _smax, hi=_ctr + _smax,
-                                      centre=_ctr, span_mV=2000.0 * _smax,
-                                      area=_a, from_bound=True, key=k))
+                    found.append(
+                        dict(
+                            lo=_ctr - _smax,
+                            hi=_ctr + _smax,
+                            centre=_ctr,
+                            span_mV=2000.0 * _smax,
+                            area=_a,
+                            from_bound=True,
+                            key=k,
+                        )
+                    )
         if not n_ok or not found:
             out[step] = []
             continue
@@ -433,7 +485,8 @@ def band_regions(jobs, *, n=None, tolerance_mV=None, min_occupancy=None,
             if g["centre"] - cur[-1]["centre"] <= tol:
                 cur.append(g)
             else:
-                groups.append(cur); cur = [g]
+                groups.append(cur)
+                cur = [g]
         groups.append(cur)
 
         regions = []
@@ -446,27 +499,42 @@ def band_regions(jobs, *, n=None, tolerance_mV=None, min_occupancy=None,
             occ = _seen / n_ok
             if occ < min_occ:
                 continue
-            regions.append(dict(
-                centre=float(np.median([g["centre"] for g in grp])),
-                lo=float(np.median([g["lo"] for g in grp])),
-                hi=float(np.median([g["hi"] for g in grp])),
-                span_mV=float(np.median([g["span_mV"] for g in grp])),
-                occupancy=float(occ), n_seen=int(_seen), n_sampled=int(n_ok),
-                from_bound=bool(any(g.get("from_bound") for g in grp))))
+            regions.append(
+                dict(
+                    centre=float(np.median([g["centre"] for g in grp])),
+                    lo=float(np.median([g["lo"] for g in grp])),
+                    hi=float(np.median([g["hi"] for g in grp])),
+                    span_mV=float(np.median([g["span_mV"] for g in grp])),
+                    occupancy=float(occ),
+                    n_seen=int(_seen),
+                    n_sampled=int(n_ok),
+                    from_bound=bool(any(g.get("from_bound") for g in grp)),
+                )
+            )
         out[step] = sorted(regions, key=lambda d: d["centre"])
 
     if verbose:
         for step in sorted(out):
             rs = out[step]
             if not rs:
-                print(entry(f"{step} bands", "none",
-                            "no region recurs in enough half-cycles"))
+                print(
+                    entry(
+                        f"{step} bands",
+                        "none",
+                        "no region recurs in enough half-cycles",
+                    )
+                )
                 continue
             for r in rs:
-                print(entry(f"{step} band", f"{r['centre']:.3f} V",
-                            f"{r['span_mV']:.0f} mV wide, in "
-                            f"{r['n_seen']}/{r['n_sampled']} sampled "
-                            f"half-cycles ({r['occupancy']:.0%})"))
+                print(
+                    entry(
+                        f"{step} band",
+                        f"{r['centre']:.3f} V",
+                        f"{r['span_mV']:.0f} mV wide, in "
+                        f"{r['n_seen']}/{r['n_sampled']} sampled "
+                        f"half-cycles ({r['occupancy']:.0%})",
+                    )
+                )
     return out
 
 
@@ -476,20 +544,25 @@ def _describe_band_set(bs):
     for step in sorted(bs or {}):
         rs = bs[step]
         if not rs:
-            out.append(entry(f"{step} bands", "none",
-                             "the peaks account for this curve"))
+            out.append(
+                entry(f"{step} bands", "none", "the peaks account for this curve")
+            )
             continue
         for r in rs:
             _n = r.get("n_cells")
-            out.append(entry(f"{step} band", f"{r['centre']:.3f} V",
-                             f"{r['span_mV']:.0f} mV wide, seen in "
-                             f"{r['occupancy']:.0%} of sampled half-cycles"
-                             + (f" across {_n} cell(s)" if _n else "")))
+            out.append(
+                entry(
+                    f"{step} band",
+                    f"{r['centre']:.3f} V",
+                    f"{r['span_mV']:.0f} mV wide, seen in "
+                    f"{r['occupancy']:.0%} of sampled half-cycles"
+                    + (f" across {_n} cell(s)" if _n else ""),
+                )
+            )
     return out
 
 
-def reconcile_band_sets(band_sets, compositions, *, tolerance_mV=None,
-                        verbose=True):
+def reconcile_band_sets(band_sets, compositions, *, tolerance_mV=None, verbose=True):
     """
     One band set per MATERIAL, across its replicates. See
     `quality.reconcile_mechanisms`, which makes the same argument about the
@@ -508,12 +581,13 @@ def reconcile_band_sets(band_sets, compositions, *, tolerance_mV=None,
     unioned within a material and clustered by centre. Mutates and returns
     `band_sets`.
     """
-    tol = float(BAND_REGION_TOLERANCE_MV if tolerance_mV is None
-                else tolerance_mV) / 1000.0
+    tol = (
+        float(BAND_REGION_TOLERANCE_MV if tolerance_mV is None else tolerance_mV)
+        / 1000.0
+    )
     groups = {}
-    for name in (band_sets or {}):
-        groups.setdefault(str((compositions or {}).get(name) or name),
-                          []).append(name)
+    for name in band_sets or {}:
+        groups.setdefault(str((compositions or {}).get(name) or name), []).append(name)
 
     changed = []
     for comp, names in groups.items():
@@ -525,10 +599,12 @@ def reconcile_band_sets(band_sets, compositions, *, tolerance_mV=None,
         for step in sorted(steps):
             # Only a WELL-ESTABLISHED region may be imposed on a replicate
             # that did not find it. See BAND_REGION_SHARED_OCCUPANCY.
-            pooled = [r for n in names
-                      for r in (band_sets[n] or {}).get(step, [])
-                      if float(r.get("occupancy", 0.0))
-                      >= BAND_REGION_SHARED_OCCUPANCY]
+            pooled = [
+                r
+                for n in names
+                for r in (band_sets[n] or {}).get(step, [])
+                if float(r.get("occupancy", 0.0)) >= BAND_REGION_SHARED_OCCUPANCY
+            ]
             if not pooled:
                 continue
             pooled.sort(key=lambda r: r["centre"])
@@ -537,27 +613,34 @@ def reconcile_band_sets(band_sets, compositions, *, tolerance_mV=None,
                 if r["centre"] - cur[-1]["centre"] <= tol:
                     cur.append(r)
                 else:
-                    grp.append(cur); cur = [r]
+                    grp.append(cur)
+                    cur = [r]
             grp.append(cur)
-            merged = [dict(centre=float(np.median([r["centre"] for r in g])),
-                           lo=float(np.median([r["lo"] for r in g])),
-                           hi=float(np.median([r["hi"] for r in g])),
-                           span_mV=float(np.median([r["span_mV"] for r in g])),
-                           occupancy=float(max(r["occupancy"] for r in g)),
-                           n_cells=len(set(
-                               n for n in names
-                               for r2 in (band_sets[n] or {}).get(step, [])
-                               if any(abs(r2["centre"] - r["centre"]) <= tol
-                                      for r in g))))
-                      for g in grp]
+            merged = [
+                dict(
+                    centre=float(np.median([r["centre"] for r in g])),
+                    lo=float(np.median([r["lo"] for r in g])),
+                    hi=float(np.median([r["hi"] for r in g])),
+                    span_mV=float(np.median([r["span_mV"] for r in g])),
+                    occupancy=float(max(r["occupancy"] for r in g)),
+                    n_cells=len(
+                        set(
+                            n
+                            for n in names
+                            for r2 in (band_sets[n] or {}).get(step, [])
+                            if any(abs(r2["centre"] - r["centre"]) <= tol for r in g)
+                        )
+                    ),
+                )
+                for g in grp
+            ]
             # A cell keeps everything it found itself, and gains only the
             # well-established regions it missed.
             for n in names:
                 own = list((band_sets[n] or {}).get(step, []))
                 before = len(own)
                 for m in merged:
-                    if not any(abs(r["centre"] - m["centre"]) <= tol
-                               for r in own):
+                    if not any(abs(r["centre"] - m["centre"]) <= tol for r in own):
                         own.append(dict(m, from_replicate=True))
                 own.sort(key=lambda d: d["centre"])
                 band_sets.setdefault(n, {})[step] = own
@@ -567,8 +650,13 @@ def reconcile_band_sets(band_sets, compositions, *, tolerance_mV=None,
     if verbose and changed:
         print(section("  One material, one band set"))
         for n, step, a, b in changed:
-            print(entry(f"{str(n)[:24]} {step}", f"{a} -> {b}",
-                        "regions, pooled across replicates"))
+            print(
+                entry(
+                    f"{str(n)[:24]} {step}",
+                    f"{a} -> {b}",
+                    "regions, pooled across replicates",
+                )
+            )
     return band_sets
 
 
@@ -606,7 +694,7 @@ def _band_ceilings(spec):
     if bw.size == n:
         return bw
     out = np.zeros(n)
-    out[:min(n, bw.size)] = bw[:min(n, bw.size)]
+    out[: min(n, bw.size)] = bw[: min(n, bw.size)]
     return out
 
 
@@ -618,31 +706,60 @@ class FitSpec:
     global or a file — so it can be pickled to a worker and so a test can
     construct one by hand.
     """
-    __slots__ = ("centres", "baseline_degree", "sigma_min", "sigma_max",
-                 "centre_tol", "max_nfev", "shoulder_of", "fraction",
-                 "sigma_ratio", "sigma0", "amp0", "band_width_max",
-                 "asymmetry",
-                 "asymmetry_edge_only",
-                 # Staged band seeding — see BAND_FROM_RESIDUAL.
-                 "band_from_residual", "band_residual_min_share",
-                 "band_residual_max", "band_residual_min_span_mV",
-                 "band_ceiling", "band_seeds",
-                 # None means "use the module's FIT_TOLERANCE". Carried on the
-                 # spec rather than read from a global because a fit may run
-                 # in a worker process, where a global set in the parent does
-                 # not exist. `quality.assess_closure` uses it.
-                 "tolerance")
 
-    def __init__(self, centres, baseline_degree=3, sigma_min=0.003,
-                 sigma_max=0.200, centre_tol=0.070, max_nfev=20000,
-                 shoulder_of=None, fraction=None, sigma_ratio=None,
-                 sigma0=None, amp0=None, band_width_max=0.0,
-                 asymmetry=None,
-                 asymmetry_edge_only=None,
-                 band_from_residual=None, band_residual_min_share=None,
-                 band_residual_max=None, band_residual_min_span_mV=None,
-                 band_ceiling=0.0, band_seeds=None,
-                 tolerance=None):
+    __slots__ = (
+        "centres",
+        "baseline_degree",
+        "sigma_min",
+        "sigma_max",
+        "centre_tol",
+        "max_nfev",
+        "shoulder_of",
+        "fraction",
+        "sigma_ratio",
+        "sigma0",
+        "amp0",
+        "band_width_max",
+        "asymmetry",
+        "asymmetry_edge_only",
+        # Staged band seeding — see BAND_FROM_RESIDUAL.
+        "band_from_residual",
+        "band_residual_min_share",
+        "band_residual_max",
+        "band_residual_min_span_mV",
+        "band_ceiling",
+        "band_seeds",
+        # None means "use the module's FIT_TOLERANCE". Carried on the
+        # spec rather than read from a global because a fit may run
+        # in a worker process, where a global set in the parent does
+        # not exist. `quality.assess_closure` uses it.
+        "tolerance",
+    )
+
+    def __init__(
+        self,
+        centres,
+        baseline_degree=3,
+        sigma_min=0.003,
+        sigma_max=0.200,
+        centre_tol=0.070,
+        max_nfev=20000,
+        shoulder_of=None,
+        fraction=None,
+        sigma_ratio=None,
+        sigma0=None,
+        amp0=None,
+        band_width_max=0.0,
+        asymmetry=None,
+        asymmetry_edge_only=None,
+        band_from_residual=None,
+        band_residual_min_share=None,
+        band_residual_max=None,
+        band_residual_min_span_mV=None,
+        band_ceiling=0.0,
+        band_seeds=None,
+        tolerance=None,
+    ):
         # baseline_degree defaults to 3, matching 1.8.7's BASELINE_DEGREE. It
         # was 1, and that is not a small difference: on P3 cell A cycle 2
         # charge a linear baseline gives R2 0.27 against 0.54 for a cubic.
@@ -688,12 +805,14 @@ class FitSpec:
             self.band_width_max = np.asarray(band_width_max, float)
         # None means "take the module default", so a spec built before the
         # asymmetry existed behaves as the constant says rather than as False.
-        self.asymmetry = (ASYMMETRY if asymmetry is None else bool(asymmetry))
+        self.asymmetry = ASYMMETRY if asymmetry is None else bool(asymmetry)
         # WHICH components may be asymmetric. See ASYMMETRY_EDGE_ONLY.
-        self.asymmetry_edge_only = (ASYMMETRY_EDGE_ONLY
-                                    if asymmetry_edge_only is None
-                                    else bool(asymmetry_edge_only))
-        self.tolerance = (None if tolerance is None else float(tolerance))
+        self.asymmetry_edge_only = (
+            ASYMMETRY_EDGE_ONLY
+            if asymmetry_edge_only is None
+            else bool(asymmetry_edge_only)
+        )
+        self.tolerance = None if tolerance is None else float(tolerance)
         # The widest band the MECHANISM permits, AS A FRACTION OF THE
         # HALF-CYCLE'S OWN VOLTAGE SPAN. `band_width_max` says what each
         # component currently is, in volts; this says what a component seeded
@@ -708,28 +827,37 @@ class FitSpec:
         # whether or not this particular curve would have asked for one — a
         # band that comes and goes is not a measurement. Empty or None keeps
         # the per-half-cycle behaviour. See BAND_REGION_SAMPLE.
-        self.band_seeds = (tuple((float(a), float(b)) for a, b in band_seeds)
-                           if band_seeds else ())
-        self.band_from_residual = (BAND_FROM_RESIDUAL
-                                   if band_from_residual is None
-                                   else bool(band_from_residual))
+        self.band_seeds = (
+            tuple((float(a), float(b)) for a, b in band_seeds) if band_seeds else ()
+        )
+        self.band_from_residual = (
+            BAND_FROM_RESIDUAL
+            if band_from_residual is None
+            else bool(band_from_residual)
+        )
         self.band_residual_min_share = float(
-            BAND_RESIDUAL_MIN_SHARE if band_residual_min_share is None
-            else band_residual_min_share)
+            BAND_RESIDUAL_MIN_SHARE
+            if band_residual_min_share is None
+            else band_residual_min_share
+        )
         self.band_residual_max = int(
-            BAND_RESIDUAL_MAX if band_residual_max is None
-            else band_residual_max)
+            BAND_RESIDUAL_MAX if band_residual_max is None else band_residual_max
+        )
         self.band_residual_min_span_mV = float(
-            BAND_RESIDUAL_MIN_SPAN_MV if band_residual_min_span_mV is None
-            else band_residual_min_span_mV)
-        self.sigma0 = (None if sigma0 is None
-                       else np.asarray(sigma0, float))
-        self.amp0 = (None if amp0 is None else np.asarray(amp0, float))
+            BAND_RESIDUAL_MIN_SPAN_MV
+            if band_residual_min_span_mV is None
+            else band_residual_min_span_mV
+        )
+        self.sigma0 = None if sigma0 is None else np.asarray(sigma0, float)
+        self.amp0 = None if amp0 is None else np.asarray(amp0, float)
         # Which components are shoulders, and of what. `shoulder_of[i]` is
         # the index of component i's parent, or None if i is a primary peak.
         # See COUPLE_SHOULDER_SIGMA.
-        self.shoulder_of = (tuple(shoulder_of) if shoulder_of is not None
-                            else (None,) * len(self.centres))
+        self.shoulder_of = (
+            tuple(shoulder_of)
+            if shoulder_of is not None
+            else (None,) * len(self.centres)
+        )
         # The two SHAPE parameters, calibrated once per dataset and then
         # held. None means "refine it here", which is what `calibrate_shape`
         # does on its sample and what a bare FitSpec still does. See
@@ -749,13 +877,18 @@ class FitSpec:
 
     def __repr__(self):
         n_sh = sum(1 for x in self.shoulder_of if x is not None)
-        return (f"FitSpec(n={len(self.centres)}, deg={self.baseline_degree}, "
-                f"sigma={self.sigma_min}-{self.sigma_max}"
-                + (f", {n_sh} shoulder(s) coupled" if n_sh else "")
-                + (f", eta={self.fraction:.2f}"
-                   if self.fraction is not None else ", eta free")
-                + (f", k={self.sigma_ratio:.2f}"
-                   if self.sigma_ratio is not None else "") + ")")
+        return (
+            f"FitSpec(n={len(self.centres)}, deg={self.baseline_degree}, "
+            f"sigma={self.sigma_min}-{self.sigma_max}"
+            + (f", {n_sh} shoulder(s) coupled" if n_sh else "")
+            + (
+                f", eta={self.fraction:.2f}"
+                if self.fraction is not None
+                else ", eta free"
+            )
+            + (f", k={self.sigma_ratio:.2f}" if self.sigma_ratio is not None else "")
+            + ")"
+        )
 
 
 # 1.8.7 Module 4 chose these from the dataset's profile class, and the choice
@@ -1134,8 +1267,9 @@ SIGMA_BOUND_PROXIMITY_COMPLEMENT = 0.95
 # reproduces the bare pseudo-Voigt to 3e-7 relative; w = 600 mV with
 # sigma = 20 mV gives a 534 mV plateau; and the shape is smooth through the
 # w = 0 branch, so the optimiser sees no step.
-def rect_pseudo_voigt(x, amplitude=1.0, center=0.0, width=0.0,
-                      sigma=0.01, fraction=0.5):
+def rect_pseudo_voigt(
+    x, amplitude=1.0, center=0.0, width=0.0, sigma=0.01, fraction=0.5
+):
     """Unit-area pseudo-Voigt smeared over a rectangle of width `width`."""
     sigma = max(float(sigma), 1e-9)
     w = float(width)
@@ -1156,16 +1290,16 @@ def rect_pseudo_voigt(x, amplitude=1.0, center=0.0, width=0.0,
     # shape, verified against PseudoVoigtModel to machine precision at w = 0.
     sg = sigma / _SIGMA_G_FACTOR
     if w <= _BAND_WIDTH_NEGLIGIBLE:
-        g = np.exp(-xc ** 2 / (2 * sg ** 2)) / (sg * np.sqrt(2 * np.pi))
-        l = sigma / np.pi / (xc ** 2 + sigma ** 2)
+        g = np.exp(-(xc**2) / (2 * sg**2)) / (sg * np.sqrt(2 * np.pi))
+        l = sigma / np.pi / (xc**2 + sigma**2)
     else:
         a = (xc + w / 2.0) / (sg * np.sqrt(2))
         b = (xc - w / 2.0) / (sg * np.sqrt(2))
         g = (erf(a) - erf(b)) / (2.0 * w)
-        l = (np.arctan((xc + w / 2.0) / sigma)
-             - np.arctan((xc - w / 2.0) / sigma)) / (np.pi * w)
-    return float(amplitude) * ((1.0 - float(fraction)) * g
-                               + float(fraction) * l)
+        l = (np.arctan((xc + w / 2.0) / sigma) - np.arctan((xc - w / 2.0) / sigma)) / (
+            np.pi * w
+        )
+    return float(amplitude) * ((1.0 - float(fraction)) * g + float(fraction) * l)
 
 
 def _rpv_area1(xc, width, sigma, fraction):
@@ -1175,14 +1309,15 @@ def _rpv_area1(xc, width, sigma, fraction):
     xc = np.asarray(xc, float)
     sg = sigma / _SIGMA_G_FACTOR
     if w <= _BAND_WIDTH_NEGLIGIBLE:
-        g = np.exp(-xc ** 2 / (2 * sg ** 2)) / (sg * np.sqrt(2 * np.pi))
-        l = sigma / np.pi / (xc ** 2 + sigma ** 2)
+        g = np.exp(-(xc**2) / (2 * sg**2)) / (sg * np.sqrt(2 * np.pi))
+        l = sigma / np.pi / (xc**2 + sigma**2)
     else:
         a = (xc + w / 2.0) / (sg * np.sqrt(2))
         b = (xc - w / 2.0) / (sg * np.sqrt(2))
         g = (erf(a) - erf(b)) / (2.0 * w)
-        l = (np.arctan((xc + w / 2.0) / sigma)
-             - np.arctan((xc - w / 2.0) / sigma)) / (np.pi * w)
+        l = (np.arctan((xc + w / 2.0) / sigma) - np.arctan((xc - w / 2.0) / sigma)) / (
+            np.pi * w
+        )
     return (1.0 - float(fraction)) * g + float(fraction) * l
 
 
@@ -1209,31 +1344,40 @@ def _rpv_area1(xc, width, sigma, fraction):
 # maximum and `sigma_r` the right, so the full width is `sigma + sigma_r` and
 # not `2 * sigma`. Everything downstream reads `fwhm`, which is computed from
 # both.
-def asym_rect_pseudo_voigt(x, amplitude=1.0, center=0.0, width=0.0,
-                           sigma=0.01, sigma_r=0.01, fraction=0.5):
+def asym_rect_pseudo_voigt(
+    x, amplitude=1.0, center=0.0, width=0.0, sigma=0.01, sigma_r=0.01, fraction=0.5
+):
     """Unit-area rect-smeared pseudo-Voigt with an independent width each side."""
     sl = max(float(sigma), 1e-9)
     sr = max(float(sigma_r), 1e-9)
     if abs(sr - sl) <= _TINY:
-        return rect_pseudo_voigt(x, amplitude=amplitude, center=center,
-                                 width=width, sigma=sl, fraction=fraction)
+        return rect_pseudo_voigt(
+            x,
+            amplitude=amplitude,
+            center=center,
+            width=width,
+            sigma=sl,
+            fraction=fraction,
+        )
     xc = np.asarray(x, float) - float(center)
     hl = float(_rpv_area1(0.0, width, sl, fraction))
     hr = float(_rpv_area1(0.0, width, sr, fraction))
     if not (hl > 0 and hr > 0):
         return np.zeros_like(xc)
-    shape = np.where(xc < 0.0,
-                     _rpv_area1(xc, width, sl, fraction) / hl,
-                     _rpv_area1(xc, width, sr, fraction) / hr)
+    shape = np.where(
+        xc < 0.0,
+        _rpv_area1(xc, width, sl, fraction) / hl,
+        _rpv_area1(xc, width, sr, fraction) / hr,
+    )
     # Each side contributes half of its own unit-area shape's area, which at
     # unit HEIGHT is 1/h. The composite therefore has area (1/hl + 1/hr)/2.
     return float(amplitude) * shape / (0.5 * (1.0 / hl + 1.0 / hr))
 
 
 PROFILE_SPECS = {
-# The values are 1.8.7 Module 4's: FIT_CENTRE_TOLERANCE_MV = 70,
-# FIT_SIGMA_MIN_MV = 5, FIT_SIGMA_MAX_MV = 200, BASELINE_DEGREE = 3, with the
-# sharp-profile overrides that cell applies. Read off the source, not recalled.
+    # The values are 1.8.7 Module 4's: FIT_CENTRE_TOLERANCE_MV = 70,
+    # FIT_SIGMA_MIN_MV = 5, FIT_SIGMA_MAX_MV = 200, BASELINE_DEGREE = 3, with the
+    # sharp-profile overrides that cell applies. Read off the source, not recalled.
     #                centre_tol  sigma_min  sigma_max  baseline_degree
     # band_width_max = 0 means "no band, use the bare pseudo-Voigt", and the
     # fit is then bit-identical to what it has always been. A two-phase
@@ -1290,15 +1434,25 @@ PROFILE_SPECS = {
     # background: see BAND_FROM_RESIDUAL for the measurement, and for what the
     # polynomial was doing instead. `quality.DEFAULT_DEGREES` no longer has a
     # sweep to make; `unattributed_fraction` is the quantity that replaces it.
-    "sharp":    dict(centre_tol=0.030, sigma_min=0.0005, sigma_max=0.030,
-                     asymmetry=True,
-                     baseline_degree=None, band_width_max=0.0),
+    "sharp": dict(
+        centre_tol=0.030,
+        sigma_min=0.0005,
+        sigma_max=0.030,
+        asymmetry=True,
+        baseline_degree=None,
+        band_width_max=0.0,
+    ),
     # MODERATE DROPPED 3 -> 2 IN 1.9.0.36. See the note below the table.
     # Moderate: OFF until measured, on the same principle as the baseline
     # degree above it. Whoever brings a moderate dataset should try it.
-    "moderate": dict(centre_tol=0.070, sigma_min=0.005, sigma_max=0.100,
-                     asymmetry=False,
-                     baseline_degree=None, band_width_max=0.0),
+    "moderate": dict(
+        centre_tol=0.070,
+        sigma_min=0.005,
+        sigma_max=0.100,
+        asymmetry=False,
+        baseline_degree=None,
+        band_width_max=0.0,
+    ),
     # BROAD DROPPED 3 -> 2 IN 1.9.0.28. The cubic was 1.8.7's and it is the
     # single cause of the fitting not converging.
     #
@@ -1354,9 +1508,15 @@ PROFILE_SPECS = {
     # terminal component were measured through the whole pipeline and all
     # three are refuted; see ASYMMETRY_EDGE_ONLY for the numbers, including
     # this one, which was the closest and still lost a cell.
-    "broad":    dict(centre_tol=0.070, sigma_min=0.005, sigma_max=0.200,
-                     asymmetry=False, asymmetry_edge_only=True,
-                     baseline_degree=None, band_width_max=0.0),
+    "broad": dict(
+        centre_tol=0.070,
+        sigma_min=0.005,
+        sigma_max=0.200,
+        asymmetry=False,
+        asymmetry_edge_only=True,
+        baseline_degree=None,
+        band_width_max=0.0,
+    ),
 }
 # MODERATE, MEASURED IN 1.9.0.36. There is still no real moderate dataset in
 # hand, so this was measured on SYNTHETIC half-cycles from `synthetic.py`
@@ -1419,8 +1579,15 @@ def shoulder_parents(centres, is_shoulder):
     return tuple(out)
 
 
-def spec_for_profile(peaks, profile, *, fraction=None, sigma_ratio=None,
-                     primaries_only=False, **overrides):
+def spec_for_profile(
+    peaks,
+    profile,
+    *,
+    fraction=None,
+    sigma_ratio=None,
+    primaries_only=False,
+    **overrides,
+):
     """
     A `FitSpec` matching 1.8.7's profile-dependent settings.
 
@@ -1484,8 +1651,11 @@ def spec_for_profile(peaks, profile, *, fraction=None, sigma_ratio=None,
         overrides["band_ceiling"] = _ceiling
         overrides["band_width_max"] = 0.0
 
-    if (primaries_only and hasattr(peaks, "columns")
-            and "is_shoulder" in getattr(peaks, "columns", [])):
+    if (
+        primaries_only
+        and hasattr(peaks, "columns")
+        and "is_shoulder" in getattr(peaks, "columns", [])
+    ):
         _prim = peaks[~peaks["is_shoulder"].fillna(False)]
         if len(_prim) >= 1:
             peaks = _prim.reset_index(drop=True)
@@ -1493,7 +1663,9 @@ def spec_for_profile(peaks, profile, *, fraction=None, sigma_ratio=None,
         centres = np.asarray(peaks["voltage"].values, float)
         if "is_shoulder" in peaks.columns:
             shoulder_of = shoulder_parents(
-                centres, peaks["is_shoulder"].fillna(False).values)
+                centres, peaks["is_shoulder"].fillna(False).values
+            )
+
         # START THE FIT WHERE DETECTION ALREADY IS.
         #
         # Detection measures a height and a width for every peak it finds and
@@ -1528,8 +1700,9 @@ def spec_for_profile(peaks, profile, *, fraction=None, sigma_ratio=None,
             # this that did.
             try:
                 return np.asarray(peaks[col].values, dtype=float)
-            except (KeyError, TypeError, ValueError):
+            except KeyError, TypeError, ValueError:
                 return None
+
         _w = _num("width_V") if "width_V" in peaks.columns else None
         if _w is not None:
             sigma0 = np.where(np.isfinite(_w) & (_w > 0), _w / 2.0, np.nan)
@@ -1547,8 +1720,11 @@ def spec_for_profile(peaks, profile, *, fraction=None, sigma_ratio=None,
                 sigma0 = np.where(_ok, sigma0, float(np.median(sigma0[_ok])))
             _h = _num("height") if "height" in peaks.columns else None
             if _h is not None:
-                amp0 = np.where(np.isfinite(_h) & np.isfinite(sigma0),
-                                np.abs(_h) * 2.0 * sigma0, np.nan)
+                amp0 = np.where(
+                    np.isfinite(_h) & np.isfinite(sigma0),
+                    np.abs(_h) * 2.0 * sigma0,
+                    np.nan,
+                )
     else:
         centres = np.asarray(peaks, float)
 
@@ -1638,18 +1814,29 @@ def calibrate_shape(jobs, *, n=CALIBRATION_SAMPLE, n_jobs=None, verbose=True):
     shoulders in the dataset, or nothing converged.
     """
     if not jobs:
-        return dict(fraction=None, sigma_ratio=None, n=0,
-                    fraction_spread=float("nan"),
-                    sigma_ratio_spread=float("nan"))
+        return dict(
+            fraction=None,
+            sigma_ratio=None,
+            n=0,
+            fraction_spread=float("nan"),
+            sigma_ratio_spread=float("nan"),
+        )
     idx = np.linspace(0, len(jobs) - 1, min(int(n), len(jobs)))
     sample = [jobs[i] for i in sorted(set(idx.round().astype(int).tolist()))]
     # Free BOTH, whatever the module defaults say: this is the measurement
     # those defaults are supposed to be based on.
-    free = [(v, y, spec.replace(fraction=None, sigma_ratio=None), k)
-            for (v, y, spec, k) in sample]
+    free = [
+        (v, y, spec.replace(fraction=None, sigma_ratio=None), k)
+        for (v, y, spec, k) in sample
+    ]
     if verbose:
-        print(entry("sample", f"{len(free)} of {len(jobs)}",
-                    "half-cycles, refitted with the shape free"))
+        print(
+            entry(
+                "sample",
+                f"{len(free)} of {len(jobs)}",
+                "half-cycles, refitted with the shape free",
+            )
+        )
     res = fit_many(free, n_jobs=n_jobs, verbose=False, label="calibration")
 
     etas, ks = [], []
@@ -1669,9 +1856,11 @@ def calibrate_shape(jobs, *, n=CALIBRATION_SAMPLE, n_jobs=None, verbose=True):
             ks.append(float(kk))
 
     def _med(xs):
-        return (float(np.median(xs)), float(np.percentile(xs, 90)
-                                            - np.percentile(xs, 10))) \
-            if xs else (None, float("nan"))
+        return (
+            (float(np.median(xs)), float(np.percentile(xs, 90) - np.percentile(xs, 10)))
+            if xs
+            else (None, float("nan"))
+        )
 
     eta, eta_sp = _med(etas)
     k, k_sp = _med(ks)
@@ -1681,14 +1870,16 @@ def calibrate_shape(jobs, *, n=CALIBRATION_SAMPLE, n_jobs=None, verbose=True):
         if eta is None:
             print(verdict("caution", "mixing fraction not measurable"))
         else:
-            _pin = ("  (pinned at a bound)" if eta <= 0.02 or eta >= 0.98
-                    else "")
-            print(entry("mixing fraction eta", f"{eta:.3f}",
-                        f"10-90 spread {eta_sp:.3f} over {len(etas)} "
-                        f"half-cycles{_pin}"))
+            _pin = "  (pinned at a bound)" if eta <= 0.02 or eta >= 0.98 else ""
+            print(
+                entry(
+                    "mixing fraction eta",
+                    f"{eta:.3f}",
+                    f"10-90 spread {eta_sp:.3f} over {len(etas)} half-cycles{_pin}",
+                )
+            )
             if eta_ok:
-                print(verdict("ok", "held fixed for every fit in this "
-                                    "dataset"))
+                print(verdict("ok", "held fixed for every fit in this dataset"))
             elif eta_sp >= FRACTION_UNDETERMINED:
                 # A SPREAD OF ~1.0 IS NOT A WIDE MEASUREMENT, it is no
                 # measurement: eta is bounded [0, 1], so a 10-90 range that
@@ -1696,37 +1887,66 @@ def calibrate_shape(jobs, *, n=CALIBRATION_SAMPLE, n_jobs=None, verbose=True):
                 # the peak shape at all. That is a different statement from
                 # "it varies", and it used to print the same verdict as a
                 # spread of 0.375.
-                print(verdict("bad", f"spread {eta_sp:.2f} spans the whole "
-                                     f"allowed range — the peak shape is not "
-                                     f"determined by this data"))
-                print(bullet("Every half-cycle refines its own eta, which is "
-                             "the only honest option, but the areas that "
-                             "result carry a shape parameter the curve never "
-                             "pinned down. Treat area TRENDS from this "
-                             "dataset as indicative; peak positions are "
-                             "unaffected."))
+                print(
+                    verdict(
+                        "bad",
+                        f"spread {eta_sp:.2f} spans the whole "
+                        f"allowed range — the peak shape is not "
+                        f"determined by this data",
+                    )
+                )
+                print(
+                    bullet(
+                        "Every half-cycle refines its own eta, which is "
+                        "the only honest option, but the areas that "
+                        "result carry a shape parameter the curve never "
+                        "pinned down. Treat area TRENDS from this "
+                        "dataset as indicative; peak positions are "
+                        "unaffected."
+                    )
+                )
             else:
-                print(verdict("caution", f"spread {eta_sp:.2f} > "
-                                         f"{FRACTION_SPREAD_MAX} — refined "
-                                         f"per half-cycle"))
-                print(bullet("The peak shape is not constant through this "
-                             "run, so it is not asserted to be. Area trends "
-                             "from this dataset carry that free parameter."))
+                print(
+                    verdict(
+                        "caution",
+                        f"spread {eta_sp:.2f} > "
+                        f"{FRACTION_SPREAD_MAX} — refined "
+                        f"per half-cycle",
+                    )
+                )
+                print(
+                    bullet(
+                        "The peak shape is not constant through this "
+                        "run, so it is not asserted to be. Area trends "
+                        "from this dataset carry that free parameter."
+                    )
+                )
         if k is not None:
             _pin = "  (pinned at a bound)" if k >= 0.98 else ""
-            print(entry("shoulder ratio k", f"{k:.3f}",
-                        f"10-90 spread {k_sp:.3f} over {len(ks)} "
-                        f"half-cycles{_pin}"))
-            print(verdict("ok", "held fixed") if k_ok else
-                  verdict("caution", f"spread > {SIGMA_RATIO_SPREAD_MAX} — "
-                                     f"refined per half-cycle"))
-    return dict(fraction=(eta if eta_ok and not REFINE_FRACTION_PER_HALF_CYCLE
-                          else None),
-                sigma_ratio=(k if k_ok and not
-                             REFINE_SIGMA_RATIO_PER_HALF_CYCLE else None),
-                fraction_median=eta, sigma_ratio_median=k,
-                fraction_spread=eta_sp, sigma_ratio_spread=k_sp,
-                n=len(res))
+            print(
+                entry(
+                    "shoulder ratio k",
+                    f"{k:.3f}",
+                    f"10-90 spread {k_sp:.3f} over {len(ks)} half-cycles{_pin}",
+                )
+            )
+            print(
+                verdict("ok", "held fixed")
+                if k_ok
+                else verdict(
+                    "caution",
+                    f"spread > {SIGMA_RATIO_SPREAD_MAX} — refined per half-cycle",
+                )
+            )
+    return dict(
+        fraction=(eta if eta_ok and not REFINE_FRACTION_PER_HALF_CYCLE else None),
+        sigma_ratio=(k if k_ok and not REFINE_SIGMA_RATIO_PER_HALF_CYCLE else None),
+        fraction_median=eta,
+        sigma_ratio_median=k,
+        fraction_spread=eta_sp,
+        sigma_ratio_spread=k_sp,
+        n=len(res),
+    )
 
 
 def build_model(voltage, dqdv, spec: FitSpec):
@@ -1815,10 +2035,11 @@ def build_model(voltage, dqdv, spec: FitSpec):
         _c0 = float(np.clip(float(c), _wlo, _whi))
         _cmin = max(_wlo, _c0 - float(_tol[i]))
         _cmax = min(_whi, _c0 + float(_tol[i]))
-        if _cmin >= _cmax:                     # degenerate window: keep a box
+        if _cmin >= _cmax:  # degenerate window: keep a box
             _cmin, _cmax = _wlo, _whi
-        params[pre + "center"].set(value=float(np.clip(_c0, _cmin, _cmax)),
-                                   min=_cmin, max=_cmax)
+        params[pre + "center"].set(
+            value=float(np.clip(_c0, _cmin, _cmax)), min=_cmin, max=_cmax
+        )
         _s0 = sigma0
         if spec.sigma0 is not None and i < spec.sigma0.size:
             _v = float(spec.sigma0[i])
@@ -1844,8 +2065,7 @@ def build_model(voltage, dqdv, spec: FitSpec):
             _v = float(spec.amp0[i])
             if np.isfinite(_v) and _v > 0:
                 _a0 = _v
-        params[pre + "sigma"].set(value=_s0, min=spec.sigma_min,
-                                  max=spec.sigma_max)
+        params[pre + "sigma"].set(value=_s0, min=spec.sigma_min, max=spec.sigma_max)
         params[pre + "amplitude"].set(value=_a0, min=0)
         params[pre + "fraction"].set(value=0.5, min=0, max=1)
         if _use_asym:
@@ -1853,8 +2073,9 @@ def build_model(voltage, dqdv, spec: FitSpec):
             # so the per-component mode has a box to work in, and so the
             # value is right if the tie is never made (a single component
             # with ASYMMETRY_SHARED off).
-            params[pre + "sigma_r"].set(value=_s0, min=spec.sigma_min,
-                                        max=spec.sigma_max)
+            params[pre + "sigma_r"].set(
+                value=_s0, min=spec.sigma_min, max=spec.sigma_max
+            )
         if _use_asym and not _use_band:
             # The asymmetric model carries a band width whether or not the
             # profile wants one. Held at zero, not varied: this is the bare
@@ -1881,8 +2102,7 @@ def build_model(voltage, dqdv, spec: FitSpec):
                 params[pre + "width"].set(value=0.0, vary=False)
             else:
                 _w0 = max(2.0 * _BAND_WIDTH_NEGLIGIBLE, 0.02 * _cap)
-                params[pre + "width"].set(value=min(_w0, _cap), min=0.0,
-                                          max=_cap)
+                params[pre + "width"].set(value=min(_w0, _cap), min=0.0, max=_cap)
 
     # --- tie the shoulders, share the mixing fraction --------------------
     # Both are lmfit `expr` constraints, so the tied parameters stop being
@@ -1895,11 +2115,13 @@ def build_model(voltage, dqdv, spec: FitSpec):
         # shoulders sharing a ratio cost one parameter between them; a ratio
         # each costs exactly what tying them was meant to save.
         _k = spec.sigma_ratio
-        params.add("sh_k",
-                   value=(SHOULDER_SIGMA_RATIO_INIT if _k is None
-                          else float(_k)),
-                   min=SHOULDER_SIGMA_RATIO_MIN, max=SHOULDER_SIGMA_RATIO_MAX,
-                   vary=(_k is None))
+        params.add(
+            "sh_k",
+            value=(SHOULDER_SIGMA_RATIO_INIT if _k is None else float(_k)),
+            min=SHOULDER_SIGMA_RATIO_MIN,
+            max=SHOULDER_SIGMA_RATIO_MAX,
+            vary=(_k is None),
+        )
         for child, parent in shoulders.items():
             params[f"p{child}_sigma"].set(expr=f"sh_k * p{parent}_sigma")
             # BOTH FLANKS, ADDED IN 1.9.0.58 with per-component asymmetry.
@@ -1911,8 +2133,7 @@ def build_model(voltage, dqdv, spec: FitSpec):
             # restored. A shoulder is a scaled copy of its parent's SHAPE,
             # so the same ratio governs both sides and this costs nothing.
             if f"p{child}_sigma_r" in params and f"p{parent}_sigma_r" in params:
-                params[f"p{child}_sigma_r"].set(
-                    expr=f"sh_k * p{parent}_sigma_r")
+                params[f"p{child}_sigma_r"].set(expr=f"sh_k * p{parent}_sigma_r")
 
     # --- which components are allowed two flanks -------------------------
     # A component seeded within `sigma_max` of a window edge is one whose
@@ -1924,14 +2145,20 @@ def build_model(voltage, dqdv, spec: FitSpec):
     if _use_asym and getattr(spec, "asymmetry_edge_only", False):
         _reach = float(spec.sigma_max)
         for i, c in enumerate(spec.centres):
-            _near_edge = (float(c) - v.min() <= _reach) or \
-                         (v.max() - float(c) <= _reach)
+            _near_edge = (float(c) - v.min() <= _reach) or (
+                v.max() - float(c) <= _reach
+            )
             if not _near_edge:
                 params[f"p{i}_sigma_r"].set(expr=f"p{i}_sigma")
     # --- one asymmetry ratio for the half-cycle --------------------------
     elif _use_asym and ASYMMETRY_SHARED and len(spec.centres) >= 1:
-        params.add("asym_k", value=ASYM_RATIO_INIT,
-                   min=ASYM_RATIO_MIN, max=ASYM_RATIO_MAX, vary=True)
+        params.add(
+            "asym_k",
+            value=ASYM_RATIO_INIT,
+            min=ASYM_RATIO_MIN,
+            max=ASYM_RATIO_MAX,
+            vary=True,
+        )
         for i in range(len(spec.centres)):
             params[f"p{i}_sigma_r"].set(expr=f"asym_k * p{i}_sigma")
 
@@ -1939,8 +2166,7 @@ def build_model(voltage, dqdv, spec: FitSpec):
         # CALIBRATED AND HELD. The shape of the instrument's response is not
         # something each cycle gets to re-decide.
         for i in range(len(spec.centres)):
-            params[f"p{i}_fraction"].set(value=float(spec.fraction),
-                                         vary=False)
+            params[f"p{i}_fraction"].set(value=float(spec.fraction), vary=False)
     elif SHARED_FRACTION and len(spec.centres) > 1:
         params.add("eta", value=0.5, min=0, max=1, vary=True)
         for i in range(len(spec.centres)):
@@ -1971,8 +2197,9 @@ def _derived(sigma, amplitude, fraction, sigma_r=None):
     sig = max(sigma, _TINY)
     if sigma_r is None or not np.isfinite(sigma_r) or abs(sigma_r - sigma) <= _TINY:
         fwhm = _FWHM_FACTOR * sigma
-        height = (amplitude / max(sig * np.sqrt(2 * np.pi), _TINY)) * (
-            1 - fraction) + (amplitude / max(np.pi * sig, _TINY)) * fraction
+        height = (amplitude / max(sig * np.sqrt(2 * np.pi), _TINY)) * (1 - fraction) + (
+            amplitude / max(np.pi * sig, _TINY)
+        ) * fraction
         return float(fwhm), float(height)
     sgr = max(float(sigma_r), _TINY)
     fwhm = sig + sgr
@@ -2041,9 +2268,16 @@ def _drop_shoulder_index(spec: FitSpec, drop):
     return tuple(out)
 
 
-def fit_half_cycle(voltage, dqdv, spec: FitSpec, *, key=None,
-                   _refit_depth=0, _seed_index=None,
-                   _bands_added=0) -> dict:
+def fit_half_cycle(
+    voltage,
+    dqdv,
+    spec: FitSpec,
+    *,
+    key=None,
+    _refit_depth=0,
+    _seed_index=None,
+    _bands_added=0,
+) -> dict:
     """
     Fit one half-cycle. Returns plain data — see the module docstring.
 
@@ -2058,51 +2292,63 @@ def fit_half_cycle(voltage, dqdv, spec: FitSpec, *, key=None,
     refit, so joining the detected peaks on it labelled every surviving
     component with the properties of the one below it.
     """
-    seed_index = (list(range(len(spec.centres))) if _seed_index is None
-                  else list(_seed_index))
+    seed_index = (
+        list(range(len(spec.centres))) if _seed_index is None else list(_seed_index)
+    )
     v = np.asarray(voltage, float)
     y = np.abs(np.asarray(dqdv, float))
-    out = {"key": key, "success": False, "reason": "", "n_points": int(v.size),
-           "components": [], "r_squared": np.nan, "redchi": np.nan,
-           "nvarys": 0, "baseline_degree": spec.baseline_degree,
-           # The BOUNDS THIS FIT ACTUALLY USED. Downstream has to know them:
-           # `analyse._flag_reliable_peaks` asks "is this component pinned at
-           # its width bound, acting as baseline?", and it was asking against
-           # a module constant of 200 mV while a sharp profile's real bound is
-           # 30 mV — so on every LTO and LFP dataset the guard could not fire.
-           "sigma_max": float(spec.sigma_max),
-           "sigma_min": float(spec.sigma_min),
-           # THE SAMPLING INTERVAL OF THIS CURVE, so a width can be judged
-           # against what the measurement can resolve rather than against a
-           # constant. LTO cell C's discharge peak is 2.6 mV wide sampled at
-           # 1 mV: three points across the full width at half maximum, and a
-           # width read from three points is not a measurement.
-           "sample_mV": float(np.median(np.diff(np.asarray(voltage, float)))
-                              * 1000.0) if np.asarray(voltage).size > 2
-           else float("nan"),
-           "centre_tol": float(spec.centre_tol),
-           "dropped_degenerate": 0,
-           # How much of the parameter count the constraints bought back.
-           # `nvarys` alone cannot be read without them: a five-component fit
-           # with two tied shoulders and a shared fraction varies 15
-           # parameters, not 20, and the difference is the whole argument for
-           # believing the standard errors.
-           "n_shoulders_coupled": 0,
-           "sigma_ratio_k": np.nan,
-           "shared_fraction": np.nan,
-           "fraction_fixed": False,
-           # The ANALYSED WINDOW. The truncation test downstream asks whether
-           # a fitted peak's centre +/- 2 sigma lies inside it, which is a
-           # question about this fit and cannot be answered from the detected
-           # peak list.
-           "v_min": float(np.min(v)) if v.size else np.nan,
-           "v_max": float(np.max(v)) if v.size else np.nan,
-           "curve_area": float(trapezoid(y, v)) if v.size > 1 else np.nan,
-           "baseline_coeffs": {},
-           "component_area_sum": 0.0, "baseline_area": np.nan,
-           "unattributed_area": np.nan, "unattributed_fraction": np.nan,
-           "bands_from_residual": 0, "n_at_sigma_max": 0,
-           "seconds": 0.0}
+    out = {
+        "key": key,
+        "success": False,
+        "reason": "",
+        "n_points": int(v.size),
+        "components": [],
+        "r_squared": np.nan,
+        "redchi": np.nan,
+        "nvarys": 0,
+        "baseline_degree": spec.baseline_degree,
+        # The BOUNDS THIS FIT ACTUALLY USED. Downstream has to know them:
+        # `analyse._flag_reliable_peaks` asks "is this component pinned at
+        # its width bound, acting as baseline?", and it was asking against
+        # a module constant of 200 mV while a sharp profile's real bound is
+        # 30 mV — so on every LTO and LFP dataset the guard could not fire.
+        "sigma_max": float(spec.sigma_max),
+        "sigma_min": float(spec.sigma_min),
+        # THE SAMPLING INTERVAL OF THIS CURVE, so a width can be judged
+        # against what the measurement can resolve rather than against a
+        # constant. LTO cell C's discharge peak is 2.6 mV wide sampled at
+        # 1 mV: three points across the full width at half maximum, and a
+        # width read from three points is not a measurement.
+        "sample_mV": float(np.median(np.diff(np.asarray(voltage, float))) * 1000.0)
+        if np.asarray(voltage).size > 2
+        else float("nan"),
+        "centre_tol": float(spec.centre_tol),
+        "dropped_degenerate": 0,
+        # How much of the parameter count the constraints bought back.
+        # `nvarys` alone cannot be read without them: a five-component fit
+        # with two tied shoulders and a shared fraction varies 15
+        # parameters, not 20, and the difference is the whole argument for
+        # believing the standard errors.
+        "n_shoulders_coupled": 0,
+        "sigma_ratio_k": np.nan,
+        "shared_fraction": np.nan,
+        "fraction_fixed": False,
+        # The ANALYSED WINDOW. The truncation test downstream asks whether
+        # a fitted peak's centre +/- 2 sigma lies inside it, which is a
+        # question about this fit and cannot be answered from the detected
+        # peak list.
+        "v_min": float(np.min(v)) if v.size else np.nan,
+        "v_max": float(np.max(v)) if v.size else np.nan,
+        "curve_area": float(trapezoid(y, v)) if v.size > 1 else np.nan,
+        "baseline_coeffs": {},
+        "component_area_sum": 0.0,
+        "baseline_area": np.nan,
+        "unattributed_area": np.nan,
+        "unattributed_fraction": np.nan,
+        "bands_from_residual": 0,
+        "n_at_sigma_max": 0,
+        "seconds": 0.0,
+    }
 
     if v.size < 5 or len(spec.centres) == 0:
         out["reason"] = "too few points or no peaks proposed"
@@ -2133,18 +2379,21 @@ def fit_half_cycle(voltage, dqdv, spec: FitSpec, *, key=None,
         _tol = getattr(spec, "tolerance", None)
         if _tol is None:
             _tol = FIT_TOLERANCE
-        _kws = (None if not _tol
-                else dict(ftol=float(_tol), xtol=float(_tol)))
+        _kws = None if not _tol else dict(ftol=float(_tol), xtol=float(_tol))
         if STAGED_REFINEMENT and len(spec.centres) > 1:
             _frozen = []
             for _pn, _p in params.items():
-                if (_pn.endswith("sigma") or _pn.endswith("fraction")) \
-                        and _p.vary and _p.expr is None:
+                if (
+                    (_pn.endswith("sigma") or _pn.endswith("fraction"))
+                    and _p.vary
+                    and _p.expr is None
+                ):
                     _p.set(vary=False)
                     _frozen.append(_pn)
             if _frozen:
-                _stage1 = model.fit(y, params, x=v,
-                                    max_nfev=spec.max_nfev, fit_kws=_kws)
+                _stage1 = model.fit(
+                    y, params, x=v, max_nfev=spec.max_nfev, fit_kws=_kws
+                )
                 params = _stage1.params.copy()
                 for _pn in _frozen:
                     params[_pn].set(vary=True)
@@ -2197,9 +2446,8 @@ def fit_half_cycle(voltage, dqdv, spec: FitSpec, *, key=None,
             if _moved:
                 out["bound_escape_tried"] = len(_moved)
                 try:
-                    _res2 = model.fit(y, _p2, x=v, max_nfev=spec.max_nfev,
-                                      fit_kws=_kws)
-                except Exception:                  # noqa: BLE001
+                    _res2 = model.fit(y, _p2, x=v, max_nfev=spec.max_nfev, fit_kws=_kws)
+                except Exception:  # noqa: BLE001
                     _res2 = None
                 if _res2 is not None:
                     _c1 = float(getattr(res, "chisqr", np.inf) or np.inf)
@@ -2209,7 +2457,7 @@ def fit_half_cycle(voltage, dqdv, spec: FitSpec, *, key=None,
                     if np.isfinite(_c2) and _c2 < _c1 * (1.0 - BOUND_ESCAPE_GAIN):
                         res = _res2
                         out["bound_escape_used"] = True
-    except Exception as exc:                       # noqa: BLE001
+    except Exception as exc:  # noqa: BLE001
         out["reason"] = f"{type(exc).__name__}: {exc}"
         out["seconds"] = time.perf_counter() - t0
         return out
@@ -2231,8 +2479,7 @@ def fit_half_cycle(voltage, dqdv, spec: FitSpec, *, key=None,
     out["hit_iteration_cap"] = bool(out["nfev"] >= int(spec.max_nfev))
 
     comps = res.eval_components(x=v)
-    peak_total = sum(val for name, val in comps.items()
-                     if not name.startswith("bg_"))
+    peak_total = sum(val for name, val in comps.items() if not name.startswith("bg_"))
     baseline = comps.get("bg_", np.zeros_like(v))
 
     rows = []
@@ -2245,9 +2492,11 @@ def fit_half_cycle(voltage, dqdv, spec: FitSpec, *, key=None,
             frac = float(res.params[pre + "fraction"].value)
         except KeyError:
             continue
+
         def _err(pname):
             e = res.params[pre + pname].stderr
             return float(e) if e is not None else np.nan
+
         _sigma_r = sigma
         _sigma_r_err = np.nan
         if (pre + "sigma_r") in res.params:
@@ -2266,51 +2515,63 @@ def fit_half_cycle(voltage, dqdv, spec: FitSpec, *, key=None,
         if (pre + "width") in res.params:
             _bw = float(res.params[pre + "width"].value)
             _bw_err = _err("width")
-        _is_band = bool(_bw > _BAND_WIDTH_NEGLIGIBLE
-                        and (not np.isfinite(_bw_err) or _bw > 2.0 * _bw_err))
+        _is_band = bool(
+            _bw > _BAND_WIDTH_NEGLIGIBLE
+            and (not np.isfinite(_bw_err) or _bw > 2.0 * _bw_err)
+        )
         # A BAND AT ITS WIDTH CEILING IS ACTING AS BASELINE, exactly as a
         # component at its sigma bound is. It is not a composition window
         # any more; it is a flat pedestal the fit is using to lift the
         # curve. Flagged here rather than discovered later, and carried out
         # to the parameter table so `reliable` can act on it.
         _bw_max = float(_band_ceilings(spec)[i])
-        _bw_pinned = bool(_bw_max > 0 and _bw >=
-                          _bw_max * SIGMA_BOUND_PROXIMITY_COMPLEMENT)
-        rows.append(dict(
-            peak_index=i,
-            seed_index=(seed_index[i] if i < len(seed_index) else i),
-            centre=centre, centre_stderr=_err("center"),
-            sigma=sigma, sigma_stderr=_err("sigma"),
-            # The HIGH-side half-width and the ratio between the two. Equal to
-            # `sigma` and 1.0 exactly when the lineshape is symmetric, so the
-            # columns are always present and always mean the same thing.
-            sigma_r=_sigma_r, sigma_r_stderr=_sigma_r_err,
-            asymmetry=(float(_sigma_r / sigma) if sigma > 0 else np.nan),
-            amplitude_area=amp, amplitude_stderr=_err("amplitude"),
-            fraction=frac, fraction_stderr=_err("fraction"),
-            band_width=_bw, band_width_stderr=_bw_err,
-            band_width_max_fitted=_bw_max,
-            band_at_width_bound=_bw_pinned,
-            # ETA AT ITS BOUND, for parity with `at_sigma_max` and
-            # `asymmetry_at_bound`. eta = 1 is a pure Lorentzian, whose wings
-            # carry area far from the centre; on a two-phase transition, whose
-            # tails are set by kinetics and inhomogeneity rather than by
-            # lifetime broadening, that is a shape the data has been allowed
-            # to reach rather than one anything argues for. Measured on LTO
-            # cell A cycle 1: eta = 1.000 and the component over-covers the
-            # cell's charge by 6%.
-            fraction_at_bound=bool(frac >= 1.0 - _BOUND_PROXIMITY
-                                   or frac <= _BOUND_PROXIMITY),
-            component_kind=("band" if _is_band else "peak"),
-            fwhm=fwhm, height=height,
-            # Area actually inside the fitted window, which is what any
-            # capacity statement must use — the analytic amplitude includes
-            # tails that were never measured.
-            area_in_window=float(trapezoid(comps[pre], v)),
-        ))
+        _bw_pinned = bool(
+            _bw_max > 0 and _bw >= _bw_max * SIGMA_BOUND_PROXIMITY_COMPLEMENT
+        )
+        rows.append(
+            dict(
+                peak_index=i,
+                seed_index=(seed_index[i] if i < len(seed_index) else i),
+                centre=centre,
+                centre_stderr=_err("center"),
+                sigma=sigma,
+                sigma_stderr=_err("sigma"),
+                # The HIGH-side half-width and the ratio between the two. Equal to
+                # `sigma` and 1.0 exactly when the lineshape is symmetric, so the
+                # columns are always present and always mean the same thing.
+                sigma_r=_sigma_r,
+                sigma_r_stderr=_sigma_r_err,
+                asymmetry=(float(_sigma_r / sigma) if sigma > 0 else np.nan),
+                amplitude_area=amp,
+                amplitude_stderr=_err("amplitude"),
+                fraction=frac,
+                fraction_stderr=_err("fraction"),
+                band_width=_bw,
+                band_width_stderr=_bw_err,
+                band_width_max_fitted=_bw_max,
+                band_at_width_bound=_bw_pinned,
+                # ETA AT ITS BOUND, for parity with `at_sigma_max` and
+                # `asymmetry_at_bound`. eta = 1 is a pure Lorentzian, whose wings
+                # carry area far from the centre; on a two-phase transition, whose
+                # tails are set by kinetics and inhomogeneity rather than by
+                # lifetime broadening, that is a shape the data has been allowed
+                # to reach rather than one anything argues for. Measured on LTO
+                # cell A cycle 1: eta = 1.000 and the component over-covers the
+                # cell's charge by 6%.
+                fraction_at_bound=bool(
+                    frac >= 1.0 - _BOUND_PROXIMITY or frac <= _BOUND_PROXIMITY
+                ),
+                component_kind=("band" if _is_band else "peak"),
+                fwhm=fwhm,
+                height=height,
+                # Area actually inside the fitted window, which is what any
+                # capacity statement must use — the analytic amplitude includes
+                # tails that were never measured.
+                area_in_window=float(trapezoid(comps[pre], v)),
+            )
+        )
 
-    bkg = {k: float(v.value) for k, v in res.params.items()
-           if k.startswith("bg_")}
+    bkg = {k: float(v.value) for k, v in res.params.items() if k.startswith("bg_")}
 
     # --- did two components land on one feature? -------------------------
     if DROP_DEGENERATE and _refit_depth < len(spec.centres):
@@ -2321,15 +2582,18 @@ def fit_half_cycle(voltage, dqdv, spec: FitSpec, *, key=None,
             keep_sh = _drop_shoulder_index(spec, bad)
             if keep:
                 out2 = fit_half_cycle(
-                    voltage, dqdv, spec.replace(centres=tuple(keep),
-                                                shoulder_of=keep_sh),
-                    key=key, _refit_depth=_refit_depth + 1,
-                    _seed_index=keep_seeds)
+                    voltage,
+                    dqdv,
+                    spec.replace(centres=tuple(keep), shoulder_of=keep_sh),
+                    key=key,
+                    _refit_depth=_refit_depth + 1,
+                    _seed_index=keep_seeds,
+                )
                 if out2.get("success"):
-                    out2["dropped_degenerate"] = (
-                        out2.get("dropped_degenerate", 0) + 1)
-                    out2["seconds"] = (out2.get("seconds", 0.0)
-                                       + time.perf_counter() - t0)
+                    out2["dropped_degenerate"] = out2.get("dropped_degenerate", 0) + 1
+                    out2["seconds"] = (
+                        out2.get("seconds", 0.0) + time.perf_counter() - t0
+                    )
                     return out2
 
     # --- BANDS SEEDED FROM THE CHARGE THE PEAKS CANNOT ACCOUNT FOR ------
@@ -2339,9 +2603,12 @@ def fit_half_cycle(voltage, dqdv, spec: FitSpec, *, key=None,
     # KEPT ONLY IF IT NAMES MORE CHARGE than the peaks alone did -- an extra
     # component that does not is not evidence of anything.
     _bands_added = int(_bands_added)
-    if (getattr(spec, "band_from_residual", False)
-            and float(getattr(spec, "band_ceiling", 0.0) or 0.0) > 0
-            and _bands_added == 0 and v.size > 8):
+    if (
+        getattr(spec, "band_from_residual", False)
+        and float(getattr(spec, "band_ceiling", 0.0) or 0.0) > 0
+        and _bands_added == 0
+        and v.size > 8
+    ):
         _curve_area = float(trapezoid(y, v))
         _named0 = float(trapezoid(peak_total, v))
         if _curve_area > 0:
@@ -2372,12 +2639,10 @@ def fit_half_cycle(voltage, dqdv, spec: FitSpec, *, key=None,
                     if not (v[0] <= c <= v[-1]):
                         continue
                     _lo, _hi = c - float(w) / 2000.0, c + float(w) / 2000.0
-                    _inside = np.nonzero((_existing >= _lo)
-                                         & (_existing <= _hi))[0]
+                    _inside = np.nonzero((_existing >= _lo) & (_existing <= _hi))[0]
                     if _inside.size:
                         # Promote the component nearest the region's centre.
-                        _j = int(_inside[np.argmin(
-                            np.abs(_existing[_inside] - c))])
+                        _j = int(_inside[np.argmin(np.abs(_existing[_inside] - c))])
                         # THE REGION SIZES THE BAND, THE MECHANISM BOUNDS
                         # IT — the same rule the appended-seed branch below
                         # states and follows, and which this branch never
@@ -2398,38 +2663,61 @@ def fit_half_cycle(voltage, dqdv, spec: FitSpec, *, key=None,
                         _caps0[_j] = max(_caps0[_j], _ceil_V)
                         _promoted = True
                         continue
-                    _seed.append(dict(centre=c, span_mV=float(w),
-                                      lo=_lo, hi=_hi,
-                                      area=float("nan"), from_reference=True))
+                    _seed.append(
+                        dict(
+                            centre=c,
+                            span_mV=float(w),
+                            lo=_lo,
+                            hi=_hi,
+                            area=float("nan"),
+                            from_reference=True,
+                        )
+                    )
                 if _promoted and not _seed:
                     # Nothing to add, but a component has become a band.
                     out2 = fit_half_cycle(
-                        voltage, dqdv,
+                        voltage,
+                        dqdv,
                         spec.replace(band_width_max=np.asarray(_caps0, float)),
-                        key=key, _refit_depth=_refit_depth,
-                        _seed_index=_seed_index, _bands_added=1)
+                        key=key,
+                        _refit_depth=_refit_depth,
+                        _seed_index=_seed_index,
+                        _bands_added=1,
+                    )
                     if out2.get("success"):
-                        out2["seconds"] = (out2.get("seconds", 0.0)
-                                           + time.perf_counter() - t0)
+                        out2["seconds"] = (
+                            out2.get("seconds", 0.0) + time.perf_counter() - t0
+                        )
                         return out2
             else:
                 _regs = residual_excess_regions(
-                    v, y - (peak_total + baseline),
-                    min_span_mV=spec.band_residual_min_span_mV)
-                _seed = [g for g in _regs
-                         if g["area"] / _curve_area
-                         >= spec.band_residual_min_share
-                         ][:max(0, int(spec.band_residual_max))]
+                    v,
+                    y - (peak_total + baseline),
+                    min_span_mV=spec.band_residual_min_span_mV,
+                )
+                _seed = [
+                    g
+                    for g in _regs
+                    if g["area"] / _curve_area >= spec.band_residual_min_share
+                ][: max(0, int(spec.band_residual_max))]
             if _seed:
-                _c = list(np.asarray(spec.centres, float)) + \
-                     [g["centre"] for g in _seed]
-                _sh = list(getattr(spec, "shoulder_of", None)
-                           or ((None,) * len(spec.centres)))
-                _sh = _sh[:len(spec.centres)] + [None] * len(_seed)
-                _s0 = (list(spec.sigma0) if spec.sigma0 is not None
-                       else [np.nan] * len(spec.centres))
-                _a0 = (list(spec.amp0) if spec.amp0 is not None
-                       else [np.nan] * len(spec.centres))
+                _c = list(np.asarray(spec.centres, float)) + [
+                    g["centre"] for g in _seed
+                ]
+                _sh = list(
+                    getattr(spec, "shoulder_of", None) or ((None,) * len(spec.centres))
+                )
+                _sh = _sh[: len(spec.centres)] + [None] * len(_seed)
+                _s0 = (
+                    list(spec.sigma0)
+                    if spec.sigma0 is not None
+                    else [np.nan] * len(spec.centres)
+                )
+                _a0 = (
+                    list(spec.amp0)
+                    if spec.amp0 is not None
+                    else [np.nan] * len(spec.centres)
+                )
                 for g in _seed:
                     # Start the band at the size of the region it belongs to:
                     # half its span as sigma, and its own unattributed charge
@@ -2440,12 +2728,12 @@ def fit_half_cycle(voltage, dqdv, spec: FitSpec, *, key=None,
                     _a = g.get("area", np.nan)
                     if not np.isfinite(_a):
                         _m = (v >= g["lo"]) & (v <= g["hi"])
-                        _a = float(trapezoid(y[_m], v[_m])) if _m.sum() > 1 \
-                            else 0.0
+                        _a = float(trapezoid(y[_m], v[_m])) if _m.sum() > 1 else 0.0
                     _a0.append(max(float(_a), 0.0))
                 _si = list(_seed_index or range(len(spec.centres)))
-                _si = _si[:len(spec.centres)] + [
-                    int(np.searchsorted(v, g["centre"])) for g in _seed]
+                _si = _si[: len(spec.centres)] + [
+                    int(np.searchsorted(v, g["centre"])) for g in _seed
+                ]
                 # Detected peaks keep whatever ceiling they had (zero, so
                 # they stay peaks); each seeded component is allowed a band
                 # no wider than the region it was found in.
@@ -2459,30 +2747,38 @@ def fit_half_cycle(voltage, dqdv, spec: FitSpec, *, key=None,
                 # free-for-all that made the decomposition incoherent is that
                 # only a residual-seeded component may be a band at all;
                 # every detected maximum stays a peak with a ceiling of zero.
-                _caps = (list(_caps0) if spec.band_seeds
-                         else list(_band_ceilings(spec)))
+                _caps = list(_caps0) if spec.band_seeds else list(_band_ceilings(spec))
                 _ceil = band_ceiling_volts(spec, v)
                 for g in _seed:
                     _caps.append(_ceil)
                 out2 = fit_half_cycle(
-                    voltage, dqdv,
-                    spec.replace(centres=tuple(_c), shoulder_of=tuple(_sh),
-                                 sigma0=np.asarray(_s0, float),
-                                 amp0=np.asarray(_a0, float),
-                                 band_width_max=np.asarray(_caps, float)),
-                    key=key, _refit_depth=_refit_depth,
-                    _seed_index=_si, _bands_added=len(_seed))
+                    voltage,
+                    dqdv,
+                    spec.replace(
+                        centres=tuple(_c),
+                        shoulder_of=tuple(_sh),
+                        sigma0=np.asarray(_s0, float),
+                        amp0=np.asarray(_a0, float),
+                        band_width_max=np.asarray(_caps, float),
+                    ),
+                    key=key,
+                    _refit_depth=_refit_depth,
+                    _seed_index=_si,
+                    _bands_added=len(_seed),
+                )
                 if out2.get("success"):
                     _named2 = float(out2.get("component_area_sum", np.nan))
                     # A region the DATASET established is fitted whether or
                     # not it happens to help this half-cycle — that constancy
                     # is the point. A region discovered here still has to earn
                     # its place by naming more charge.
-                    _keep2 = (bool(spec.band_seeds)
-                              or (np.isfinite(_named2) and _named2 > _named0))
+                    _keep2 = bool(spec.band_seeds) or (
+                        np.isfinite(_named2) and _named2 > _named0
+                    )
                     if _keep2:
-                        out2["seconds"] = (out2.get("seconds", 0.0)
-                                           + time.perf_counter() - t0)
+                        out2["seconds"] = (
+                            out2.get("seconds", 0.0) + time.perf_counter() - t0
+                        )
                         out2["band_seed_regions"] = _seed
                         return out2
 
@@ -2499,8 +2795,7 @@ def fit_half_cycle(voltage, dqdv, spec: FitSpec, *, key=None,
     _ak = _val("asym_k")
     if not np.isfinite(_ak) and rows:
         _r0 = rows[0]
-        _ak = (float(_r0["sigma_r"] / _r0["sigma"])
-               if _r0["sigma"] > 0 else np.nan)
+        _ak = float(_r0["sigma_r"] / _r0["sigma"]) if _r0["sigma"] > 0 else np.nan
     # THE TIE CAN BE BROKEN WITHOUT SAYING SO. `sigma_r` carries
     # `expr = asym_k * sigma` AND `min = sigma_min`, and lmfit applies bounds
     # to a constrained parameter AFTER evaluating its expression. So whenever
@@ -2512,43 +2807,67 @@ def fit_half_cycle(voltage, dqdv, spec: FitSpec, *, key=None,
     # optimiser's value and `asymmetry_k_clipped` says they parted company.
     _ak_eff = _ak
     if rows:
-        _eff = [float(r["sigma_r"] / r["sigma"]) for r in rows
-                if r["sigma"] > 0 and np.isfinite(r["sigma_r"])]
+        _eff = [
+            float(r["sigma_r"] / r["sigma"])
+            for r in rows
+            if r["sigma"] > 0 and np.isfinite(r["sigma_r"])
+        ]
         if _eff:
             _ak_eff = float(np.median(_eff))
-    _ak_clipped = bool(np.isfinite(_ak) and np.isfinite(_ak_eff) and _ak > 0
-                       and abs(_ak_eff - _ak) / _ak > 0.01)
+    _ak_clipped = bool(
+        np.isfinite(_ak)
+        and np.isfinite(_ak_eff)
+        and _ak > 0
+        and abs(_ak_eff - _ak) / _ak > 0.01
+    )
     # A SHARED PARAMETER ON ITS BOUND IS NOT A MEASUREMENT — the same fault
     # as a sigma pinned on its floor, one level up, and it would be silent
     # because there is only one of these per half-cycle. Reported, not
     # clamped: the fit is still the best available description, but a reader
     # must not read a bound as an answer.
     # Against the FITTED value: that is the parameter that carries the bounds.
-    _ak_pinned = bool(np.isfinite(_ak)
-                      and (_ak <= ASYM_RATIO_MIN * (1.0 + _BOUND_PROXIMITY)
-                           or _ak >= ASYM_RATIO_MAX * (1.0 - _BOUND_PROXIMITY)))
-    out.update(n_shoulders_coupled=len(_resolved_shoulders(spec))
-               if COUPLE_SHOULDER_SIGMA else 0,
-               sigma_ratio_k=_val("sh_k"), shared_fraction=_eta,
-               fraction_fixed=spec.fraction is not None,
-               asymmetry_k=_ak_eff,
-               asymmetry_k_fitted=_ak,
-               asymmetry_k_clipped=_ak_clipped,
-               asymmetry_at_bound=_ak_pinned,
-               asymmetry_fitted=bool(getattr(spec, "asymmetry", False)))
+    _ak_pinned = bool(
+        np.isfinite(_ak)
+        and (
+            _ak <= ASYM_RATIO_MIN * (1.0 + _BOUND_PROXIMITY)
+            or _ak >= ASYM_RATIO_MAX * (1.0 - _BOUND_PROXIMITY)
+        )
+    )
+    out.update(
+        n_shoulders_coupled=len(_resolved_shoulders(spec))
+        if COUPLE_SHOULDER_SIGMA
+        else 0,
+        sigma_ratio_k=_val("sh_k"),
+        shared_fraction=_eta,
+        fraction_fixed=spec.fraction is not None,
+        asymmetry_k=_ak_eff,
+        asymmetry_k_fitted=_ak,
+        asymmetry_k_clipped=_ak_clipped,
+        asymmetry_at_bound=_ak_pinned,
+        asymmetry_fitted=bool(getattr(spec, "asymmetry", False)),
+    )
 
-    ss_res = float(np.sum(res.residual ** 2))
+    ss_res = float(np.sum(res.residual**2))
     ss_tot = float(np.sum((y - y.mean()) ** 2))
     # THE FOUR NUMBERS R2 HIDES. Computed here because this is the only place
     # the composite and the baseline both exist; costs one pass each.
-    _q = (fit_quality(v, y, peak_total + baseline, baseline) if FIT_QUALITY
-          else dict(height_ratio=np.nan, overshoot=np.nan,
-                    max_residual_frac=np.nan, residual_runs_z=np.nan))
+    _q = (
+        fit_quality(v, y, peak_total + baseline, baseline)
+        if FIT_QUALITY
+        else dict(
+            height_ratio=np.nan,
+            overshoot=np.nan,
+            max_residual_frac=np.nan,
+            residual_runs_z=np.nan,
+        )
+    )
     out.update(_q)
     out.update(
         success=True,
         r_squared=(1.0 - ss_res / ss_tot) if ss_tot > 0 else np.nan,
-        redchi=float(res.redchi), nvarys=int(res.nvarys), components=rows,
+        redchi=float(res.redchi),
+        nvarys=int(res.nvarys),
+        components=rows,
         # Kept because a lineshape that adds a parameter has to EARN it, and
         # R2 cannot say whether it did. lmfit computes both from the same
         # residual the fit minimised.
@@ -2564,9 +2883,10 @@ def fit_half_cycle(voltage, dqdv, spec: FitSpec, *, key=None,
         # residual looks.
         unattributed_area=float(trapezoid(y - (peak_total + baseline), v)),
         unattributed_fraction=(
-            float(trapezoid(y - (peak_total + baseline), v)
-                  / trapezoid(y, v)) if v.size > 1
-            and trapezoid(y, v) > 0 else np.nan),
+            float(trapezoid(y - (peak_total + baseline), v) / trapezoid(y, v))
+            if v.size > 1 and trapezoid(y, v) > 0
+            else np.nan
+        ),
         bands_from_residual=int(_bands_added),
         # HOW MANY COMPONENTS ENDED AT THE WIDTH CEILING. A peak pinned at
         # `sigma_max` is not a peak the data chose the width of; on a curve
@@ -2575,10 +2895,14 @@ def fit_half_cycle(voltage, dqdv, spec: FitSpec, *, key=None,
         # has not permitted a component shaped like one. Counted here so the
         # mechanism decision can act on it: see
         # `quality.MECHANISM_AT_BOUND_ESCALATES`.
-        n_at_sigma_max=int(sum(
-            1 for _c in rows
-            if float(_c["sigma"]) >= float(spec.sigma_max)
-            * SIGMA_BOUND_PROXIMITY_COMPLEMENT)),
+        n_at_sigma_max=int(
+            sum(
+                1
+                for _c in rows
+                if float(_c["sigma"])
+                >= float(spec.sigma_max) * SIGMA_BOUND_PROXIMITY_COMPLEMENT
+            )
+        ),
         # The baseline coefficients, so the fitted curve can be rebuilt from
         # this dict alone. `evaluate` needs them; keeping them costs four
         # floats and saves shipping a ModelResult, which is the one thing this
@@ -2627,7 +2951,7 @@ def _runs_z(resid):
     runs = 1 + int((s[1:] != s[:-1]).sum())
     n = n1 + n2
     mu = 2.0 * n1 * n2 / n + 1.0
-    var = (2.0 * n1 * n2 * (2.0 * n1 * n2 - n)) / (n ** 2 * (n - 1))
+    var = (2.0 * n1 * n2 * (2.0 * n1 * n2 - n)) / (n**2 * (n - 1))
     return float((runs - mu) / np.sqrt(var)) if var > 0 else np.nan
 
 
@@ -2644,8 +2968,12 @@ def fit_quality(voltage, dqdv, total, baseline):
     y = np.asarray(dqdv, float)
     t = np.asarray(total, float)
     b = np.asarray(baseline, float)
-    out = dict(height_ratio=np.nan, overshoot=np.nan,
-               max_residual_frac=np.nan, residual_runs_z=np.nan)
+    out = dict(
+        height_ratio=np.nan,
+        overshoot=np.nan,
+        max_residual_frac=np.nan,
+        residual_runs_z=np.nan,
+    )
     if y.size < 3 or t.size != y.size:
         return out
     amp = float(y.max() - y.min())
@@ -2660,8 +2988,7 @@ def fit_quality(voltage, dqdv, total, baseline):
     if amp > 0:
         # How far the composite goes OUTSIDE the data's own range. A fit has
         # no business being anywhere the curve never went.
-        out["overshoot"] = float(max(t.max() - y.max(), y.min() - t.min(),
-                                     0.0) / amp)
+        out["overshoot"] = float(max(t.max() - y.max(), y.min() - t.min(), 0.0) / amp)
         out["max_residual_frac"] = float(np.max(np.abs(y - t)) / amp)
     out["residual_runs_z"] = _runs_z(y - t)
     return out
@@ -2698,8 +3025,9 @@ def evaluate(fit_result, voltage):
         # That is what "the fits aren't great" was looking at.
         _w = float(comp.get("band_width", 0.0) or 0.0)
         _sr = comp.get("sigma_r", None)
-        _sr = (float(_sr) if _sr is not None and np.isfinite(_sr)
-               else float(comp["sigma"]))
+        _sr = (
+            float(_sr) if _sr is not None and np.isfinite(_sr) else float(comp["sigma"])
+        )
         _split = abs(_sr - float(comp["sigma"])) > _TINY
         if _w > 0.0 or _split:
             m = _LMModel(asym_rect_pseudo_voigt, prefix=pre)
@@ -2711,9 +3039,12 @@ def evaluate(fit_result, voltage):
         # make_params: lmfit silently ignores a prefixed keyword there, which
         # leaves `fraction` at its 0.5 default and draws the wrong curve.
         par = m.make_params()
-        for suffix, val in (("center", comp["centre"]), ("sigma", comp["sigma"]),
-                            ("amplitude", comp["amplitude_area"]),
-                            ("fraction", comp["fraction"])) + _extra:
+        for suffix, val in (
+            ("center", comp["centre"]),
+            ("sigma", comp["sigma"]),
+            ("amplitude", comp["amplitude_area"]),
+            ("fraction", comp["fraction"]),
+        ) + _extra:
             if (pre + suffix) in par:
                 par[pre + suffix].set(value=float(val))
         y = m.eval(par, x=v)
@@ -2737,6 +3068,7 @@ def evaluate(fit_result, voltage):
 # ---------------------------------------------------------------------------
 # Parallel execution
 # ---------------------------------------------------------------------------
+
 
 def _cpu_budget(n_jobs):
     if n_jobs is not None:
@@ -2768,17 +3100,23 @@ def _worker_rss_probe():
     measures afterwards.
     """
     import psutil
+
     x = np.linspace(0.0, 1.0, 201)
     y = 0.05 * np.exp(-0.5 * ((x - 0.5) / 0.05) ** 2)
     try:
-        fit_half_cycle(x, y, FitSpec([0.5], baseline_degree=1,
-                                     sigma_min=0.005, sigma_max=0.20,
-                                     max_nfev=200), key="probe")
+        fit_half_cycle(
+            x,
+            y,
+            FitSpec(
+                [0.5], baseline_degree=1, sigma_min=0.005, sigma_max=0.20, max_nfev=200
+            ),
+            key="probe",
+        )
     except Exception:
         # A probe that cannot fit is still a probe: the imports it paid for
         # are the point, and the caller clamps whatever comes back.
         pass
-    return psutil.Process().memory_info().rss / (1024.0 ** 2)
+    return psutil.Process().memory_info().rss / (1024.0**2)
 
 
 def measure_worker_cost_mb(*, force=False):
@@ -2811,6 +3149,7 @@ def measure_worker_cost_mb(*, force=False):
         # (which is what lets the flattened notebook send a `__main__`
         # function to a worker) without going near joblib's singleton.
         from joblib.externals.loky import ProcessPoolExecutor
+
         ex = ProcessPoolExecutor(max_workers=1)
         mb = float(ex.submit(_worker_rss_probe).result(timeout=180))
         ex.shutdown(kill_workers=True)
@@ -2836,7 +3175,8 @@ def _available_memory_mb():
     """Free memory right now, in MB, or None if it cannot be read."""
     try:
         import psutil
-        return psutil.virtual_memory().available / (1024.0 ** 2)
+
+        return psutil.virtual_memory().available / (1024.0**2)
     except Exception:
         return None
 
@@ -2852,8 +3192,9 @@ def memory_budget_workers():
     """
     avail = _available_memory_mb()
     if avail is None:
-        return None, ("free memory could not be read (psutil unavailable) — "
-                      "sizing on cores alone")
+        return None, (
+            "free memory could not be read (psutil unavailable) — sizing on cores alone"
+        )
     raw = measure_worker_cost_mb()
     # Say which number was actually used. A line reading "(measured)" beside a
     # figure a clamp had already replaced is the reporting fault this project
@@ -2862,16 +3203,18 @@ def memory_budget_workers():
         cost, how = WORKER_RSS_ASSUMED_MB, "assumed — could not be measured"
     else:
         want = float(raw) * WORKER_WORKING_SET_FACTOR
-        cost = min(max(want, WORKER_RSS_SANITY_MIN_MB),
-                   WORKER_RSS_SANITY_MAX_MB)
-        how = (f"measured {raw:.0f} MB to start, "
-               f"×{WORKER_WORKING_SET_FACTOR:g} in use"
-               if abs(cost - want) < 0.5
-               else f"measured {raw:.0f} MB, outside the sanity bounds")
+        cost = min(max(want, WORKER_RSS_SANITY_MIN_MB), WORKER_RSS_SANITY_MAX_MB)
+        how = (
+            f"measured {raw:.0f} MB to start, ×{WORKER_WORKING_SET_FACTOR:g} in use"
+            if abs(cost - want) < 0.5
+            else f"measured {raw:.0f} MB, outside the sanity bounds"
+        )
     n = int((avail * WORKER_MEMORY_HEADROOM) // cost)
-    return max(0, n), (f"{avail / 1024.0:.1f} GB free, "
-                       f"{WORKER_MEMORY_HEADROOM:.0%} of it usable, "
-                       f"{cost:.0f} MB per worker ({how})")
+    return max(0, n), (
+        f"{avail / 1024.0:.1f} GB free, "
+        f"{WORKER_MEMORY_HEADROOM:.0%} of it usable, "
+        f"{cost:.0f} MB per worker ({how})"
+    )
 
 
 def release_workers(*, verbose=False):
@@ -2894,6 +3237,7 @@ def release_workers(*, verbose=False):
     """
     try:
         from joblib.externals.loky import reusable_executor as _re
+
         ex = getattr(_re, "_executor", None)
         if ex is None:
             return False
@@ -2922,8 +3266,10 @@ def plan_workers(jobs, *, n_jobs=None, calibrate=3, verbose=True):
     budget = _cpu_budget(n_jobs)
     if len(jobs) <= calibrate or budget == 1:
         if verbose:
-            print(f"  fitting {len(jobs)} half-cycle(s) serially "
-                  f"({'too few to parallelise' if budget > 1 else 'one core'})")
+            print(
+                f"  fitting {len(jobs)} half-cycle(s) serially "
+                f"({'too few to parallelise' if budget > 1 else 'one core'})"
+            )
         return 1, [], 0.0
 
     done, elapsed = [], 0.0
@@ -2940,9 +3286,11 @@ def plan_workers(jobs, *, n_jobs=None, calibrate=3, verbose=True):
 
     if estimate < PARALLEL_MIN_SECONDS:
         if verbose:
-            print(f"  fitting {len(jobs)} half-cycle(s) serially — estimated "
-                  f"{estimate:.0f} s, below the {PARALLEL_MIN_SECONDS:.0f} s "
-                  f"floor where a worker pool repays its start-up")
+            print(
+                f"  fitting {len(jobs)} half-cycle(s) serially — estimated "
+                f"{estimate:.0f} s, below the {PARALLEL_MIN_SECONDS:.0f} s "
+                f"floor where a worker pool repays its start-up"
+            )
         return 1, done, estimate
 
     workers = min(budget, len(jobs) - len(done))
@@ -2958,21 +3306,27 @@ def plan_workers(jobs, *, n_jobs=None, calibrate=3, verbose=True):
     if mem_n is not None and mem_n < workers:
         if mem_n < 1:
             if verbose:
-                print(f"  fitting {len(jobs)} half-cycle(s) serially — "
-                      f"{why}, which is not enough for one worker. This will "
-                      f"be slow; closing something would make it faster.")
+                print(
+                    f"  fitting {len(jobs)} half-cycle(s) serially — "
+                    f"{why}, which is not enough for one worker. This will "
+                    f"be slow; closing something would make it faster."
+                )
             return 1, done, estimate
         workers, capped_by = mem_n, "free memory"
 
     if verbose:
-        print(f"  fitting {len(jobs)} half-cycle(s) on {workers} worker(s) — "
-              f"estimated {estimate:.0f} s serial, {estimate/workers:.0f} s "
-              f"parallel")
+        print(
+            f"  fitting {len(jobs)} half-cycle(s) on {workers} worker(s) — "
+            f"estimated {estimate:.0f} s serial, {estimate / workers:.0f} s "
+            f"parallel"
+        )
         if capped_by == "free memory":
             print(f"      held to {workers} by memory, not cores: {why}")
         elif capped_by == "the ceiling":
-            print(f"      held to the {PARALLEL_MAX_WORKERS}-worker ceiling "
-                  f"({budget} cores available); {why}")
+            print(
+                f"      held to the {PARALLEL_MAX_WORKERS}-worker ceiling "
+                f"({budget} cores available); {why}"
+            )
         elif mem_n is not None:
             print(f"      {why} — room for {mem_n}")
     return workers, done, estimate
@@ -3013,19 +3367,22 @@ def fit_many(jobs, *, n_jobs=None, verbose=True, label=""):
         state["t"] = now
         el = now - t0
         eta = (el / n * (total - n)) if n else float("nan")
-        print(f"      {tag}{n}/{total} fitted   {el:.0f} s elapsed"
-              + (f", ~{eta:.0f} s left" if np.isfinite(eta) and n < total
-                 else ""), flush=True)
+        print(
+            f"      {tag}{n}/{total} fitted   {el:.0f} s elapsed"
+            + (f", ~{eta:.0f} s left" if np.isfinite(eta) and n < total else ""),
+            flush=True,
+        )
 
     if workers == 1:
         rest = []
-        for v, y, sp, k in jobs[len(done):]:
+        for v, y, sp, k in jobs[len(done) :]:
             rest.append(fit_half_cycle(v, y, sp, key=k))
             if show:
                 _tick(len(done) + len(rest))
         return done + rest
 
     from joblib import Parallel, delayed
+
     # `return_as="generator_unordered"` lets results be counted as they land
     # rather than all at once at the end, which is the whole point of a
     # progress line. Older joblib does not have it; there the pass runs as it
@@ -3033,7 +3390,8 @@ def fit_many(jobs, *, n_jobs=None, verbose=True, label=""):
     try:
         gen = Parallel(n_jobs=workers, return_as="generator_unordered")(
             delayed(fit_half_cycle)(v, y, sp, key=k)
-            for v, y, sp, k in jobs[len(done):])
+            for v, y, sp, k in jobs[len(done) :]
+        )
         got = []
         for r in gen:
             got.append(r)
@@ -3046,17 +3404,24 @@ def fit_many(jobs, *, n_jobs=None, verbose=True, label=""):
         for r in got:
             by_key.setdefault(_hashable(r.get("key")), []).append(r)
         rest = []
-        for v, y, sp, k in jobs[len(done):]:
+        for v, y, sp, k in jobs[len(done) :]:
             bucket = by_key.get(_hashable(k))
-            rest.append(bucket.pop(0) if bucket else
-                        {"key": k, "success": False,
-                         "reason": "result lost in the worker pool",
-                         "components": []})
+            rest.append(
+                bucket.pop(0)
+                if bucket
+                else {
+                    "key": k,
+                    "success": False,
+                    "reason": "result lost in the worker pool",
+                    "components": [],
+                }
+            )
         return done + rest
     except TypeError:
         rest = Parallel(n_jobs=workers)(
             delayed(fit_half_cycle)(v, y, sp, key=k)
-            for v, y, sp, k in jobs[len(done):])
+            for v, y, sp, k in jobs[len(done) :]
+        )
         return done + list(rest)
 
 

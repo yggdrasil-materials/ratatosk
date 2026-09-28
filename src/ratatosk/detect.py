@@ -59,8 +59,8 @@ import numpy as np
 from .compat import trapezoid
 from .style import entry, verdict, bullet
 import pandas as pd
-from scipy.signal import (find_peaks, peak_widths, peak_prominences,
-                          savgol_filter)
+from scipy.signal import find_peaks, peak_widths, peak_prominences, savgol_filter
+
 # NOT `from scipy.signal import PeakPropertyWarning` — SciPy raises it but
 # does not re-export it from the package namespace (checked on 1.17), so that
 # import silently falls through to a stand-in class that catches nothing and
@@ -69,24 +69,45 @@ from scipy.signal import (find_peaks, peak_widths, peak_prominences,
 # that works whatever the class is called.
 try:
     from scipy.signal._peak_finding_utils import PeakPropertyWarning
-except Exception:                        # pragma: no cover - layout changed
+except Exception:  # pragma: no cover - layout changed
     PeakPropertyWarning = RuntimeWarning
 
 
-__all__ = ["DetectSpec", "Detection", "detect_half_cycle", "detect_all",
-           "choose_reference_cycle", "detect_peaks_single",
-           "infer_missing_seeds",
-           "DEFAULT_REFERENCE_CYCLE", "REFERENCE_CYCLE_AUTO",
-           "formation_end", "CE_SETTLED_TOLERANCE_PP", "CE_SETTLED_RUN",
-           "REFERENCE_CYCLE_FLOOR", "REFERENCE_CYCLE_FALLBACK", "REFERENCE_CYCLE_CEILING",
-    "CE_SETTLED_MIN_LATER", "CE_SETTLED_MAX_PCT",
-           "SOUND_BANDS", "detect_spec_for_profile", "PROFILE_MIN_DISTANCE_MV",
-           "PROFILE_MIN_WIDTH_MV",
-           "PROFILE_MIN_WIDTH_BY_CLASS", "local_noise", "NOISE_FLOOR",
-           "NOISE_SNR_MIN", "NOISE_SHARE_MIN", "recurrent_maxima",
-           "PHASE_INVARIANCE", "phase_stable",
-           "add_recurrent_seeds", "RECURRENCE_SEEDS",
-           "RECURRENCE_MIN_OCCUPANCY", "RECURRENCE_MIN_SHARE"]
+__all__ = [
+    "DetectSpec",
+    "Detection",
+    "detect_half_cycle",
+    "detect_all",
+    "choose_reference_cycle",
+    "detect_peaks_single",
+    "infer_missing_seeds",
+    "DEFAULT_REFERENCE_CYCLE",
+    "REFERENCE_CYCLE_AUTO",
+    "formation_end",
+    "CE_SETTLED_TOLERANCE_PP",
+    "CE_SETTLED_RUN",
+    "REFERENCE_CYCLE_FLOOR",
+    "REFERENCE_CYCLE_FALLBACK",
+    "REFERENCE_CYCLE_CEILING",
+    "CE_SETTLED_MIN_LATER",
+    "CE_SETTLED_MAX_PCT",
+    "SOUND_BANDS",
+    "detect_spec_for_profile",
+    "PROFILE_MIN_DISTANCE_MV",
+    "PROFILE_MIN_WIDTH_MV",
+    "PROFILE_MIN_WIDTH_BY_CLASS",
+    "local_noise",
+    "NOISE_FLOOR",
+    "NOISE_SNR_MIN",
+    "NOISE_SHARE_MIN",
+    "recurrent_maxima",
+    "PHASE_INVARIANCE",
+    "phase_stable",
+    "add_recurrent_seeds",
+    "RECURRENCE_SEEDS",
+    "RECURRENCE_MIN_OCCUPANCY",
+    "RECURRENCE_MIN_SHARE",
+]
 
 
 # =============================================================================
@@ -187,8 +208,16 @@ CE_SETTLED_MIN_LATER = 5
 CE_SETTLED_MAX_PCT = 105.0
 
 
-def formation_end(efficiency, *, tolerance_pp=None, run=None, floor=None,
-                  ceiling=None, min_later=None, max_ce_pct=None):
+def formation_end(
+    efficiency,
+    *,
+    tolerance_pp=None,
+    run=None,
+    floor=None,
+    ceiling=None,
+    min_later=None,
+    max_ce_pct=None,
+):
     """
     The first cycle at which coulombic efficiency has settled, and why.
 
@@ -210,15 +239,20 @@ def formation_end(efficiency, *, tolerance_pp=None, run=None, floor=None,
     min_later = CE_SETTLED_MIN_LATER if min_later is None else min_later
     max_ce_pct = CE_SETTLED_MAX_PCT if max_ce_pct is None else max_ce_pct
 
-    pairs = sorted((int(c), float(v)) for c, v in (efficiency or {}).items()
-                   if v is not None and np.isfinite(v))
+    pairs = sorted(
+        (int(c), float(v))
+        for c, v in (efficiency or {}).items()
+        if v is not None and np.isfinite(v)
+    )
     if len(pairs) < run + 1:
-        return None, (f"only {len(pairs)} cycles with a coulombic efficiency "
-                      f"— too few to say when formation ended")
+        return None, (
+            f"only {len(pairs)} cycles with a coulombic efficiency "
+            f"— too few to say when formation ended"
+        )
     cycles = [c for c, _ in pairs]
     ce = np.array([v for _, v in pairs], float)
     for i in range(len(cycles) - run + 1):
-        later = ce[i + 1:]
+        later = ce[i + 1 :]
         # The median must be a median OF SOMETHING. Without this the test
         # gets easier the later it looks — see REFERENCE_CYCLE_CEILING — and
         # the first window it accepts is the last one in the file.
@@ -236,22 +270,27 @@ def formation_end(efficiency, *, tolerance_pp=None, run=None, floor=None,
                 f"median for {run} cycles at or below cycle {ceiling} — "
                 f"formation does not end later than that, so anything flat "
                 f"beyond it is a quiet stretch of a noisy CE series and not "
-                f"a measurement of formation")
+                f"a measurement of formation"
+            )
         median = float(np.median(later))
         if median > max_ce_pct:
             # Steady, and impossible. Keep looking rather than accepting it.
             continue
-        if all(abs(ce[j] - median) <= tolerance_pp
-               for j in range(i, i + run)):
+        if all(abs(ce[j] - median) <= tolerance_pp for j in range(i, i + run)):
             if cycles[i] < floor:
-                return floor, (f"CE settled by cycle {cycles[i]}; using the "
-                               f"floor of {floor}")
+                return floor, (
+                    f"CE settled by cycle {cycles[i]}; using the floor of {floor}"
+                )
             return cycles[i], (
                 f"CE within {tolerance_pp:g} points of the later median "
-                f"({median:.2f}%) from here for {run} cycles running")
-    return None, (f"CE never held within {tolerance_pp:g} points of the "
-                  f"later median for {run} cycles — formation may not have "
-                  f"finished inside this record")
+                f"({median:.2f}%) from here for {run} cycles running"
+            )
+    return None, (
+        f"CE never held within {tolerance_pp:g} points of the "
+        f"later median for {run} cycles — formation may not have "
+        f"finished inside this record"
+    )
+
 
 DEFAULT_PROMINENCE_FRACTION = 0.05
 DEFAULT_MIN_DISTANCE_MV = 30
@@ -395,7 +434,7 @@ PROFILE_MIN_WIDTH_BY_CLASS = {"sharp": 2, "moderate": 5, "broad": 5}
 #
 # What is wrong is that the CURVE'S OWN MAXIMUM was not in the peak list at
 # all. See `_ensure_curve_maximum`.
-PROFILE_MIN_WIDTH_MV = {"sharp": 2, "moderate": 4, "broad": 5}   # unused
+PROFILE_MIN_WIDTH_MV = {"sharp": 2, "moderate": 4, "broad": 5}  # unused
 SHOULDER_DETECTION = True
 SHOULDER_MIN_SEPARATION_MV = 20
 SHOULDER_HEIGHT_FRACTION = 0.10
@@ -550,9 +589,9 @@ SHOULDER_PARENT_SHARE_MIN = 0.20
 # measurement can support, in the same family as `sigma_min` from the histogram
 # bin and `WIDTH_MIN_SAMPLES` from the sampling interval.
 NOISE_FLOOR = True
-NOISE_SNR_MIN = 12.0            # prominence / local noise
-NOISE_SHARE_MIN = 0.10          # ...unless it is this much of the largest
-NOISE_WINDOW_BINS = 30          # half-width of the local noise estimate
+NOISE_SNR_MIN = 12.0  # prominence / local noise
+NOISE_SHARE_MIN = 0.10  # ...unless it is this much of the largest
+NOISE_WINDOW_BINS = 30  # half-width of the local noise estimate
 
 
 def local_noise(signal, index=None, half=NOISE_WINDOW_BINS):
@@ -597,7 +636,7 @@ def local_noise(signal, index=None, half=NOISE_WINDOW_BINS):
 
 LOCAL_PROMINENCE_FRACTION = 0.25
 MIN_HEIGHT_FRACTION = 0.02
-LOCAL_PROMINENCE = True          # set False to restore 1.8.x exactly
+LOCAL_PROMINENCE = True  # set False to restore 1.8.x exactly
 
 EDGE_EXCLUSION_MV = 50
 # Minimum visible fraction of a truncated peak (estimated from half-width
@@ -659,6 +698,7 @@ SEED_INFERENCE_TOLERANCE_MV = 80.0
 # PORTED FROM 1.8.7 MODULE 3 — do not edit without a bit-identity regression
 # =============================================================================
 
+
 def _voltage_to_samples(mV, voltage_array):
     """Convert millivolts to approximate sample count."""
     if len(voltage_array) < 2:
@@ -703,7 +743,7 @@ def _ensure_curve_maximum(peaks_df, voltage, signal, *, min_distance_mV):
         return peaks_df
     i = int(np.nanargmax(y))
     if i == 0 or i == len(y) - 1:
-        return peaks_df            # an edge is a truncation, not a peak
+        return peaks_df  # an edge is a truncation, not a peak
     v_max = float(voltage[i])
     if peaks_df is not None and not peaks_df.empty:
         near = (peaks_df["voltage"] - v_max).abs() < min_distance_mV / 1000.0
@@ -714,30 +754,52 @@ def _ensure_curve_maximum(peaks_df, voltage, signal, *, min_distance_mV):
             j = peaks_df.index[near][0]
             if bool(peaks_df.loc[j, "is_shoulder"]):
                 from scipy.signal import peak_prominences
+
                 prom = float(peak_prominences(y, [i])[0][0])
                 if prom > 0:
                     peaks_df = peaks_df.copy()
-                    peaks_df.loc[j, ["voltage", "height", "prominence",
-                                     "is_shoulder", "peak_index"]] = [
-                        v_max, float(y[i]), prom, False, i]
+                    peaks_df.loc[
+                        j,
+                        [
+                            "voltage",
+                            "height",
+                            "prominence",
+                            "is_shoulder",
+                            "peak_index",
+                        ],
+                    ] = [v_max, float(y[i]), prom, False, i]
                     if "prominence_estimated" in peaks_df.columns:
                         peaks_df.loc[j, "prominence_estimated"] = False
             return peaks_df
 
     from scipy.signal import peak_prominences
+
     prom = float(peak_prominences(y, [i])[0][0])
     if prom <= 0:
         # Not a local maximum at all — a monotonic run or a flat top. Adding
         # it would be inventing a peak, which is the failure this whole
         # module is written against.
         return peaks_df
-    row = {c: np.nan for c in (peaks_df.columns if peaks_df is not None
-                               and not peaks_df.empty else [])}
-    row.update(voltage=v_max, height=float(y[i]), height_original=float(y[i]),
-               prominence=prom, prominence_estimated=False,
-               peak_index=i, is_shoulder=False, is_truncated=False,
-               peaks_capped=False, width_V=np.nan,
-               left_voltage=np.nan, right_voltage=np.nan)
+    row = {
+        c: np.nan
+        for c in (
+            peaks_df.columns if peaks_df is not None and not peaks_df.empty else []
+        )
+    }
+    row.update(
+        voltage=v_max,
+        height=float(y[i]),
+        height_original=float(y[i]),
+        prominence=prom,
+        prominence_estimated=False,
+        peak_index=i,
+        is_shoulder=False,
+        is_truncated=False,
+        peaks_capped=False,
+        width_V=np.nan,
+        left_voltage=np.nan,
+        right_voltage=np.nan,
+    )
     if peaks_df is None or peaks_df.empty:
         out = pd.DataFrame([row])
     else:
@@ -746,8 +808,7 @@ def _ensure_curve_maximum(peaks_df, voltage, signal, *, min_distance_mV):
     return out.sort_values("voltage").reset_index(drop=True)
 
 
-def _deduplicate_peaks(peaks_df, min_separation_mV=20,
-                       primary_min_separation_mV=None):
+def _deduplicate_peaks(peaks_df, min_separation_mV=20, primary_min_separation_mV=None):
     """
     Remove peaks closer than min_separation_mV after merge.
 
@@ -771,10 +832,13 @@ def _deduplicate_peaks(peaks_df, min_separation_mV=20,
     if peaks_df.empty or len(peaks_df) < 2:
         return peaks_df
 
-    df = peaks_df.sort_values('voltage').reset_index(drop=True)
+    df = peaks_df.sort_values("voltage").reset_index(drop=True)
     min_sep_V = min_separation_mV / 1000.0 + 1e-9  # float tolerance
-    primary_sep_V = ((primary_min_separation_mV / 1000.0 + 1e-9)
-                     if primary_min_separation_mV else min_sep_V)
+    primary_sep_V = (
+        (primary_min_separation_mV / 1000.0 + 1e-9)
+        if primary_min_separation_mV
+        else min_sep_V
+    )
 
     def _sep(i, j):
         # TWO PRIMARIES ARE SEPARATED BY `min_distance_mV`, FULL STOP.
@@ -801,9 +865,9 @@ def _deduplicate_peaks(peaks_df, min_separation_mV=20,
         # what it was written for: a shoulder legitimately sits close to its
         # parent, and the 20 mV rule stops the second-derivative pass
         # re-reporting a feature the primary pass already has.
-        if 'is_shoulder' in df.columns and not (
-                bool(df.loc[i, 'is_shoulder'])
-                or bool(df.loc[j, 'is_shoulder'])):
+        if "is_shoulder" in df.columns and not (
+            bool(df.loc[i, "is_shoulder"]) or bool(df.loc[j, "is_shoulder"])
+        ):
             return primary_sep_V
         return min_sep_V
 
@@ -814,15 +878,16 @@ def _deduplicate_peaks(peaks_df, min_separation_mV=20,
         for j in range(i + 1, len(df)):
             if not keep[j]:
                 continue
-            if df.loc[j, 'voltage'] - df.loc[i, 'voltage'] < _sep(i, j):
+            if df.loc[j, "voltage"] - df.loc[i, "voltage"] < _sep(i, j):
                 # Too close — drop lower prominence
-                if df.loc[i, 'prominence'] >= df.loc[j, 'prominence']:
+                if df.loc[i, "prominence"] >= df.loc[j, "prominence"]:
                     keep[j] = False
                 else:
                     keep[i] = False
                     break
-            elif (df.loc[j, 'voltage'] - df.loc[i, 'voltage']
-                  >= max(min_sep_V, primary_sep_V)):
+            elif df.loc[j, "voltage"] - df.loc[i, "voltage"] >= max(
+                min_sep_V, primary_sep_V
+            ):
                 # Past the WIDEST threshold any later pair could use, so
                 # nothing further can be a duplicate of i. Breaking on the
                 # pair's own threshold would skip a non-shoulder pair that
@@ -830,12 +895,19 @@ def _deduplicate_peaks(peaks_df, min_separation_mV=20,
                 break
 
     result = df[keep].reset_index(drop=True)
-    result['peak_id'] = range(1, len(result) + 1)
+    result["peak_id"] = range(1, len(result) + 1)
     return result
 
 
-def _assess_truncation(centre_v, left_v, right_v, data_v_min, data_v_max,
-                        visible_fraction_threshold, edge_tol_V=0.002):
+def _assess_truncation(
+    centre_v,
+    left_v,
+    right_v,
+    data_v_min,
+    data_v_max,
+    visible_fraction_threshold,
+    edge_tol_V=0.002,
+):
     """
     Assess whether a peak is truncated by the voltage window edge.
     Uses half-width asymmetry: for a symmetric peak, the full width would
@@ -874,9 +946,9 @@ def _assess_truncation(centre_v, left_v, right_v, data_v_min, data_v_max,
         else:
             visible = 0.0
         if visible >= visible_fraction_threshold:
-            return True, False   # truncated but usable
+            return True, False  # truncated but usable
         else:
-            return False, True   # discard
+            return False, True  # discard
     elif near_lower and not near_upper:
         # Left side clipped — use right_hw as reference
         if right_hw > 0:
@@ -896,8 +968,6 @@ def _assess_truncation(centre_v, left_v, right_v, data_v_min, data_v_max,
         return True, False
     else:
         return False, False
-
-
 
 
 def _shoulder_sigma(neg_d2, i):
@@ -930,7 +1000,7 @@ def _shoulder_sigma(neg_d2, i):
     while R < n - 1 and neg_d2[R] > 0:
         R += 1
     if neg_d2[L] > 0 or neg_d2[R] > 0:
-        return np.nan          # never crossed: the lobe runs off the window
+        return np.nan  # never crossed: the lobe runs off the window
     half = (R - L) / 2.0
     return half if half > 0 else np.nan
 
@@ -1008,8 +1078,7 @@ def _d2_window(voltage, signal, peak_indices, n):
     try:
         idx = np.asarray(sorted(int(i) for i in peak_indices), dtype=int)
         if idx.size:
-            widths = peak_widths(np.asarray(signal, float), idx,
-                                 rel_height=0.5)[0]
+            widths = peak_widths(np.asarray(signal, float), idx, rel_height=0.5)[0]
             widths = widths[np.isfinite(widths) & (widths > 0)]
             if widths.size:
                 w = int(round(SHOULDER_D2_WINDOW_FRACTION * float(np.min(widths))))
@@ -1018,16 +1087,26 @@ def _d2_window(voltage, signal, peak_indices, n):
     w = int(min(SHOULDER_D2_WINDOW_MAX, max(SHOULDER_D2_WINDOW_MIN, w)))
     if w % 2 == 0:
         w += 1
-    return min(w, SHOULDER_D2_WINDOW_MAX if SHOULDER_D2_WINDOW_MAX % 2 else
-               SHOULDER_D2_WINDOW_MAX - 1)
+    return min(
+        w,
+        SHOULDER_D2_WINDOW_MAX
+        if SHOULDER_D2_WINDOW_MAX % 2
+        else SHOULDER_D2_WINDOW_MAX - 1,
+    )
 
 
-def _flank_shoulders(voltage, signal, peak_indices, *,
-                     min_separation_mV=SHOULDER_MIN_SEPARATION_MV,
-                     height_fraction=SHOULDER_HEIGHT_FRACTION,
-                     d2_prominence_fraction=SHOULDER_D2_PROMINENCE_FRACTION,
-                     parent_share_min=SHOULDER_PARENT_SHARE_MIN,
-                     v_min_edge=-np.inf, v_max_edge=np.inf):
+def _flank_shoulders(
+    voltage,
+    signal,
+    peak_indices,
+    *,
+    min_separation_mV=SHOULDER_MIN_SEPARATION_MV,
+    height_fraction=SHOULDER_HEIGHT_FRACTION,
+    d2_prominence_fraction=SHOULDER_D2_PROMINENCE_FRACTION,
+    parent_share_min=SHOULDER_PARENT_SHARE_MIN,
+    v_min_edge=-np.inf,
+    v_max_edge=np.inf,
+):
     """
     Shoulders, found ON THE FLANKS OF PRIMARY PEAKS, judged locally.
 
@@ -1095,7 +1174,7 @@ def _flank_shoulders(voltage, signal, peak_indices, *,
     # ends outside the outermost pair. These are the flank boundaries.
     bounds = [0]
     for a, b in zip(pk, pk[1:]):
-        bounds.append(int(a + np.argmin(signal[a:b + 1])) if b > a else int(a))
+        bounds.append(int(a + np.argmin(signal[a : b + 1])) if b > a else int(a))
     bounds.append(n - 1)
 
     for i, p in enumerate(pk):
@@ -1124,8 +1203,8 @@ def _flank_shoulders(voltage, signal, peak_indices, *,
                 continue
             try:
                 cand, _props = find_peaks(
-                    seg, prominence=d2_prominence_fraction * seg_range,
-                    distance=min_sep)
+                    seg, prominence=d2_prominence_fraction * seg_range, distance=min_sep
+                )
             except Exception:
                 continue
             for c in cand:
@@ -1158,19 +1237,23 @@ def _flank_shoulders(voltage, signal, peak_indices, *,
     return _uniq
 
 
-def detect_peaks_single(voltage, dqdv, orientation=None,
-                        prominence_fraction=DEFAULT_PROMINENCE_FRACTION,
-                         min_distance_mV=DEFAULT_MIN_DISTANCE_MV,
-                         min_width_mV=DEFAULT_MIN_WIDTH_MV,
-                         shoulder_detection=SHOULDER_DETECTION,
-                         shoulder_min_separation_mV=SHOULDER_MIN_SEPARATION_MV,
-                         shoulder_height_fraction=SHOULDER_HEIGHT_FRACTION,
-                         shoulder_d2_prominence_fraction=SHOULDER_D2_PROMINENCE_FRACTION,
-                         edge_exclusion_mV=EDGE_EXCLUSION_MV,
-                         truncation_visible_fraction=TRUNCATION_VISIBLE_FRACTION,
-                         local_prominence=LOCAL_PROMINENCE,
-                         local_prominence_fraction=LOCAL_PROMINENCE_FRACTION,
-                         min_height_fraction=MIN_HEIGHT_FRACTION):
+def detect_peaks_single(
+    voltage,
+    dqdv,
+    orientation=None,
+    prominence_fraction=DEFAULT_PROMINENCE_FRACTION,
+    min_distance_mV=DEFAULT_MIN_DISTANCE_MV,
+    min_width_mV=DEFAULT_MIN_WIDTH_MV,
+    shoulder_detection=SHOULDER_DETECTION,
+    shoulder_min_separation_mV=SHOULDER_MIN_SEPARATION_MV,
+    shoulder_height_fraction=SHOULDER_HEIGHT_FRACTION,
+    shoulder_d2_prominence_fraction=SHOULDER_D2_PROMINENCE_FRACTION,
+    edge_exclusion_mV=EDGE_EXCLUSION_MV,
+    truncation_visible_fraction=TRUNCATION_VISIBLE_FRACTION,
+    local_prominence=LOCAL_PROMINENCE,
+    local_prominence_fraction=LOCAL_PROMINENCE_FRACTION,
+    min_height_fraction=MIN_HEIGHT_FRACTION,
+):
     """
     Detect peaks in a single half-cycle with shoulder detection, dedup,
     and truncation handling.
@@ -1204,8 +1287,11 @@ def detect_peaks_single(voltage, dqdv, orientation=None,
     # knows better; nothing in the pipeline passes one.
     if orientation is None:
         m = np.isfinite(voltage) & np.isfinite(dqdv)
-        area = (float(trapezoid(dqdv[m], voltage[m])) if m.sum() > 1
-                else float(np.nansum(dqdv)))
+        area = (
+            float(trapezoid(dqdv[m], voltage[m]))
+            if m.sum() > 1
+            else float(np.nansum(dqdv))
+        )
         orientation = 1.0 if area >= 0 else -1.0
     signal = dqdv.copy() if orientation > 0 else -dqdv
     # NaN-safe. `dqdv` comes from a to_numeric(errors="coerce"), so one NaN
@@ -1227,7 +1313,7 @@ def detect_peaks_single(voltage, dqdv, orientation=None,
         signal,
         prominence=prominence_fraction * signal_range,
         distance=min_dist_s,
-        width=min_width_s
+        width=min_width_s,
     )
 
     # === PASS 1b: scale-free rescue ===
@@ -1247,12 +1333,11 @@ def detect_peaks_single(voltage, dqdv, orientation=None,
         # was reporting is not lost: `width_undersampled` in the parameter
         # table is the same statement, measured, per component.
         with warnings.catch_warnings():
-            warnings.filterwarnings(
-                "ignore", message="some peaks have a width of 0")
-            warnings.filterwarnings(
-                "ignore", category=PeakPropertyWarning)
+            warnings.filterwarnings("ignore", message="some peaks have a width of 0")
+            warnings.filterwarnings("ignore", category=PeakPropertyWarning)
             _all_idx, _all_props = find_peaks(
-                signal, prominence=0, distance=min_dist_s, width=min_width_s)
+                signal, prominence=0, distance=min_dist_s, width=min_width_s
+            )
         if len(_all_idx):
             _hmax = float(np.nanmax(signal))
             _keep = []
@@ -1262,16 +1347,21 @@ def detect_peaks_single(voltage, dqdv, orientation=None,
                 _h = float(signal[_i])
                 if _h <= 0 or _hmax <= 0:
                     continue
-                if (_p >= local_prominence_fraction * _h
-                        and _h >= min_height_fraction * _hmax):
+                if (
+                    _p >= local_prominence_fraction * _h
+                    and _h >= min_height_fraction * _hmax
+                ):
                     _keep.append((_i, _p))
             if _keep:
                 _ki = np.array([k[0] for k in _keep])
                 _kp = np.array([k[1] for k in _keep])
                 _order = np.argsort(np.concatenate([peak_indices, _ki]))
                 peak_indices = np.concatenate([peak_indices, _ki])[_order]
-                properties = {"prominences": np.concatenate(
-                    [properties["prominences"], _kp])[_order]}
+                properties = {
+                    "prominences": np.concatenate([properties["prominences"], _kp])[
+                        _order
+                    ]
+                }
 
     # Edge handling (primary pass): genuine local maxima near the window
     # limits are NOT dropped here. They flow into the truncation assessment
@@ -1327,24 +1417,32 @@ def detect_peaks_single(voltage, dqdv, orientation=None,
     shoulder_sigma_V = {}
     if shoulder_detection:
         _pairs = _flank_shoulders(
-            voltage, signal, peak_indices,
+            voltage,
+            signal,
+            peak_indices,
             min_separation_mV=shoulder_min_separation_mV,
             height_fraction=shoulder_height_fraction,
             d2_prominence_fraction=shoulder_d2_prominence_fraction,
-            v_min_edge=v_min_edge, v_max_edge=v_max_edge)
+            v_min_edge=v_min_edge,
+            v_max_edge=v_max_edge,
+        )
         shoulder_indices = [i for i, _ in _pairs]
         # sigma is measured in SAMPLES by `_shoulder_sigma`; convert here,
         # where the voltage axis is in scope.
-        _vstep = float(np.mean(np.abs(np.diff(voltage)))) if len(voltage) > 1 \
-            else np.nan
-        shoulder_sigma_V = {i: (sg * _vstep if np.isfinite(sg) else np.nan)
-                            for i, sg in _pairs}
+        _vstep = (
+            float(np.mean(np.abs(np.diff(voltage)))) if len(voltage) > 1 else np.nan
+        )
+        shoulder_sigma_V = {
+            i: (sg * _vstep if np.isfinite(sg) else np.nan) for i, sg in _pairs
+        }
         # A shoulder that coincides with a primary is not a second feature.
         if len(peak_indices):
-            shoulder_indices = [i for i in shoulder_indices
-                                if np.min(np.abs(i - np.asarray(peak_indices)))
-                                >= max(3, _voltage_to_samples(
-                                    shoulder_min_separation_mV, voltage))]
+            shoulder_indices = [
+                i
+                for i in shoulder_indices
+                if np.min(np.abs(i - np.asarray(peak_indices)))
+                >= max(3, _voltage_to_samples(shoulder_min_separation_mV, voltage))
+            ]
 
     # === MERGE ===
     all_indices = sorted(set(list(peak_indices) + shoulder_indices))
@@ -1375,7 +1473,8 @@ def detect_peaks_single(voltage, dqdv, orientation=None,
         # curve is wrong, and `min_width_mV` wants measuring on the sharp
         # profile rather than adjusting on a hunch.
         _rescued = _ensure_curve_maximum(
-            pd.DataFrame(), voltage, signal, min_distance_mV=min_distance_mV)
+            pd.DataFrame(), voltage, signal, min_distance_mV=min_distance_mV
+        )
         if _rescued is None or len(_rescued) == 0:
             return pd.DataFrame()
         return _rescued
@@ -1412,8 +1511,11 @@ def detect_peaks_single(voltage, dqdv, orientation=None,
         width_V = np.asarray(width_V, float).copy()
         for _k, _ix in enumerate(all_indices):
             _sg = shoulder_sigma_V.get(int(_ix), np.nan)
-            if (np.isfinite(_sg) and _sg > 0
-                    and not (np.isfinite(width_V[_k]) and width_V[_k] > 0)):
+            if (
+                np.isfinite(_sg)
+                and _sg > 0
+                and not (np.isfinite(width_V[_k]) and width_V[_k] > 0)
+            ):
                 width_V[_k] = 2.0 * _sg
                 left_v_arr[_k] = voltage[_ix] - _sg
                 right_v_arr[_k] = voltage[_ix] + _sg
@@ -1425,8 +1527,7 @@ def detect_peaks_single(voltage, dqdv, orientation=None,
     prom_array, prom_estimated = [], []
     for p in all_indices:
         if p in peak_indices:
-            prom_array.append(
-                properties['prominences'][list(peak_indices).index(p)])
+            prom_array.append(properties["prominences"][list(peak_indices).index(p)])
             prom_estimated.append(False)
         else:
             prom_array.append(signal[p] * 0.1)
@@ -1444,12 +1545,14 @@ def detect_peaks_single(voltage, dqdv, orientation=None,
     for k, idx in enumerate(all_indices):
         centre_v = voltage[idx]
         truncated, drop = _assess_truncation(
-            centre_v, left_v_arr[k], right_v_arr[k],
-            data_v_min, data_v_max,
-            truncation_visible_fraction
+            centre_v,
+            left_v_arr[k],
+            right_v_arr[k],
+            data_v_min,
+            data_v_max,
+            truncation_visible_fraction,
         )
-        is_truncated_list.append(bool(truncated or (drop and
-                                                    not TRUNCATION_DROP)))
+        is_truncated_list.append(bool(truncated or (drop and not TRUNCATION_DROP)))
         drop_list.append(bool(drop and TRUNCATION_DROP))
 
     # Filter: keep non-dropped peaks
@@ -1457,45 +1560,49 @@ def detect_peaks_single(voltage, dqdv, orientation=None,
     if not keep_mask.any():
         return pd.DataFrame()
 
-    all_indices   = all_indices[keep_mask]
-    left_v_arr    = left_v_arr[keep_mask]
-    right_v_arr   = right_v_arr[keep_mask]
-    width_V       = width_V[keep_mask]
-    prom_array    = [p for p, k in zip(prom_array, keep_mask) if k]
+    all_indices = all_indices[keep_mask]
+    left_v_arr = left_v_arr[keep_mask]
+    right_v_arr = right_v_arr[keep_mask]
+    width_V = width_V[keep_mask]
+    prom_array = [p for p, k in zip(prom_array, keep_mask) if k]
     prom_estimated = [e for e, k in zip(prom_estimated, keep_mask) if k]
-    is_shoulder   = [s for s, k in zip(is_shoulder, keep_mask) if k]
+    is_shoulder = [s for s, k in zip(is_shoulder, keep_mask) if k]
     is_truncated_list = [t for t, k in zip(is_truncated_list, keep_mask) if k]
 
-    peaks_df = pd.DataFrame({
-        'peak_id':        range(1, len(all_indices) + 1),
-        'voltage':        voltage[all_indices],
-        'height':         signal[all_indices],
-        'height_original': dqdv[all_indices],
-        'prominence':     prom_array,
-        # False = measured by find_peaks; True = a shoulder's placeholder,
-        # 10% of its height, kept only so shoulders can be ranked.
-        'prominence_estimated': prom_estimated,
-        'width_V':        width_V,
-        'left_voltage':   left_v_arr,
-        'right_voltage':  right_v_arr,
-        'peak_index':     all_indices,
-        'is_shoulder':    is_shoulder,
-        'is_truncated':   is_truncated_list,
-    })
+    peaks_df = pd.DataFrame(
+        {
+            "peak_id": range(1, len(all_indices) + 1),
+            "voltage": voltage[all_indices],
+            "height": signal[all_indices],
+            "height_original": dqdv[all_indices],
+            "prominence": prom_array,
+            # False = measured by find_peaks; True = a shoulder's placeholder,
+            # 10% of its height, kept only so shoulders can be ranked.
+            "prominence_estimated": prom_estimated,
+            "width_V": width_V,
+            "left_voltage": left_v_arr,
+            "right_voltage": right_v_arr,
+            "peak_index": all_indices,
+            "is_shoulder": is_shoulder,
+            "is_truncated": is_truncated_list,
+        }
+    )
 
-    peaks_df = peaks_df.sort_values('voltage').reset_index(drop=True)
-    peaks_df['peak_id'] = range(1, len(peaks_df) + 1)
+    peaks_df = peaks_df.sort_values("voltage").reset_index(drop=True)
+    peaks_df["peak_id"] = range(1, len(peaks_df) + 1)
 
     # A SHOULDER THAT IS THE TALLEST FEATURE HAS NO PARENT. Done before
     # deduplication, because the fabricated shoulder prominence is what ranks
     # a peak there, and a promoted peak's remeasured prominence is the number
     # that should decide.
-    peaks_df = _ensure_curve_maximum(peaks_df, voltage, signal,
-                                     min_distance_mV=min_distance_mV)
+    peaks_df = _ensure_curve_maximum(
+        peaks_df, voltage, signal, min_distance_mV=min_distance_mV
+    )
 
     # === DEDUPLICATION ===
-    peaks_df = _deduplicate_peaks(peaks_df, shoulder_min_separation_mV,
-                                  primary_min_separation_mV=min_distance_mV)
+    peaks_df = _deduplicate_peaks(
+        peaks_df, shoulder_min_separation_mV, primary_min_separation_mV=min_distance_mV
+    )
 
     # === THE NOISE FLOOR ===
     # After deduplication, so a candidate is judged once and in its final
@@ -1508,14 +1615,14 @@ def detect_peaks_single(voltage, dqdv, orientation=None,
         _keep, _why = [], []
         for _k in range(len(peaks_df)):
             if _k == _tallest or _hmax <= 0:
-                _keep.append(True); _why.append(np.nan)
+                _keep.append(True)
+                _why.append(np.nan)
                 continue
             _sd = local_noise(signal, int(peaks_df["peak_index"].iloc[_k]))
             _pr = float(peaks_df["prominence"].iloc[_k])
             _snr = (_pr / _sd) if (np.isfinite(_sd) and _sd > 0) else np.inf
             _share = abs(float(_h[_k])) / _hmax
-            _keep.append(not (_snr < NOISE_SNR_MIN
-                              and _share < NOISE_SHARE_MIN))
+            _keep.append(not (_snr < NOISE_SNR_MIN and _share < NOISE_SHARE_MIN))
             _why.append(_snr)
         if not all(_keep):
             peaks_df = peaks_df[np.array(_keep)].reset_index(drop=True)
@@ -1536,6 +1643,7 @@ def detect_peaks_single(voltage, dqdv, orientation=None,
 # NEW IN 1.9.0
 # =============================================================================
 
+
 class DetectSpec:
     """
     The detection parameters as a value object.
@@ -1544,29 +1652,38 @@ class DetectSpec:
     global or a file, so it can be constructed in a test, written into a run
     manifest, and compared between runs. The defaults are 1.8.7's.
     """
-    __slots__ = ("prominence_fraction", "min_distance_mV", "min_width_mV",
-                 "shoulder_detection", "shoulder_min_separation_mV",
-                 "shoulder_height_fraction", "shoulder_d2_prominence_fraction",
-                 "edge_exclusion_mV", "truncation_visible_fraction")
 
-    def __init__(self,
-                 prominence_fraction=DEFAULT_PROMINENCE_FRACTION,
-                 min_distance_mV=DEFAULT_MIN_DISTANCE_MV,
-                 min_width_mV=DEFAULT_MIN_WIDTH_MV,
-                 shoulder_detection=SHOULDER_DETECTION,
-                 shoulder_min_separation_mV=SHOULDER_MIN_SEPARATION_MV,
-                 shoulder_height_fraction=SHOULDER_HEIGHT_FRACTION,
-                 shoulder_d2_prominence_fraction=SHOULDER_D2_PROMINENCE_FRACTION,
-                 edge_exclusion_mV=EDGE_EXCLUSION_MV,
-                 truncation_visible_fraction=TRUNCATION_VISIBLE_FRACTION):
+    __slots__ = (
+        "prominence_fraction",
+        "min_distance_mV",
+        "min_width_mV",
+        "shoulder_detection",
+        "shoulder_min_separation_mV",
+        "shoulder_height_fraction",
+        "shoulder_d2_prominence_fraction",
+        "edge_exclusion_mV",
+        "truncation_visible_fraction",
+    )
+
+    def __init__(
+        self,
+        prominence_fraction=DEFAULT_PROMINENCE_FRACTION,
+        min_distance_mV=DEFAULT_MIN_DISTANCE_MV,
+        min_width_mV=DEFAULT_MIN_WIDTH_MV,
+        shoulder_detection=SHOULDER_DETECTION,
+        shoulder_min_separation_mV=SHOULDER_MIN_SEPARATION_MV,
+        shoulder_height_fraction=SHOULDER_HEIGHT_FRACTION,
+        shoulder_d2_prominence_fraction=SHOULDER_D2_PROMINENCE_FRACTION,
+        edge_exclusion_mV=EDGE_EXCLUSION_MV,
+        truncation_visible_fraction=TRUNCATION_VISIBLE_FRACTION,
+    ):
         self.prominence_fraction = float(prominence_fraction)
         self.min_distance_mV = float(min_distance_mV)
         self.min_width_mV = float(min_width_mV)
         self.shoulder_detection = bool(shoulder_detection)
         self.shoulder_min_separation_mV = float(shoulder_min_separation_mV)
         self.shoulder_height_fraction = float(shoulder_height_fraction)
-        self.shoulder_d2_prominence_fraction = \
-            float(shoulder_d2_prominence_fraction)
+        self.shoulder_d2_prominence_fraction = float(shoulder_d2_prominence_fraction)
         self.edge_exclusion_mV = float(edge_exclusion_mV)
         self.truncation_visible_fraction = float(truncation_visible_fraction)
 
@@ -1579,30 +1696,35 @@ class DetectSpec:
         return {k: getattr(self, k) for k in self.__slots__}
 
     def __repr__(self):
-        return (f"DetectSpec(prom={self.prominence_fraction}, "
-                f"dist={self.min_distance_mV:.0f} mV, "
-                f"shoulders={self.shoulder_detection}, "
-                f"visible>={self.truncation_visible_fraction:.0%})")
+        return (
+            f"DetectSpec(prom={self.prominence_fraction}, "
+            f"dist={self.min_distance_mV:.0f} mV, "
+            f"shoulders={self.shoulder_detection}, "
+            f"visible>={self.truncation_visible_fraction:.0%})"
+        )
 
 
 @dataclass
 class Detection:
     """One dataset's detected peaks, and the reference cycle they anchor to."""
+
     name: str
-    peaks: dict = field(default_factory=dict)          # (cycle, step) -> DataFrame
+    peaks: dict = field(default_factory=dict)  # (cycle, step) -> DataFrame
     reference_cycle: int = DEFAULT_REFERENCE_CYCLE
     reference_reason: str = ""
     # How bad the choice was, decided where the outcome is known rather than
     # guessed from the sentence above. See REF_OK / REF_WARN / REF_BAD.
     reference_severity: str = "ok"
-    reference_peaks: dict = field(default_factory=dict)   # step -> DataFrame
+    reference_peaks: dict = field(default_factory=dict)  # step -> DataFrame
     spec: DetectSpec = None
-    skipped: dict = field(default_factory=dict)        # (cycle, step) -> why
+    skipped: dict = field(default_factory=dict)  # (cycle, step) -> why
 
     def counts(self, step):
         """Peaks detected per cycle for one step, in cycle order."""
-        return np.array([len(df) for (c, s), df in sorted(self.peaks.items())
-                         if s == step], dtype=int)
+        return np.array(
+            [len(df) for (c, s), df in sorted(self.peaks.items()) if s == step],
+            dtype=int,
+        )
 
     def reference_voltages(self, step):
         df = self.reference_peaks.get(step)
@@ -1625,34 +1747,47 @@ class Detection:
             if rp is not None and not rp.empty:
                 parts = []
                 for _, pk in rp.iterrows():
-                    tag = ("*" if pk["is_shoulder"] else "") + \
-                          ("†" if pk["is_truncated"] else "")
-                    parts.append(f'{pk["voltage"]:.3f}{tag}')
+                    tag = ("*" if pk["is_shoulder"] else "") + (
+                        "†" if pk["is_truncated"] else ""
+                    )
+                    parts.append(f"{pk['voltage']:.3f}{tag}")
                 notes = []
                 if rp["is_shoulder"].any():
                     notes.append("* shoulder, found on the second derivative")
                 if rp["is_truncated"].any():
                     notes.append("† truncated, fitted one-sided")
-                out.append(entry(f"{step.lower()} peaks",
-                                 f"{', '.join(parts)} V",
-                                 "; ".join(notes)))
+                out.append(
+                    entry(
+                        f"{step.lower()} peaks",
+                        f"{', '.join(parts)} V",
+                        "; ".join(notes),
+                    )
+                )
             c = self.counts(step)
             if c.size:
                 extras = []
-                nsh = sum(int(df["is_shoulder"].sum())
-                          for (cy, s), df in self.peaks.items()
-                          if s == step and not df.empty)
-                ntr = sum(int(df["is_truncated"].sum())
-                          for (cy, s), df in self.peaks.items()
-                          if s == step and not df.empty)
+                nsh = sum(
+                    int(df["is_shoulder"].sum())
+                    for (cy, s), df in self.peaks.items()
+                    if s == step and not df.empty
+                )
+                ntr = sum(
+                    int(df["is_truncated"].sum())
+                    for (cy, s), df in self.peaks.items()
+                    if s == step and not df.empty
+                )
                 if nsh:
                     extras.append(f"{nsh} shoulders")
                 if ntr:
                     extras.append(f"{ntr} truncated")
-                out.append(entry(f"{step.lower()}, all cycles",
-                                 f"median {np.median(c):.0f}",
-                                 f"range {c.min()}-{c.max()}"
-                                 + ((", " + ", ".join(extras)) if extras else "")))
+                out.append(
+                    entry(
+                        f"{step.lower()}, all cycles",
+                        f"median {np.median(c):.0f}",
+                        f"range {c.min()}-{c.max()}"
+                        + ((", " + ", ".join(extras)) if extras else ""),
+                    )
+                )
                 # A PEAK LIST THAT ONLY THIS CYCLE HAS is the failure this
                 # whole selector exists to avoid: the reference's components
                 # are fitted and tracked in every cycle, so one it alone
@@ -1661,23 +1796,31 @@ class Detection:
                 # on by setting `reference_cycle` in Cell 3b.
                 rn = len(rp) if rp is not None else 0
                 if rn and c.size > 2 and rn != int(np.median(c)):
-                    out.append(verdict(
-                        "caution",
-                        f"the reference cycle has {rn} {step.lower()} peak(s) "
-                        f"where the median cycle has {int(np.median(c))}"))
-                    out.append(bullet(
-                        "Every cycle is fitted with the reference's list, so "
-                        "a component only this cycle shows is tracked through "
-                        "the whole dataset and reported with no drift."))
+                    out.append(
+                        verdict(
+                            "caution",
+                            f"the reference cycle has {rn} {step.lower()} peak(s) "
+                            f"where the median cycle has {int(np.median(c))}",
+                        )
+                    )
+                    out.append(
+                        bullet(
+                            "Every cycle is fitted with the reference's list, so "
+                            "a component only this cycle shows is tracked through "
+                            "the whole dataset and reported with no drift."
+                        )
+                    )
         if self.skipped:
-            out.append(entry("not detectable",
-                             f"{len(self.skipped)} half-cycle(s)"))
+            out.append(entry("not detectable", f"{len(self.skipped)} half-cycle(s)"))
         if self.spec is not None:
-            out.append(bullet(
-                f"edge exclusion ±{self.spec.edge_exclusion_mV:.0f} mV; "
-                f"truncation threshold "
-                f"{self.spec.truncation_visible_fraction:.0%} visible",
-                indent=2))
+            out.append(
+                bullet(
+                    f"edge exclusion ±{self.spec.edge_exclusion_mV:.0f} mV; "
+                    f"truncation threshold "
+                    f"{self.spec.truncation_visible_fraction:.0%} visible",
+                    indent=2,
+                )
+            )
         return "\n".join(out)
 
 
@@ -1768,40 +1911,52 @@ def phase_stable(sig, peaks_df, spec, *, fractions=None):
         try:
             v2, y2 = rebin(frac)
         except Exception:
-            return keep                     # cannot test: do not judge
+            return keep  # cannot test: do not judge
         if v2 is None or len(v2) < 10:
             return keep
-        alt = type("PhaseSignal", (), dict(voltage=np.asarray(v2, float),
-                                           dqdv=np.abs(np.asarray(y2, float))))()
+        alt = type(
+            "PhaseSignal",
+            (),
+            dict(voltage=np.asarray(v2, float), dqdv=np.abs(np.asarray(y2, float))),
+        )()
         try:
             pk2 = detect_peaks_single(
-                alt.voltage, alt.dqdv,
+                alt.voltage,
+                alt.dqdv,
                 prominence_fraction=spec.prominence_fraction,
                 min_distance_mV=spec.min_distance_mV,
                 min_width_mV=spec.min_width_mV,
                 shoulder_detection=spec.shoulder_detection,
                 shoulder_min_separation_mV=spec.shoulder_min_separation_mV,
                 shoulder_height_fraction=spec.shoulder_height_fraction,
-                shoulder_d2_prominence_fraction=(
-                    spec.shoulder_d2_prominence_fraction),
+                shoulder_d2_prominence_fraction=(spec.shoulder_d2_prominence_fraction),
                 edge_exclusion_mV=spec.edge_exclusion_mV,
-                truncation_visible_fraction=spec.truncation_visible_fraction)
+                truncation_visible_fraction=spec.truncation_visible_fraction,
+            )
         except Exception:
             return keep
-        seen.append(np.asarray(pk2["voltage"], float)
-                    if pk2 is not None and len(pk2) else np.empty(0))
+        seen.append(
+            np.asarray(pk2["voltage"], float)
+            if pk2 is not None and len(pk2)
+            else np.empty(0)
+        )
 
     h = np.abs(peaks_df["height"].to_numpy(float))
     tallest = int(np.argmax(h)) if h.size else -1
     v_pk = peaks_df["voltage"].to_numpy(float)
-    w_pk = (peaks_df["width_V"].to_numpy(float) * 1000.0
-            if "width_V" in peaks_df else np.zeros(n))
+    w_pk = (
+        peaks_df["width_V"].to_numpy(float) * 1000.0
+        if "width_V" in peaks_df
+        else np.zeros(n)
+    )
     for j in range(n):
         if j == tallest:
-            continue                        # a curve's own maximum is a feature
-        tol_mV = max(PHASE_TOLERANCE_MV,
-                     PHASE_TOLERANCE_BINS * binw,
-                     PHASE_TOLERANCE_WIDTH_FRACTION * float(w_pk[j]))
+            continue  # a curve's own maximum is a feature
+        tol_mV = max(
+            PHASE_TOLERANCE_MV,
+            PHASE_TOLERANCE_BINS * binw,
+            PHASE_TOLERANCE_WIDTH_FRACTION * float(w_pk[j]),
+        )
         tol = tol_mV / 1000.0
         for other in seen:
             if other.size == 0 or np.min(np.abs(other - v_pk[j])) > tol:
@@ -1822,7 +1977,8 @@ def detect_half_cycle(sig, spec=None):
     if sig.voltage.size < 10:
         return pd.DataFrame()
     peaks = detect_peaks_single(
-        sig.voltage, sig.dqdv,
+        sig.voltage,
+        sig.dqdv,
         prominence_fraction=spec.prominence_fraction,
         min_distance_mV=spec.min_distance_mV,
         min_width_mV=spec.min_width_mV,
@@ -1831,7 +1987,8 @@ def detect_half_cycle(sig, spec=None):
         shoulder_height_fraction=spec.shoulder_height_fraction,
         shoulder_d2_prominence_fraction=spec.shoulder_d2_prominence_fraction,
         edge_exclusion_mV=spec.edge_exclusion_mV,
-        truncation_visible_fraction=spec.truncation_visible_fraction)
+        truncation_visible_fraction=spec.truncation_visible_fraction,
+    )
 
     if peaks is None or not len(peaks):
         return peaks
@@ -1866,15 +2023,21 @@ detect_half_cycle.phase_unstable_dropped = 0
 # "FLAGGED ANOMALOUS by the integrity check" both rendered as a green tick.
 # The severity is therefore decided HERE, where the outcome is known, and
 # carried as a value. A verdict inferred from prose is not a verdict.
-REF_OK = "ok"          # a cycle that passed the integrity check
-REF_WARN = "warn"      # a fallback, or a cycle that could not be checked
-REF_BAD = "bad"        # nothing passed, or the chosen cycle is ANOMALOUS
+REF_OK = "ok"  # a cycle that passed the integrity check
+REF_WARN = "warn"  # a fallback, or a cycle that could not be checked
+REF_BAD = "bad"  # nothing passed, or the chosen cycle is ANOMALOUS
 
 
-def choose_reference_cycle(available_cycles, exists, *, integrity=None,
-                           default=DEFAULT_REFERENCE_CYCLE,
-                           auto=REFERENCE_CYCLE_AUTO, exists_step=None,
-                           efficiency=None):
+def choose_reference_cycle(
+    available_cycles,
+    exists,
+    *,
+    integrity=None,
+    default=DEFAULT_REFERENCE_CYCLE,
+    auto=REFERENCE_CYCLE_AUTO,
+    exists_step=None,
+    efficiency=None,
+):
     """
     Pick the cycle whose peak list will anchor the whole dataset, and say why.
 
@@ -1920,7 +2083,7 @@ def choose_reference_cycle(available_cycles, exists, *, integrity=None,
     if not cycles:
         return default, "no cycles available", REF_BAD
     if exists_step is None:
-        exists_step = lambda c, s: True          # noqa: E731
+        exists_step = lambda c, s: True  # noqa: E731
 
     start, settled_why, settled_ok = default, None, False
     if auto and efficiency:
@@ -1955,47 +2118,86 @@ def choose_reference_cycle(available_cycles, exists, *, integrity=None,
         # Judge only the half-cycles this cycle ACTUALLY HAS. Requiring both
         # meant a dataset with one step direction, or a truncated final
         # cycle, could never pass: the missing half returns "unknown".
-        bands = [integrity(c, s) for s in ("Charge", "Discharge")
-                 if exists_step(c, s)]
+        bands = [integrity(c, s) for s in ("Charge", "Discharge") if exists_step(c, s)]
         return bool(bands) and all(b in SOUND_BANDS for b in bands)
 
-    candidates = [c for c in cycles
-                  if c >= start and exists(c) and _sound(c)]
+    candidates = [c for c in cycles if c >= start and exists(c) and _sound(c)]
     if candidates:
         c = candidates[0]
         if settled_why and not settled_ok:
-            return c, (f"formation could not be measured — {settled_why}; "
-                       f"fell back to cycle {REFERENCE_CYCLE_FALLBACK} and "
-                       f"{c} is the first at or above it that passes"), REF_WARN
+            return (
+                c,
+                (
+                    f"formation could not be measured — {settled_why}; "
+                    f"fell back to cycle {REFERENCE_CYCLE_FALLBACK} and "
+                    f"{c} is the first at or above it that passes"
+                ),
+                REF_WARN,
+            )
         if settled_why and start > default:
             if c == start:
-                return c, (f"formation ended here — {settled_why} — and it "
-                           f"passes the integrity check"), REF_OK
-            return c, (f"formation ended at cycle {start} ({settled_why}), "
-                       f"which failed the integrity check; {c} is the first "
-                       f"after it that passes"), REF_OK
+                return (
+                    c,
+                    (
+                        f"formation ended here — {settled_why} — and it "
+                        f"passes the integrity check"
+                    ),
+                    REF_OK,
+                )
+            return (
+                c,
+                (
+                    f"formation ended at cycle {start} ({settled_why}), "
+                    f"which failed the integrity check; {c} is the first "
+                    f"after it that passes"
+                ),
+                REF_OK,
+            )
         why_settled = f"; {settled_why}" if settled_why else ""
         if c == start:
-            return (c,
-                    f"default, and it passes the integrity check{why_settled}",
-                    REF_OK)
-        return c, (f"cycle {start} failed the integrity check; "
-                   f"{c} is the first at or above it that passes"), REF_OK
+            return (
+                c,
+                f"default, and it passes the integrity check{why_settled}",
+                REF_OK,
+            )
+        return (
+            c,
+            (
+                f"cycle {start} failed the integrity check; "
+                f"{c} is the first at or above it that passes"
+            ),
+            REF_OK,
+        )
 
     below = [c for c in cycles if c < start and exists(c) and _sound(c)]
     if below:
         c = below[-1]
         if settled_why and not settled_ok:
-            return c, (f"formation could not be measured — {settled_why}; "
-                       f"the record does not reach cycle "
-                       f"{REFERENCE_CYCLE_FALLBACK}, so {c} is the latest "
-                       f"sound cycle available"), REF_WARN
-        return c, (f"no cycle at or above {start} passes the integrity "
-                   f"check; fell back to {c}"), REF_WARN
+            return (
+                c,
+                (
+                    f"formation could not be measured — {settled_why}; "
+                    f"the record does not reach cycle "
+                    f"{REFERENCE_CYCLE_FALLBACK}, so {c} is the latest "
+                    f"sound cycle available"
+                ),
+                REF_WARN,
+            )
+        return (
+            c,
+            (
+                f"no cycle at or above {start} passes the integrity "
+                f"check; fell back to {c}"
+            ),
+            REF_WARN,
+        )
 
     c, why = _fallback()
-    return c, (f"NO cycle passes the integrity check — using {c} "
-               f"unchecked ({why})"), REF_BAD
+    return (
+        c,
+        (f"NO cycle passes the integrity check — using {c} unchecked ({why})"),
+        REF_BAD,
+    )
 
 
 def detect_spec_for_profile(profile, **overrides):
@@ -2005,12 +2207,11 @@ def detect_spec_for_profile(profile, **overrides):
     Anything passed as a keyword overrides the profile's value, so an
     operator setting `peak_min_distance_mV` in Cell 3b still wins.
     """
-    cls = (profile.get("class", "broad") if isinstance(profile, dict)
-           else str(profile))
-    kw = {"min_distance_mV": PROFILE_MIN_DISTANCE_MV.get(
-        cls, DEFAULT_MIN_DISTANCE_MV),
-        "min_width_mV": PROFILE_MIN_WIDTH_BY_CLASS.get(
-            cls, DEFAULT_MIN_WIDTH_MV)}
+    cls = profile.get("class", "broad") if isinstance(profile, dict) else str(profile)
+    kw = {
+        "min_distance_mV": PROFILE_MIN_DISTANCE_MV.get(cls, DEFAULT_MIN_DISTANCE_MV),
+        "min_width_mV": PROFILE_MIN_WIDTH_BY_CLASS.get(cls, DEFAULT_MIN_WIDTH_MV),
+    }
     kw.update({k: v for k, v in overrides.items() if v is not None})
     return DetectSpec(**kw)
 
@@ -2072,10 +2273,10 @@ def detect_spec_for_profile(profile, **overrides):
 # MEASUREMENT, not about the material or the mechanism — the same discipline as
 # the noise floor and the width floors. 7-13 against 110 leaves the gate room.
 RECURRENCE_SEEDS = True
-RECURRENCE_TOLERANCE_MV = 15.0      # how close two maxima must be to be "the same"
-RECURRENCE_MIN_OCCUPANCY = 0.50     # in at least half the half-cycles
-RECURRENCE_MIN_SHARE = 0.25         # ...and this much of the curve's own height
-RECURRENCE_MAX_DENSITY = 30.0       # maxima per half-cycle above which we decline
+RECURRENCE_TOLERANCE_MV = 15.0  # how close two maxima must be to be "the same"
+RECURRENCE_MIN_OCCUPANCY = 0.50  # in at least half the half-cycles
+RECURRENCE_MIN_SHARE = 0.25  # ...and this much of the curve's own height
+RECURRENCE_MAX_DENSITY = 30.0  # maxima per half-cycle above which we decline
 # A seed must not merely sit NEAR the recurrent voltage; it must be a
 # plausible instance of the feature. With noise there is almost always some
 # local maximum within the tolerance, so position alone would place a seed on
@@ -2144,12 +2345,16 @@ RECURRENCE_SEED_SHARE_FRACTION = 0.5
 RECURRENCE_SEED_GUARD_AT_PLACEMENT = False
 
 
-def recurrent_maxima(signals, *, tolerance_mV=RECURRENCE_TOLERANCE_MV,
-                     min_occupancy=RECURRENCE_MIN_OCCUPANCY,
-                     min_share=RECURRENCE_MIN_SHARE,
-                     max_density=RECURRENCE_MAX_DENSITY,
-                     edge_exclusion_mV=EDGE_EXCLUSION_MV,
-                     enabled=RECURRENCE_SEEDS):
+def recurrent_maxima(
+    signals,
+    *,
+    tolerance_mV=RECURRENCE_TOLERANCE_MV,
+    min_occupancy=RECURRENCE_MIN_OCCUPANCY,
+    min_share=RECURRENCE_MIN_SHARE,
+    max_density=RECURRENCE_MAX_DENSITY,
+    edge_exclusion_mV=EDGE_EXCLUSION_MV,
+    enabled=RECURRENCE_SEEDS,
+):
     """
     Voltages at which a local maximum recurs across a dataset.
 
@@ -2192,13 +2397,18 @@ def recurrent_maxima(signals, *, tolerance_mV=RECURRENCE_TOLERANCE_MV,
         if not n_hc or not rows:
             continue
         density = len(rows) / float(n_hc)
-        entry = {"features": [], "density": density, "declined": None,
-                 "n_half_cycles": n_hc}
+        entry = {
+            "features": [],
+            "density": density,
+            "declined": None,
+            "n_half_cycles": n_hc,
+        }
         if density > float(max_density):
             entry["declined"] = (
                 f"{density:.0f} local maxima per half-cycle — this curve's "
                 f"maxima are sampling noise rather than structure, so "
-                f"recurrence cannot be measured on it")
+                f"recurrence cannot be measured on it"
+            )
             out[step] = entry
             continue
         vs = np.array([r[1] for r in rows], float)
@@ -2210,7 +2420,7 @@ def recurrent_maxima(signals, *, tolerance_mV=RECURRENCE_TOLERANCE_MV,
             if claimed[i]:
                 continue
             c = float(vs_sorted[i])
-            for _ in range(3):              # settle on the local mode
+            for _ in range(3):  # settle on the local mode
                 m = (vs >= c - tol) & (vs <= c + tol)
                 if not m.any():
                     break
@@ -2221,10 +2431,16 @@ def recurrent_maxima(signals, *, tolerance_mV=RECURRENCE_TOLERANCE_MV,
                 continue
             occ = len({g[0] for g in grp}) / float(n_hc)
             share = float(np.median([g[2] for g in grp]))
-            claimed |= ((vs_sorted >= c - tol) & (vs_sorted <= c + tol))
+            claimed |= (vs_sorted >= c - tol) & (vs_sorted <= c + tol)
             if occ >= float(min_occupancy) and share >= float(min_share):
-                feats.append(dict(voltage=c, occupancy=occ, share=share,
-                                  n_cycles=len({g[0] for g in grp})))
+                feats.append(
+                    dict(
+                        voltage=c,
+                        occupancy=occ,
+                        share=share,
+                        n_cycles=len({g[0] for g in grp}),
+                    )
+                )
         # Two clusters can settle on centres closer than the tolerance; keep
         # the better-occupied one so a feature is not seeded twice.
         feats.sort(key=lambda d: -d["occupancy"])
@@ -2237,10 +2453,15 @@ def recurrent_maxima(signals, *, tolerance_mV=RECURRENCE_TOLERANCE_MV,
     return out
 
 
-def add_recurrent_seeds(peaks, signals, recurrent, *,
-                        tolerance_mV=RECURRENCE_TOLERANCE_MV,
-                        min_distance_mV=DEFAULT_MIN_DISTANCE_MV,
-                        share_tolerance=RECURRENCE_SEED_SHARE_FRACTION):
+def add_recurrent_seeds(
+    peaks,
+    signals,
+    recurrent,
+    *,
+    tolerance_mV=RECURRENCE_TOLERANCE_MV,
+    min_distance_mV=DEFAULT_MIN_DISTANCE_MV,
+    share_tolerance=RECURRENCE_SEED_SHARE_FRACTION,
+):
     """
     Seed each half-cycle with the recurrent features it did not detect itself.
 
@@ -2307,7 +2528,7 @@ def add_recurrent_seeds(peaks, signals, recurrent, *,
                 if st != step or df is None or df.empty:
                     continue
                 if (df["voltage"] - fv).abs().min() <= sep:
-                    continue                      # already has it
+                    continue  # already has it
                 if len(df) >= MAX_PEAKS_PER_HALF_CYCLE:
                     continue
                 sig = signals.get((c, st))
@@ -2322,15 +2543,17 @@ def add_recurrent_seeds(peaks, signals, recurrent, *,
                     continue
                 near = idx[int(np.argmin(np.abs(v[idx] - fv)))]
                 if abs(float(v[near]) - fv) > tol:
-                    continue                      # not present on this curve
+                    continue  # not present on this curve
                 # THE GUARD AGAIN, AT THE PLACEMENT — see
                 # RECURRENCE_SEED_GUARD_AT_PLACEMENT for the measurement and
                 # for why this is off. The check above was made against `fv`;
                 # this seed is going to `v[near]`, which can be a whole
                 # `tolerance_mV` away.
-                if (RECURRENCE_SEED_GUARD_AT_PLACEMENT
-                        and (df["voltage"] - float(v[near])).abs().min() <= sep):
-                    continue                      # already has it, really
+                if (
+                    RECURRENCE_SEED_GUARD_AT_PLACEMENT
+                    and (df["voltage"] - float(v[near])).abs().min() <= sep
+                ):
+                    continue  # already has it, really
                 # ...and it has to LOOK like the feature, not merely sit near
                 # where the feature is. With noise there is almost always some
                 # maximum within the tolerance; a half-cycle where the nearest
@@ -2342,14 +2565,18 @@ def add_recurrent_seeds(peaks, signals, recurrent, *,
                     continue
                 prom = float(peak_prominences(y, [int(near)])[0][0])
                 row = {col: np.nan for col in df.columns}
-                row.update(voltage=float(v[near]), height=float(y[near]),
-                           height_original=float(np.asarray(sig.dqdv,
-                                                            float)[near]),
-                           prominence=prom, prominence_estimated=False,
-                           peak_index=int(near),
-                           peak_id=int(df["peak_id"].max()) + 1,
-                           is_shoulder=False, is_truncated=False,
-                           is_recurrent=True)
+                row.update(
+                    voltage=float(v[near]),
+                    height=float(y[near]),
+                    height_original=float(np.asarray(sig.dqdv, float)[near]),
+                    prominence=prom,
+                    prominence_estimated=False,
+                    peak_index=int(near),
+                    peak_id=int(df["peak_id"].max()) + 1,
+                    is_shoulder=False,
+                    is_truncated=False,
+                    is_recurrent=True,
+                )
                 out = pd.concat([df, pd.DataFrame([row])], ignore_index=True)
                 out = out.sort_values("voltage").reset_index(drop=True)
                 out["peak_id"] = range(1, len(out) + 1)
@@ -2373,15 +2600,18 @@ def add_recurrent_seeds(peaks, signals, recurrent, *,
         if "is_recurrent" not in df.columns:
             df["is_recurrent"] = False
         else:
-            df["is_recurrent"] = (df["is_recurrent"]
-                                  .fillna(False).astype(bool))
+            df["is_recurrent"] = df["is_recurrent"].fillna(False).astype(bool)
     return added
 
 
-def infer_missing_seeds(peaks, reference_peaks, *,
-                        tolerance_mV=SEED_INFERENCE_TOLERANCE_MV,
-                        windows=None,
-                        enabled=INFER_MISSING_SEEDS):
+def infer_missing_seeds(
+    peaks,
+    reference_peaks,
+    *,
+    tolerance_mV=SEED_INFERENCE_TOLERANCE_MV,
+    windows=None,
+    enabled=INFER_MISSING_SEEDS,
+):
     """
     Fill single-cycle detection gaps with seeds from the nearest cycle.
 
@@ -2459,16 +2689,16 @@ def infer_missing_seeds(peaks, reference_peaks, *,
                 _rv_all = ref["voltage"].to_numpy(float)
                 _dv = float(df.loc[j, "voltage"])
                 if np.min(np.abs(_rv_all - _dv)) < abs(_dv - rv) - 1e-12:
-                    continue                  # that maximum is someone else's
+                    continue  # that maximum is someone else's
                 found[c] = _dv
             if not found:
-                continue                      # never seen; not a gap
+                continue  # never seen; not a gap
             for c in cycles:
                 if c in found:
                     continue
                 df = peaks.get((c, step))
                 if df is None or df.empty:
-                    continue                  # nothing fitted here at all
+                    continue  # nothing fitted here at all
                 near = min(found, key=lambda k: (abs(k - c), k))
                 # INSIDE THIS HALF-CYCLE'S OWN WINDOW, or not at all. See the
                 # docstring: the position comes from a neighbour, and a
@@ -2480,13 +2710,15 @@ def infer_missing_seeds(peaks, reference_peaks, *,
                         infer_missing_seeds.refused += 1
                         continue
                 row = {col: np.nan for col in df.columns}
-                row.update(voltage=found[near],
-                           peak_id=int(df["peak_id"].max()) + 1,
-                           is_shoulder=bool(rp.get("is_shoulder", False)),
-                           is_truncated=bool(rp.get("is_truncated", False)),
-                           prominence_estimated=True,
-                           is_inferred=True,
-                           inferred_from_cycle=int(near))
+                row.update(
+                    voltage=found[near],
+                    peak_id=int(df["peak_id"].max()) + 1,
+                    is_shoulder=bool(rp.get("is_shoulder", False)),
+                    is_truncated=bool(rp.get("is_truncated", False)),
+                    prominence_estimated=True,
+                    is_inferred=True,
+                    inferred_from_cycle=int(near),
+                )
                 out = pd.concat([df, pd.DataFrame([row])], ignore_index=True)
                 out = out.sort_values("voltage").reset_index(drop=True)
                 out["peak_id"] = range(1, len(out) + 1)
@@ -2517,8 +2749,16 @@ def infer_missing_seeds(peaks, reference_peaks, *,
     return added
 
 
-def detect_all(signals, *, name="", spec=None, reference_cycle=None,
-               integrity=None, verbose=True, efficiency=None):
+def detect_all(
+    signals,
+    *,
+    name="",
+    spec=None,
+    reference_cycle=None,
+    integrity=None,
+    verbose=True,
+    efficiency=None,
+):
     """
     Detect across a dataset and choose its reference cycle.
 
@@ -2559,41 +2799,53 @@ def detect_all(signals, *, name="", spec=None, reference_cycle=None,
     # in the run all along.
     _nph = int(getattr(detect_half_cycle, "phase_unstable_dropped", 0))
     if verbose and _nph:
-        print(f"  phase invariance: {_nph} candidate(s) dropped — they moved "
-              f"with the bin grid when it was shifted, so they are the "
-              f"binning and not the curve")
+        print(
+            f"  phase invariance: {_nph} candidate(s) dropped — they moved "
+            f"with the bin grid when it was shifted, so they are the "
+            f"binning and not the curve"
+        )
 
     recurrent = recurrent_maxima(signals)
-    n_seeded = add_recurrent_seeds(peaks, signals, recurrent,
-                                   min_distance_mV=spec.min_distance_mV)
+    n_seeded = add_recurrent_seeds(
+        peaks, signals, recurrent, min_distance_mV=spec.min_distance_mV
+    )
     if verbose and recurrent:
         for _st in ("Charge", "Discharge"):
             _e = recurrent.get(_st)
             if not _e:
                 continue
             if _e.get("declined"):
-                print(f"  recurrence ({_st.lower()}): not measured — "
-                      f"{_e['declined']}")
+                print(f"  recurrence ({_st.lower()}): not measured — {_e['declined']}")
             elif _e["features"]:
-                _fv = ", ".join(f"{d['voltage']:.3f} V "
-                                f"({d['occupancy']:.0%} of cycles, "
-                                f"{d['share']:.0%} of the curve)"
-                                for d in _e["features"])
+                _fv = ", ".join(
+                    f"{d['voltage']:.3f} V "
+                    f"({d['occupancy']:.0%} of cycles, "
+                    f"{d['share']:.0%} of the curve)"
+                    for d in _e["features"]
+                )
                 print(f"  recurrence ({_st.lower()}): {_fv}")
     if verbose and n_seeded:
-        print(f"  {n_seeded} recurrent seed(s) added to half-cycles that did "
-              f"not detect them on their own")
+        print(
+            f"  {n_seeded} recurrent seed(s) added to half-cycles that did "
+            f"not detect them on their own"
+        )
 
-    n_capped = sum(1 for d in peaks.values()
-                   if not d.empty and bool(d.get("peaks_capped",
-                                                 pd.Series([False])).any()))
+    n_capped = sum(
+        1
+        for d in peaks.values()
+        if not d.empty and bool(d.get("peaks_capped", pd.Series([False])).any())
+    )
     if n_capped and verbose:
-        print(f"\n  *** {n_capped} half-cycle(s) detected more than "
-              f"{MAX_PEAKS_PER_HALF_CYCLE} peaks and were capped to the "
-              f"strongest. ***")
-        print("      That many features on one dQ/dV curve is a detection "
-              "failure, not a rich material — check the smoothing window "
-              "and the prominence fraction in Cell 4.")
+        print(
+            f"\n  *** {n_capped} half-cycle(s) detected more than "
+            f"{MAX_PEAKS_PER_HALF_CYCLE} peaks and were capped to the "
+            f"strongest. ***"
+        )
+        print(
+            "      That many features on one dQ/dV curve is a detection "
+            "failure, not a rich material — check the smoothing window "
+            "and the prominence fraction in Cell 4."
+        )
 
     cycles = sorted({int(c) for c, _ in signals})
 
@@ -2605,8 +2857,9 @@ def detect_all(signals, *, name="", spec=None, reference_cycle=None,
         # nothing. A half-cycle whose curve failed preprocessing has an
         # empty peak table, and a reference cycle with no peaks fixes an
         # empty peak list for the whole dataset.
-        return any(not peaks.get((c, s), pd.DataFrame()).empty
-                   for s in ("Charge", "Discharge"))
+        return any(
+            not peaks.get((c, s), pd.DataFrame()).empty for s in ("Charge", "Discharge")
+        )
 
     if reference_cycle is not None:
         ref = int(reference_cycle)
@@ -2618,11 +2871,16 @@ def detect_all(signals, *, name="", spec=None, reference_cycle=None,
         if not cycles:
             # The reference_cycle=None branch handles this cleanly; this one
             # raised IndexError on cycles[0].
-            return Detection(name=name, peaks=peaks, skipped=skipped,
-                             spec=spec, reference_cycle=ref,
-                             reference_reason="no cycles available",
-                             reference_severity=REF_BAD,
-                             reference_peaks={})
+            return Detection(
+                name=name,
+                peaks=peaks,
+                skipped=skipped,
+                spec=spec,
+                reference_cycle=ref,
+                reference_reason="no cycles available",
+                reference_severity=REF_BAD,
+                reference_peaks={},
+            )
         if ref not in cycles:
             # The NEAREST available cycle, not the second one in the record.
             ref = min(cycles, key=lambda c: (abs(c - ref), c))
@@ -2637,8 +2895,11 @@ def detect_all(signals, *, name="", spec=None, reference_cycle=None,
             # "the integrity check could not assess it" caution that no choice
             # of cycle could clear. `choose_reference_cycle` was given
             # `exists_step` for this reason and this branch was not.
-            bands = [integrity(ref, s) for s in ("Charge", "Discharge")
-                     if (ref, s) in signals]
+            bands = [
+                integrity(ref, s)
+                for s in ("Charge", "Discharge")
+                if (ref, s) in signals
+            ]
             if not bands:
                 bands = [integrity(ref, s) for s in ("Charge", "Discharge")]
             # Anything outside SOUND_BANDS is "we could not tell", which the
@@ -2649,25 +2910,36 @@ def detect_all(signals, *, name="", spec=None, reference_cycle=None,
                 severity = REF_OK
                 reason += "; it passes the integrity check"
             elif "ANOMALOUS" not in bands:
-                reason += ("; the integrity check could not assess it ("
-                           + ", ".join(str(b) for b in bands) + ")")
+                reason += (
+                    "; the integrity check could not assess it ("
+                    + ", ".join(str(b) for b in bands)
+                    + ")"
+                )
             if "ANOMALOUS" in bands:
                 severity = REF_BAD
                 reason += "; FLAGGED ANOMALOUS by the integrity check"
                 if verbose:
-                    print(f"\n  *** WARNING: reference cycle {ref} is flagged "
-                          f"ANOMALOUS. ***")
-                    print("      Its peak list will be fitted and tracked in "
-                          "every cycle of this dataset.")
-                    print("      Pass reference_cycle=None to let Ratatosk "
-                          "choose.")
+                    print(
+                        f"\n  *** WARNING: reference cycle {ref} is flagged "
+                        f"ANOMALOUS. ***"
+                    )
+                    print(
+                        "      Its peak list will be fitted and tracked in "
+                        "every cycle of this dataset."
+                    )
+                    print("      Pass reference_cycle=None to let Ratatosk choose.")
     else:
         ref, reason, severity = choose_reference_cycle(
-            cycles, _exists, integrity=integrity, efficiency=efficiency,
-            exists_step=lambda c, st: (c, st) in signals)
+            cycles,
+            _exists,
+            integrity=integrity,
+            efficiency=efficiency,
+            exists_step=lambda c, st: (c, st) in signals,
+        )
 
-    ref_peaks = {s: peaks.get((ref, s), pd.DataFrame())
-                 for s in ("Charge", "Discharge")}
+    ref_peaks = {
+        s: peaks.get((ref, s), pd.DataFrame()) for s in ("Charge", "Discharge")
+    }
     # Each half-cycle's own voltage range, so an inferred seed can be checked
     # against the data it is about to be fitted to rather than against the
     # neighbour it was copied from.
@@ -2682,21 +2954,35 @@ def detect_all(signals, *, name="", spec=None, reference_cycle=None,
     n_inferred = infer_missing_seeds(peaks, ref_peaks, windows=_windows)
     _refused = int(getattr(infer_missing_seeds, "refused", 0))
     if verbose and _refused:
-        print(f"\n  {_refused} inferred seed(s) REFUSED: the neighbouring "
-              f"cycle's position lies outside that half-cycle's own voltage "
-              f"range.")
-        print("    A seed outside the data is not a gap to bridge; the "
-              "component it would have produced is not a measurement.")
+        print(
+            f"\n  {_refused} inferred seed(s) REFUSED: the neighbouring "
+            f"cycle's position lies outside that half-cycle's own voltage "
+            f"range."
+        )
+        print(
+            "    A seed outside the data is not a gap to bridge; the "
+            "component it would have produced is not a measurement."
+        )
     if verbose and n_inferred:
-        print(f"\n  {n_inferred} seed(s) inferred from neighbouring cycles "
-              f"where detection found nothing at a reference peak.")
-        print("    They are fitted and tracked, marked is_inferred, and "
-              "excluded from headline trends.")
+        print(
+            f"\n  {n_inferred} seed(s) inferred from neighbouring cycles "
+            f"where detection found nothing at a reference peak."
+        )
+        print(
+            "    They are fitted and tracked, marked is_inferred, and "
+            "excluded from headline trends."
+        )
 
     det = Detection(
-        name=name, peaks=peaks, reference_cycle=int(ref),
-        reference_reason=reason, reference_severity=severity,
-        spec=spec, skipped=skipped, reference_peaks=ref_peaks)
+        name=name,
+        peaks=peaks,
+        reference_cycle=int(ref),
+        reference_reason=reason,
+        reference_severity=severity,
+        spec=spec,
+        skipped=skipped,
+        reference_peaks=ref_peaks,
+    )
 
     if verbose:
         print("\n" + det.summary())

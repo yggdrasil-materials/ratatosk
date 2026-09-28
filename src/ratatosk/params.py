@@ -61,15 +61,28 @@ from .plots import _get_display_name
 
 from .style import _S, entry, half_cycle_labels
 
-__all__ = ["extract_neware_metadata", "collect_parameters", "describe_defaults",
-           "recommended_palettes", "default_key_cycles",
-           "choose_files", "select_files", "pick_files_dialog",
-           "detection_overrides", "analysis_overrides", "infer_chemistry",
-           "USE_FILE_DIALOG", "validate_run_settings",
-           "find_data_dir", "DATA_DIR_ENV",
-           "parameters_from_dict", "preprocess_overrides",
-           "SPECIFIC_CAPACITY_LIBRARY", "lookup_specific_capacity",
-           "FARADAY_mAh_PER_MOL"]
+__all__ = [
+    "extract_neware_metadata",
+    "collect_parameters",
+    "describe_defaults",
+    "recommended_palettes",
+    "default_key_cycles",
+    "choose_files",
+    "select_files",
+    "pick_files_dialog",
+    "detection_overrides",
+    "analysis_overrides",
+    "infer_chemistry",
+    "USE_FILE_DIALOG",
+    "validate_run_settings",
+    "find_data_dir",
+    "DATA_DIR_ENV",
+    "parameters_from_dict",
+    "preprocess_overrides",
+    "SPECIFIC_CAPACITY_LIBRARY",
+    "lookup_specific_capacity",
+    "FARADAY_mAh_PER_MOL",
+]
 
 
 # =============================================================================
@@ -117,10 +130,17 @@ ANALYSIS_DEFAULTS = {
 # Which reader claims which knob. Every key of ANALYSIS_DEFAULTS appears in
 # exactly one of these, checked at import — a knob nobody reads is a knob that
 # does nothing, and that is how the four deleted fit fields survived.
-PREPROCESS_KEYS = ("smoothing_window", "polyorder", "spike_removal",
-                   "spike_window_size", "spike_threshold_multiplier",
-                   "rebin_width_mV", "second_smooth_window",
-                   "histogram_bin_mV", "histogram_smooth_bins")
+PREPROCESS_KEYS = (
+    "smoothing_window",
+    "polyorder",
+    "spike_removal",
+    "spike_window_size",
+    "spike_threshold_multiplier",
+    "rebin_width_mV",
+    "second_smooth_window",
+    "histogram_bin_mV",
+    "histogram_smooth_bins",
+)
 
 # Which dQ/dV path each preprocessing knob reaches. A knob set for the path
 # that is not running does nothing, and Cell 4 says so rather than echoing it
@@ -128,19 +148,31 @@ PREPROCESS_KEYS = ("smoothing_window", "polyorder", "spike_removal",
 # claimed by a reader; this says WHICH reader, which is the part that was
 # actually wrong.
 KEYS_BY_DQDV_METHOD = {
-    "derivative": ("smoothing_window", "polyorder", "spike_removal",
-                   "spike_window_size", "spike_threshold_multiplier",
-                   "rebin_width_mV", "second_smooth_window"),
+    "derivative": (
+        "smoothing_window",
+        "polyorder",
+        "spike_removal",
+        "spike_window_size",
+        "spike_threshold_multiplier",
+        "rebin_width_mV",
+        "second_smooth_window",
+    ),
     "histogram": ("histogram_bin_mV", "histogram_smooth_bins"),
 }
-assert set(sum(KEYS_BY_DQDV_METHOD.values(), ())) == set(PREPROCESS_KEYS), \
+assert set(sum(KEYS_BY_DQDV_METHOD.values(), ())) == set(PREPROCESS_KEYS), (
     "a preprocessing knob belongs to no dQ/dV path"
-DETECTION_KEYS = ("peak_min_distance_mV", "peak_prominence_fraction",
-                  "peak_min_width_mV", "edge_exclusion_mV",
-                  "shoulder_detection")
+)
+DETECTION_KEYS = (
+    "peak_min_distance_mV",
+    "peak_prominence_fraction",
+    "peak_min_width_mV",
+    "edge_exclusion_mV",
+    "shoulder_detection",
+)
 ANALYSIS_KEYS = ("reference_cycle", "tracking_tolerance_mV")
-assert (set(PREPROCESS_KEYS) | set(DETECTION_KEYS) | set(ANALYSIS_KEYS)
-        == set(ANALYSIS_DEFAULTS)), "an analysis knob has no reader"
+assert set(PREPROCESS_KEYS) | set(DETECTION_KEYS) | set(ANALYSIS_KEYS) == set(
+    ANALYSIS_DEFAULTS
+), "an analysis knob has no reader"
 
 
 def _explicit(params, keys):
@@ -172,15 +204,15 @@ def extract_neware_metadata(source):
     non-merged layouts from other cycler brands.
     """
     metadata = {
-        'active_material_mass_mg': None,
-        'voltage_upper_V': None,
-        'voltage_lower_V': None,
-        'cycle_count': None,
-        'c_rate': None,
-        'charge_current_A': None,
-        'discharge_current_A': None,
-        'barcode': None,
-        'test_start_date': None,
+        "active_material_mass_mg": None,
+        "voltage_upper_V": None,
+        "voltage_lower_V": None,
+        "cycle_count": None,
+        "c_rate": None,
+        "charge_current_A": None,
+        "discharge_current_A": None,
+        "barcode": None,
+        "test_start_date": None,
     }
 
     # An absent 'test' sheet and an unreadable workbook were both swallowed
@@ -188,10 +220,12 @@ def extract_neware_metadata(source):
     # cycler that had not written its metadata: no prompt was pre-filled and
     # nothing said why. They are separated here, and neither is silent.
     if isinstance(source, pd.ExcelFile):
-        if 'test' not in source.sheet_names:
-            print(f"      no 'test' sheet in this workbook "
-                  f"(sheets: {', '.join(map(str, source.sheet_names))}) "
-                  f"— nothing to pre-fill from")
+        if "test" not in source.sheet_names:
+            print(
+                f"      no 'test' sheet in this workbook "
+                f"(sheets: {', '.join(map(str, source.sheet_names))}) "
+                f"— nothing to pre-fill from"
+            )
             return metadata
     try:
         # These exports carry no default cell style, and openpyxl warns about
@@ -199,16 +233,19 @@ def extract_neware_metadata(source):
         # the loading messages, so it is silenced here rather than left to
         # scroll past eight times.
         import warnings as _w
+
         with _w.catch_warnings():
             _w.filterwarnings("ignore", message=".*no default style.*")
-            df_test = pd.read_excel(source, sheet_name='test', header=None)
+            df_test = pd.read_excel(source, sheet_name="test", header=None)
     except ValueError:
         # pandas raises ValueError for a sheet that is not in the workbook.
         print("      no 'test' sheet in this workbook — nothing to pre-fill")
         return metadata
-    except Exception as exc:                                # noqa: BLE001
-        print(f"      *** the 'test' sheet could not be read ({exc}); "
-              f"every parameter will have to be typed ***")
+    except Exception as exc:  # noqa: BLE001
+        print(
+            f"      *** the 'test' sheet could not be read ({exc}); "
+            f"every parameter will have to be typed ***"
+        )
         return metadata
 
     def _get(row, col):
@@ -216,14 +253,14 @@ def extract_neware_metadata(source):
         try:
             val = df_test.iloc[row, col]
             return None if pd.isna(val) else val
-        except (IndexError, KeyError):
+        except IndexError, KeyError:
             return None
 
     def _parse_numeric(text):
         """Extract leading numeric value from '12.72mg', '4.3V', etc."""
         if text is None:
             return None
-        match = re.match(r'^([+-]?\d*\.?\d+)', str(text).strip())
+        match = re.match(r"^([+-]?\d*\.?\d+)", str(text).strip())
         return float(match.group(1)) if match else None
 
     n_rows = min(10, len(df_test))
@@ -244,39 +281,39 @@ def extract_neware_metadata(source):
             if value is None:
                 value = _get(row, label_col + 1)
 
-            if 'active material' in ll:
+            if "active material" in ll:
                 mass = _parse_numeric(value)
                 if mass is not None and mass > 0:
-                    metadata['active_material_mass_mg'] = mass
+                    metadata["active_material_mass_mg"] = mass
 
-            elif 'volt' in ll and 'upper' in ll:
+            elif "volt" in ll and "upper" in ll:
                 v = _parse_numeric(value)
                 if v is not None:
-                    metadata['voltage_upper_V'] = v
+                    metadata["voltage_upper_V"] = v
 
-            elif 'volt' in ll and 'lower' in ll:
+            elif "volt" in ll and "lower" in ll:
                 v = _parse_numeric(value)
                 if v is not None:
-                    metadata['voltage_lower_V'] = v
+                    metadata["voltage_lower_V"] = v
 
-            elif 'cycle' in ll and 'count' in ll:
+            elif "cycle" in ll and "count" in ll:
                 try:
-                    metadata['cycle_count'] = int(float(str(value)))
-                except (ValueError, TypeError):
+                    metadata["cycle_count"] = int(float(str(value)))
+                except ValueError, TypeError:
                     pass
 
-            elif 'barcode' in ll:
+            elif "barcode" in ll:
                 for offset in [2, 1, 3]:
                     bv = _get(row, label_col + offset)
                     if bv is not None and len(str(bv).strip()) > 3:
-                        metadata['barcode'] = str(bv).strip()
+                        metadata["barcode"] = str(bv).strip()
                         break
 
-            elif 'start time' in ll:
+            elif "start time" in ll:
                 for offset in [2, 1]:
                     sv = _get(row, label_col + offset)
                     if sv is not None:
-                        metadata['test_start_date'] = str(sv).strip()
+                        metadata["test_start_date"] = str(sv).strip()
                         break
 
     # --- Step plan section ---
@@ -285,9 +322,11 @@ def extract_neware_metadata(source):
     for row in range(len(df_test)):
         for col in range(min(3, n_cols)):
             val = _get(row, col)
-            if (val is not None and
-                'step' in str(val).lower() and
-                'index' in str(val).lower()):
+            if (
+                val is not None
+                and "step" in str(val).lower()
+                and "index" in str(val).lower()
+            ):
                 step_header_row = row
                 break
         if step_header_row is not None:
@@ -295,8 +334,7 @@ def extract_neware_metadata(source):
 
     if step_header_row is not None:
         # Read column headers from the step plan row
-        headers = [str(_get(step_header_row, c) or '')
-                   for c in range(n_cols)]
+        headers = [str(_get(step_header_row, c) or "") for c in range(n_cols)]
 
         # Find column indices — exclude "cut-off" variants
         crate_idx = None
@@ -305,90 +343,90 @@ def extract_neware_metadata(source):
 
         for i, h in enumerate(headers):
             hl = h.lower()
-            if ('c-rate' in hl or 'c_rate' in hl) and 'cut' not in hl:
+            if ("c-rate" in hl or "c_rate" in hl) and "cut" not in hl:
                 crate_idx = i
-            elif 'current' in hl and 'cut' not in hl:
+            elif "current" in hl and "cut" not in hl:
                 current_idx = i
-            elif 'step name' in hl or 'step_name' in hl:
+            elif "step name" in hl or "step_name" in hl:
                 step_name_idx = i
 
         if step_name_idx is not None:
             for row in range(step_header_row + 1, len(df_test)):
-                sn = str(_get(row, step_name_idx) or '').lower()
+                sn = str(_get(row, step_name_idx) or "").lower()
 
-                if any(t in sn for t in ['chg', 'charge']):
+                if any(t in sn for t in ["chg", "charge"]):
                     if crate_idx is not None:
                         try:
                             cr = float(_get(row, crate_idx))
                             if not np.isnan(cr):
-                                metadata['c_rate'] = cr
-                        except (ValueError, TypeError):
+                                metadata["c_rate"] = cr
+                        except ValueError, TypeError:
                             pass
                     if current_idx is not None:
                         try:
                             cu = float(_get(row, current_idx))
                             if not np.isnan(cu):
-                                metadata['charge_current_A'] = cu
-                        except (ValueError, TypeError):
+                                metadata["charge_current_A"] = cu
+                        except ValueError, TypeError:
                             pass
 
-                elif any(t in sn for t in ['dchg', 'discharge']):
-                    if crate_idx is not None and metadata['c_rate'] is None:
+                elif any(t in sn for t in ["dchg", "discharge"]):
+                    if crate_idx is not None and metadata["c_rate"] is None:
                         try:
                             cr = float(_get(row, crate_idx))
                             if not np.isnan(cr):
-                                metadata['c_rate'] = cr
-                        except (ValueError, TypeError):
+                                metadata["c_rate"] = cr
+                        except ValueError, TypeError:
                             pass
                     if current_idx is not None:
                         try:
                             cu = float(_get(row, current_idx))
                             if not np.isnan(cu):
-                                metadata['discharge_current_A'] = cu
-                        except (ValueError, TypeError):
+                                metadata["discharge_current_A"] = cu
+                        except ValueError, TypeError:
                             pass
 
     return metadata
 
 
 recommended_palettes = [
-    "viridis_r",    # perceptually uniform, colourblind-safe (recommended)
-    "Greys",        # greyscale light->dark
-    "Greys_r",      # greyscale dark->light
-    "plasma",       # perceptually uniform, vibrant
-    "inferno",      # perceptually uniform, high contrast
-    "magma",        # perceptually uniform, warm
-    "cividis",      # perceptually uniform, colourblind-safe
-    "Reds",         # sequential red
-    "YlOrRd",       # yellow->orange->red
-    "OrRd",         # orange->red
-    "Blues",        # sequential blue
-    "Paired",       # categorical pairs
-    "Accent",       # categorical accent colours
-    "rocket",       # seaborn sequential (dark->light)
-    "mako",         # seaborn sequential (cool)
-    "flare",        # seaborn sequential (warm)
-    "crest",        # seaborn sequential (teal)
-    "vlag",         # seaborn diverging (blue/red)
-    "icefire",      # seaborn diverging (cool/warm)
-    "PRGn",         # diverging purple/green
-    "Spectral",     # diverging rainbow
+    "viridis_r",  # perceptually uniform, colourblind-safe (recommended)
+    "Greys",  # greyscale light->dark
+    "Greys_r",  # greyscale dark->light
+    "plasma",  # perceptually uniform, vibrant
+    "inferno",  # perceptually uniform, high contrast
+    "magma",  # perceptually uniform, warm
+    "cividis",  # perceptually uniform, colourblind-safe
+    "Reds",  # sequential red
+    "YlOrRd",  # yellow->orange->red
+    "OrRd",  # orange->red
+    "Blues",  # sequential blue
+    "Paired",  # categorical pairs
+    "Accent",  # categorical accent colours
+    "rocket",  # seaborn sequential (dark->light)
+    "mako",  # seaborn sequential (cool)
+    "flare",  # seaborn sequential (warm)
+    "crest",  # seaborn sequential (teal)
+    "vlag",  # seaborn diverging (blue/red)
+    "icefire",  # seaborn diverging (cool/warm)
+    "PRGn",  # diverging purple/green
+    "Spectral",  # diverging rainbow
 ]
 
 
 default_palette = "viridis_r"
 
 
-default_dqdv_charge_colour = '#0072B2'
+default_dqdv_charge_colour = "#0072B2"
 
 
-default_dqdv_discharge_colour = '#D55E00'
+default_dqdv_discharge_colour = "#D55E00"
 
 
-default_dqdv_charge_linestyle = '-'
+default_dqdv_charge_linestyle = "-"
 
 
-default_dqdv_discharge_linestyle = '-'
+default_dqdv_discharge_linestyle = "-"
 
 
 default_key_cycles = [1, 5, 10, 20, 30, 40, 50]
@@ -397,12 +435,13 @@ default_key_cycles = [1, 5, 10, 20, 30, 40, 50]
 _plots_key_cycles = None
 try:
     from .plots import DEFAULT_KEY_CYCLES as _plots_key_cycles
-except Exception:                                    # pragma: no cover
+except Exception:  # pragma: no cover
     pass
 if _plots_key_cycles is not None and list(_plots_key_cycles) != default_key_cycles:
     raise RuntimeError(
         "params.default_key_cycles and plots.DEFAULT_KEY_CYCLES disagree: "
-        f"{default_key_cycles} vs {list(_plots_key_cycles)}")
+        f"{default_key_cycles} vs {list(_plots_key_cycles)}"
+    )
 
 
 default_electrode_diameter_mm = 12.0
@@ -411,22 +450,16 @@ default_electrode_diameter_mm = 12.0
 _VALID_CMAPS = set(plt.colormaps())
 
 
-
-
-
-
-
-
 _COUNTER_METAL_DENSITY = {
-    'Li': 0.534,
-    'Na': 0.971,
+    "Li": 0.534,
+    "Na": 0.971,
 }
 
 
-_DEFAULT_COUNTER_THICKNESS_MM = 0.5   # typical foil thickness
+_DEFAULT_COUNTER_THICKNESS_MM = 0.5  # typical foil thickness
 
 
-_DEFAULT_COUNTER_DIAMETER_MM = 16.0   # same as separator punch
+_DEFAULT_COUNTER_DIAMETER_MM = 16.0  # same as separator punch
 
 
 def _validate_palette(name):
@@ -464,31 +497,32 @@ def _suggest_cell_id(name, all_names):
     with its composition alone, so two single-cell runs of two different
     cells produced two identically named folders.
     """
-    m = re.search(r'[Cc]ell[\s_-]?([A-Za-z0-9])(?![A-Za-z0-9])', name)
+    m = re.search(r"[Cc]ell[\s_-]?([A-Za-z0-9])(?![A-Za-z0-9])", name)
     if m:
         return m.group(1).upper()
-    m = re.findall(r'[_-]([A-Za-z])[_-]', name)
+    m = re.findall(r"[_-]([A-Za-z])[_-]", name)
     if m:
         return m[-1].upper()
-    toks = {n: re.findall(r'\d+', n) for n in all_names}
+    toks = {n: re.findall(r"\d+", n) for n in all_names}
     mine = toks.get(name, [])
     if mine and len(all_names) > 1:
         n_tok = min((len(t) for t in toks.values()), default=0)
         for pos in range(n_tok):
             if len({t[pos] for t in toks.values() if len(t) > pos}) > 1:
                 return mine[pos]
-    return ''
+    return ""
 
 
-def _input_with_default(prompt, default_value, cast_type=str,
-                         min_val=None, source=None):
+def _input_with_default(
+    prompt, default_value, cast_type=str, min_val=None, source=None
+):
     """Prompt for input with a pre-filled default shown in brackets."""
     # input() does not render ANSI codes — build a plain-text prompt.
     # Styling is applied only to print() calls (errors, confirmations).
     if default_value is not None:
-        if source == 'file':
+        if source == "file":
             src_tag = "[from file: "
-        elif source == 'library':
+        elif source == "library":
             src_tag = "[from library: "
         else:
             src_tag = "[default: "
@@ -501,7 +535,9 @@ def _input_with_default(prompt, default_value, cast_type=str,
             if default_value is not None:
                 return cast_type(default_value) if cast_type != str else default_value
             else:
-                print(f"  {_S.WARN}No default available — please enter a value.{_S.RESET}")
+                print(
+                    f"  {_S.WARN}No default available — please enter a value.{_S.RESET}"
+                )
                 continue
         try:
             value = cast_type(raw)
@@ -509,12 +545,13 @@ def _input_with_default(prompt, default_value, cast_type=str,
                 print(f"  {_S.WARN}Value must be >= {min_val}.{_S.RESET}")
                 continue
             return value
-        except (ValueError, TypeError):
-            print(f"  {_S.WARN}Invalid input. Please enter a {cast_type.__name__}.{_S.RESET}")
+        except ValueError, TypeError:
+            print(
+                f"  {_S.WARN}Invalid input. Please enter a {cast_type.__name__}.{_S.RESET}"
+            )
 
 
-def _skip_module(module_name,
-                 reason="RUN_PEAK_FITTING=False (set in Cell 3)"):
+def _skip_module(module_name, reason="RUN_PEAK_FITTING=False (set in Cell 3)"):
     """
     Print a clear skip message. Does NOT raise — the caller is
     expected to guard the module body with an if/else block so
@@ -528,14 +565,11 @@ def _skip_module(module_name,
             # existing module body, indented +4 spaces
     """
     print(f"{_S.WARN}--- {module_name} skipped ({reason}). ---{_S.RESET}")
-    print(f"    To run this analysis now, set "
-          f"RUN_PEAK_FITTING = True in Cell 3, re-run Cell 3,")
-    print(f"    then run this module's cell manually. "
-          f"No other cells need to re-run.")
-
-
-
-
+    print(
+        f"    To run this analysis now, set "
+        f"RUN_PEAK_FITTING = True in Cell 3, re-run Cell 3,"
+    )
+    print(f"    then run this module's cell manually. No other cells need to re-run.")
 
 
 # ---------------------------------------------------------------------------
@@ -594,42 +628,67 @@ FARADAY_mAh_PER_MOL = 96485.33212 / 3.6
 # here because it is the one written on the samples.)
 SPECIFIC_CAPACITY_LIBRARY = {
     "LiCoO2": dict(
-        n=1.0, M=97.871, ion="Li",
+        n=1.0,
+        M=97.871,
+        ion="Li",
         note="1 Li per formula unit (full extraction to CoO2)",
-        aliases=("lco", "licoo2", "lithiumcobaltoxide", "lithiumcobaltate")),
+        aliases=("lco", "licoo2", "lithiumcobaltoxide", "lithiumcobaltate"),
+    ),
     "LiMn2O4": dict(
-        n=1.0, M=180.812, ion="Li",
+        n=1.0,
+        M=180.812,
+        ion="Li",
         note="1 Li per formula unit (spinel, 4 V plateau)",
-        aliases=("lmo", "limn2o4", "lithiummanganeseoxide",
-                 "lithiummanganatespinel")),
+        aliases=("lmo", "limn2o4", "lithiummanganeseoxide", "lithiummanganatespinel"),
+    ),
     "LiNi1/3Mn1/3Co1/3O2": dict(
-        n=1.0, M=96.460, ion="Li",
+        n=1.0,
+        M=96.460,
+        ion="Li",
         note="1 Li per formula unit (full delithiation)",
-        aliases=("nmc111", "ncm111", "mnc111", "lini13mn13co13o2",
-                 "lini033mn033co033o2", "lini0333mn0333co0333o2")),
+        aliases=(
+            "nmc111",
+            "ncm111",
+            "mnc111",
+            "lini13mn13co13o2",
+            "lini033mn033co033o2",
+            "lini0333mn0333co0333o2",
+        ),
+    ),
     "LiNi0.8Mn0.1Co0.1O2": dict(
-        n=1.0, M=97.280, ion="Li",
+        n=1.0,
+        M=97.280,
+        ion="Li",
         note="1 Li per formula unit (full delithiation)",
-        aliases=("nmc811", "ncm811", "mnc811", "lini08mn01co01o2")),
+        aliases=("nmc811", "ncm811", "mnc811", "lini08mn01co01o2"),
+    ),
     "LiCoMnO4": dict(
-        n=1.0, M=184.807, ion="Li",
+        n=1.0,
+        M=184.807,
+        ion="Li",
         note="1 Li per formula unit (5 V spinel)",
-        aliases=("licomno4", "lcmo", "limncoo4")),
+        aliases=("licomno4", "lcmo", "limncoo4"),
+    ),
     "Li4Ti5O12": dict(
-        n=3.0, M=459.083, ion="Li",
+        n=3.0,
+        M=459.083,
+        ion="Li",
         note="3 Li per formula unit (8a -> 16c, Ti4+/Ti3+)",
-        aliases=("lto", "li4ti5o12", "lithiumtitanate",
-                 "lithiumtitaniumoxide")),
+        aliases=("lto", "li4ti5o12", "lithiumtitanate", "lithiumtitaniumoxide"),
+    ),
     "Na0.67Ni0.33Mn0.67O2": dict(
-        n=0.67, M=103.578, ion="Na",
+        n=0.67,
+        M=103.578,
+        ion="Na",
         note="0.67 Na per formula unit, UNDOPED parent P3 composition — "
-             "a doped sample is not this number",
+        "a doped sample is not this number",
         # NOT `Na2/3Ni1/3Mn2/3O2`: that stoichiometry is M = 103.514 and
         # 172.6 mAh/g, and answering it with 173.4 under a formula the
         # operator did not write is exactly the near-match this library
         # refuses everywhere else. It gets no default until it is entered
         # here with its own arithmetic.
-        aliases=("nnm", "na067ni033mn067o2")),
+        aliases=("nnm", "na067ni033mn067o2"),
+    ),
 }
 
 
@@ -725,20 +784,27 @@ def infer_chemistry(composition, electrolyte=""):
 COUNTER_METAL_DEFAULT = "Na"
 
 
-def counter_electrode_metal(params_or_composition, *, stated=None,
-                            battery_chemistry=None, electrolyte=""):
+def counter_electrode_metal(
+    params_or_composition, *, stated=None, battery_chemistry=None, electrolyte=""
+):
     """`(metal_symbol, source)` — see COUNTER_METAL_DEFAULT."""
     if stated:
         return str(stated).strip().title()[:2], "stated"
     chem = battery_chemistry or infer_chemistry(
-        params_or_composition if isinstance(params_or_composition, str)
-        else (params_or_composition or {}).get("composition"), electrolyte)
+        params_or_composition
+        if isinstance(params_or_composition, str)
+        else (params_or_composition or {}).get("composition"),
+        electrolyte,
+    )
     if chem == "Li-ion":
         return "Li", "chemistry"
     if chem == "Na-ion":
         return "Na", "chemistry"
-    comp = (params_or_composition if isinstance(params_or_composition, str)
-            else (params_or_composition or {}).get("composition"))
+    comp = (
+        params_or_composition
+        if isinstance(params_or_composition, str)
+        else (params_or_composition or {}).get("composition")
+    )
     key = _capacity_key(comp)
     for formula, rec in SPECIFIC_CAPACITY_LIBRARY.items():
         if key and (key == _capacity_key(formula) or key in rec["aliases"]):
@@ -746,10 +812,9 @@ def counter_electrode_metal(params_or_composition, *, stated=None,
     return COUNTER_METAL_DEFAULT, "assumed"
 
 
-def _estimate_counter_electrode_mass_mg(diameter_mm=None,
-                                         thickness_mm=None,
-                                         battery_chemistry=None,
-                                         metal=None):
+def _estimate_counter_electrode_mass_mg(
+    diameter_mm=None, thickness_mm=None, battery_chemistry=None, metal=None
+):
     """
     Estimate counter electrode mass from geometry and metal density.
     Returns (mass_mg, metal_symbol). `metal` overrides the inference.
@@ -761,10 +826,10 @@ def _estimate_counter_electrode_mass_mg(diameter_mm=None,
 
     # Determine counter electrode metal
     if not metal:
-        if battery_chemistry == 'Li-ion':
-            metal = 'Li'
-        elif battery_chemistry == 'Na-ion':
-            metal = 'Na'
+        if battery_chemistry == "Li-ion":
+            metal = "Li"
+        elif battery_chemistry == "Na-ion":
+            metal = "Na"
         else:
             metal = COUNTER_METAL_DEFAULT
 
@@ -776,10 +841,13 @@ def _estimate_counter_electrode_mass_mg(diameter_mm=None,
     return mass_mg, metal
 
 
-
-
-def collect_parameters(electrochemical_data, cycler_metadata=None,
-                       answers=None, headless=False, verbose=True):
+def collect_parameters(
+    electrochemical_data,
+    cycler_metadata=None,
+    answers=None,
+    headless=False,
+    verbose=True,
+):
     """
     Ask for each dataset's parameters, pre-filled from the cycler's own file.
 
@@ -803,7 +871,7 @@ def collect_parameters(electrochemical_data, cycler_metadata=None,
     # makes the name local to this whole function anyway, so on the interactive
     # path every raw `input()` call would raise UnboundLocalError before
     # reaching a person.
-    def input(prompt=""):                       # noqa: A001
+    def input(prompt=""):  # noqa: A001
         text = str(prompt).lower().strip()
         pre = _ANSWERS.get(_CURRENT["name"], {})
         for k, v in pre.items():
@@ -824,7 +892,8 @@ def collect_parameters(electrochemical_data, cycler_metadata=None,
             raise ValueError(
                 f"headless run is stuck on {_CURRENT['name']!r}: {prompt!r} "
                 f"rejects a blank answer and has no default. Supply it in "
-                f"`answers`.")
+                f"`answers`."
+            )
         if verbose:
             print(f"{prompt}{reply}   [auto]")
         return reply
@@ -843,13 +912,12 @@ def collect_parameters(electrochemical_data, cycler_metadata=None,
         # captured by a bare "capacity".
         pre = _ANSWERS.get(_CURRENT["name"], {})
         _pl = str(prompt).lower().strip()
-        _cands = [(k, v) for k, v in pre.items()
-                  if _pl.startswith(str(k).lower().strip())]
+        _cands = [
+            (k, v) for k, v in pre.items() if _pl.startswith(str(k).lower().strip())
+        ]
         if not _cands:
-            _cands = [(k, v) for k, v in pre.items()
-                      if str(k).lower().strip() in _pl]
-        hit = (max(_cands, key=lambda kv: len(str(kv[0])))[1]
-               if _cands else None)
+            _cands = [(k, v) for k, v in pre.items() if str(k).lower().strip() in _pl]
+        hit = max(_cands, key=lambda kv: len(str(kv[0])))[1] if _cands else None
         if hit is not None:
             if verbose:
                 print(f"  {prompt}: {hit}   [answered]")
@@ -858,13 +926,12 @@ def collect_parameters(electrochemical_data, cycler_metadata=None,
             if default_value is None:
                 raise ValueError(
                     f"headless run needs an answer for {_CURRENT['name']!r}: "
-                    f"{prompt!r} has no default from the cycler file.")
+                    f"{prompt!r} has no default from the cycler file."
+                )
             if verbose:
                 print(f"  {prompt}: {default_value}   [default accepted]")
-            return (cast_type(default_value) if cast_type is not str
-                    else default_value)
-        return _input_with_default(prompt, default_value, cast_type,
-                                   min_val, source)
+            return cast_type(default_value) if cast_type is not str else default_value
+        return _input_with_default(prompt, default_value, cast_type, min_val, source)
 
     user_parameters = {}
     _last_composition = None  # carries forward between datasets
@@ -897,11 +964,11 @@ def collect_parameters(electrochemical_data, cycler_metadata=None,
         # leaves prompts with no default sitting in a `while True` that
         # rejects a blank answer.
         meta = cycler_metadata.get(name, {}) or {}
-        print(f"\n{_S.HEADER}{'='*60}")
+        print(f"\n{_S.HEADER}{'=' * 60}")
         print(f"  Setting parameters for: {name}")
         if any(v is not None for v in meta.values()):
             print(f"  (Values marked [from file] were read from the cycler)")
-        print(f"{'='*60}{_S.RESET}")
+        print(f"{'=' * 60}{_S.RESET}")
         confirmed = False
         while not confirmed:
             # ----- MATERIAL -----
@@ -925,11 +992,14 @@ def collect_parameters(electrochemical_data, cycler_metadata=None,
             # So this prompt no longer accepts one. `_ask` already refuses a
             # blank when there is no default, carries the previous cell's
             # answer when there is one, and is answerable for a headless run.
-            composition = str(_ask(
-                "Active material composition (e.g., LiCoO2)",
-                _last_composition, cast_type=str,
-                source='previous cell' if _last_composition else None
-            )).strip()
+            composition = str(
+                _ask(
+                    "Active material composition (e.g., LiCoO2)",
+                    _last_composition,
+                    cast_type=str,
+                    source="previous cell" if _last_composition else None,
+                )
+            ).strip()
             # ----- CELL IDENTIFIER -----
             # Which physical cell this is. Previously inferred from the
             # filename at display time, only when two datasets shared a
@@ -940,88 +1010,117 @@ def collect_parameters(electrochemical_data, cycler_metadata=None,
             _cid_suggest = _suggest_cell_id(name, list(electrochemical_data))
             if len(electrochemical_data) > 1:
                 while True:
-                    _cid_in = input(
-                        f"Cell identifier (A, B, 1, 2 ...) "
-                        f"[{_cid_suggest or 'none'}]: ").strip().upper()
+                    _cid_in = (
+                        input(
+                            f"Cell identifier (A, B, 1, 2 ...) "
+                            f"[{_cid_suggest or 'none'}]: "
+                        )
+                        .strip()
+                        .upper()
+                    )
                     cell_id = _cid_in or _cid_suggest
                     if not cell_id:
-                        print(f"  {_S.WARN}Enter an identifier. Without one you "
-                              f"cannot tell which cell a figure came from."
-                              f"{_S.RESET}")
+                        print(
+                            f"  {_S.WARN}Enter an identifier. Without one you "
+                            f"cannot tell which cell a figure came from."
+                            f"{_S.RESET}"
+                        )
                         continue
-                    _clash = [n for n, p in user_parameters.items()
-                              if str(p.get('cell_id', '')).upper() == cell_id]
+                    _clash = [
+                        n
+                        for n, p in user_parameters.items()
+                        if str(p.get("cell_id", "")).upper() == cell_id
+                    ]
                     if _clash:
-                        print(f"  {_S.WARN}'{cell_id}' is already used by "
-                              f"{_clash[0]}.{_S.RESET}")
-                        print(f"  {_S.WARN}Two datasets labelled as the same "
-                              f"physical cell is exactly the ambiguity this "
-                              f"field prevents.{_S.RESET}")
+                        print(
+                            f"  {_S.WARN}'{cell_id}' is already used by "
+                            f"{_clash[0]}.{_S.RESET}"
+                        )
+                        print(
+                            f"  {_S.WARN}Two datasets labelled as the same "
+                            f"physical cell is exactly the ambiguity this "
+                            f"field prevents.{_S.RESET}"
+                        )
                         continue
                     break
             else:
                 cell_id = _cid_suggest
             while True:
                 blend_input = input(
-                    "Electrode blend ratio "
-                    "(e.g., 80/10/10, leave blank for 80/10/10): "
+                    "Electrode blend ratio (e.g., 80/10/10, leave blank for 80/10/10): "
                 )
                 blend = blend_input if blend_input else "80/10/10"
                 try:
-                    blend_values = [float(p) for p in blend.split('/')]
-                    if (len(blend_values) >= 2
-                            and all(v >= 0 for v in blend_values)
-                            and sum(blend_values) > 0):
+                    blend_values = [float(p) for p in blend.split("/")]
+                    if (
+                        len(blend_values) >= 2
+                        and all(v >= 0 for v in blend_values)
+                        and sum(blend_values) > 0
+                    ):
                         break
                     else:
-                        print(f"  {_S.WARN}Need at least 2 components, all non-negative.{_S.RESET}")
+                        print(
+                            f"  {_S.WARN}Need at least 2 components, all non-negative.{_S.RESET}"
+                        )
                 except ValueError:
-                    print(f"  {_S.WARN}Invalid format. Use numbers separated by '/'.{_S.RESET}")
+                    print(
+                        f"  {_S.WARN}Invalid format. Use numbers separated by '/'.{_S.RESET}"
+                    )
             active_material_mass_mg = _ask(
                 "Mass of active material (mg)",
-                meta.get('active_material_mass_mg'),
-                cast_type=float, min_val=0.001,
-                source='file' if meta.get('active_material_mass_mg') else None
+                meta.get("active_material_mass_mg"),
+                cast_type=float,
+                min_val=0.001,
+                source="file" if meta.get("active_material_mass_mg") else None,
             )
             # Carry forward theoretical capacity if composition unchanged.
             # The previous cell's answer wins over the library, because it is
             # what THIS OPERATOR chose for THIS material in THIS run — an
             # override typed once should not have to be typed again.
-            _theo_default = (_last_theoretical_capacity
-                             if (_last_theoretical_capacity is not None
-                                 and _last_composition is not None
-                                 and composition == _last_composition)
-                             else None)
-            _theo_source = 'previous cell' if _theo_default else None
+            _theo_default = (
+                _last_theoretical_capacity
+                if (
+                    _last_theoretical_capacity is not None
+                    and _last_composition is not None
+                    and composition == _last_composition
+                )
+                else None
+            )
+            _theo_source = "previous cell" if _theo_default else None
             _lib_formula = None
             if _theo_default is None:
-                _lib_cap, _lib_formula, _lib_note = \
-                    lookup_specific_capacity(composition)
+                _lib_cap, _lib_formula, _lib_note = lookup_specific_capacity(
+                    composition
+                )
                 if _lib_cap is not None:
                     # PRINT THE STOICHIOMETRY THE NUMBER CAME FROM. A default
                     # is accepted by pressing return, so the assumption behind
                     # it has to be visible at that moment and not in a
                     # manifest read afterwards.
-                    print(f"  {_S.VALUE}Library: {_lib_formula} -> "
-                          f"{_lib_cap} mAh/g{_S.RESET}  ({_lib_note})")
+                    print(
+                        f"  {_S.VALUE}Library: {_lib_formula} -> "
+                        f"{_lib_cap} mAh/g{_S.RESET}  ({_lib_note})"
+                    )
                     _theo_default = _lib_cap
-                    _theo_source = 'library'
+                    _theo_source = "library"
             theoretical_capacity_mAh_g = _ask(
                 "Theoretical capacity (mAh/g)",
                 _theo_default,
-                cast_type=float, min_val=0.001,
-                source=_theo_source
+                cast_type=float,
+                min_val=0.001,
+                source=_theo_source,
             )
             # Provenance, not decoration: a number that came from the library
             # and a number somebody chose are different claims, and only one
             # of them is evidence about this electrode.
-            if (_theo_source == 'library' and _theo_default is not None
-                    and float(theoretical_capacity_mAh_g)
-                    != float(_theo_default)):
-                _theo_source = 'entered (library offered '\
-                               f'{_theo_default})'
+            if (
+                _theo_source == "library"
+                and _theo_default is not None
+                and float(theoretical_capacity_mAh_g) != float(_theo_default)
+            ):
+                _theo_source = f"entered (library offered {_theo_default})"
             elif _theo_source is None:
-                _theo_source = 'entered'
+                _theo_source = "entered"
             _theo_provenance = _theo_source
             _theo_library_formula = _lib_formula
             # ----- ELECTRODE GEOMETRY -----
@@ -1029,8 +1128,9 @@ def collect_parameters(electrochemical_data, cycler_metadata=None,
             electrode_diameter_mm = _ask(
                 "Electrode punch diameter (mm)",
                 default_electrode_diameter_mm,
-                cast_type=float, min_val=0.1,
-                source=None
+                cast_type=float,
+                min_val=0.1,
+                source=None,
             )
             # v1.8: auto-detect electrode type from Neware protocol.
             # After Cell 2 processing, Rest rows are removed and Step is
@@ -1050,22 +1150,24 @@ def collect_parameters(electrochemical_data, cycler_metadata=None,
             _detected_electrode = None
             _first_step = None
             try:
-                if 'Step' in df.columns and not df.empty:
-                    _first_step = str(df['Step'].iloc[0]).strip()
-                    if _first_step == 'Discharge':
+                if "Step" in df.columns and not df.empty:
+                    _first_step = str(df["Step"].iloc[0]).strip()
+                    if _first_step == "Discharge":
                         _detected_electrode = "Negative"
-                    elif _first_step == 'Charge':
+                    elif _first_step == "Charge":
                         _detected_electrode = "Positive"
             except Exception:
                 pass
 
-            _suggested_electrode = (_detected_electrode
-                                    or _last_electrode_type
-                                    or "Positive")
+            _suggested_electrode = (
+                _detected_electrode or _last_electrode_type or "Positive"
+            )
 
             if _detected_electrode is not None:
-                print(f"  Protocol starts with {_first_step} — "
-                      f"suggesting {_detected_electrode} electrode")
+                print(
+                    f"  Protocol starts with {_first_step} — "
+                    f"suggesting {_detected_electrode} electrode"
+                )
 
             _suggest_str = _suggested_electrode
             while True:
@@ -1083,7 +1185,9 @@ def collect_parameters(electrochemical_data, cycler_metadata=None,
                     electrode_type = "Negative"
                     break
                 else:
-                    print(f"  {_S.WARN}Enter 'positive'/'p' or 'negative'/'n'.{_S.RESET}")
+                    print(
+                        f"  {_S.WARN}Enter 'positive'/'p' or 'negative'/'n'.{_S.RESET}"
+                    )
 
             _last_electrode_type = electrode_type
             # ----- PIPELINE-LEVEL: POWER/ENERGY (asked once) -----
@@ -1094,10 +1198,15 @@ def collect_parameters(electrochemical_data, cycler_metadata=None,
                 ).lower()
                 _POWER_ENERGY_GLOBAL = pe_input not in ["no", "n"]
             else:
-                _pe_state = (f"{_S.CONFIRM}ON{_S.RESET}" if _POWER_ENERGY_GLOBAL
-                             else f"{_S.WARN}SKIP{_S.RESET}")
-                print(f"Power/energy (Cell 6c): {_pe_state} "
-                      f"{_S.FILE}(set on first dataset){_S.RESET}")
+                _pe_state = (
+                    f"{_S.CONFIRM}ON{_S.RESET}"
+                    if _POWER_ENERGY_GLOBAL
+                    else f"{_S.WARN}SKIP{_S.RESET}"
+                )
+                print(
+                    f"Power/energy (Cell 6c): {_pe_state} "
+                    f"{_S.FILE}(set on first dataset){_S.RESET}"
+                )
             power_energy_analysis = _POWER_ENERGY_GLOBAL
 
             # ----- PIPELINE-LEVEL: dQ/dV PEAK FITTING (asked once) -----
@@ -1116,25 +1225,34 @@ def collect_parameters(electrochemical_data, cycler_metadata=None,
                 # capacity attribution, having asked once, quietly, twenty
                 # prompts earlier. Answer 'no' for a quick cycling-only pass.
                 while True:
-                    _pk_input = input(
-                        "Run full dQ/dV peak fitting (Cells 8-12)? "
-                        "Slower, and the point of the tool. "
-                        "(yes/no, blank = YES): "
-                    ).strip().lower()
-                    if _pk_input in ('n', 'no'):
+                    _pk_input = (
+                        input(
+                            "Run full dQ/dV peak fitting (Cells 8-12)? "
+                            "Slower, and the point of the tool. "
+                            "(yes/no, blank = YES): "
+                        )
+                        .strip()
+                        .lower()
+                    )
+                    if _pk_input in ("n", "no"):
                         RUN_PEAK_FITTING = False
                         break
-                    if _pk_input in ('', 'y', 'yes'):
+                    if _pk_input in ("", "y", "yes"):
                         RUN_PEAK_FITTING = True
                         break
                     print(f"  {_S.WARN}Enter 'yes' or 'no'.{_S.RESET}")
             else:
                 # Second and subsequent datasets: show the existing choice
                 # for reassurance, without asking again.
-                _pk_state = (f"{_S.CONFIRM}ON{_S.RESET}" if RUN_PEAK_FITTING
-                             else f"{_S.WARN}SKIP{_S.RESET}")
-                print(f"dQ/dV peak fitting (Cells 8-12): {_pk_state} "
-                      f"{_S.FILE}(set on first dataset){_S.RESET}")
+                _pk_state = (
+                    f"{_S.CONFIRM}ON{_S.RESET}"
+                    if RUN_PEAK_FITTING
+                    else f"{_S.WARN}SKIP{_S.RESET}"
+                )
+                print(
+                    f"dQ/dV peak fitting (Cells 8-12): {_pk_state} "
+                    f"{_S.FILE}(set on first dataset){_S.RESET}"
+                )
 
             # ----- CYCLING CONDITIONS -----
             print(f"\n{_S.SECTION}--- Cycling conditions ---{_S.RESET}")
@@ -1158,29 +1276,43 @@ def collect_parameters(electrochemical_data, cycler_metadata=None,
             #
             # Answered here rather than in Cell 6a because every caption
             # between the two would otherwise still be quoting the header.
-            _proto = rate_protocol(df, dict(
-                active_material_mass_mg=active_material_mass_mg,
-                theoretical_capacity_mAh_g=theoretical_capacity_mAh_g))
+            _proto = rate_protocol(
+                df,
+                dict(
+                    active_material_mass_mg=active_material_mass_mg,
+                    theoretical_capacity_mAh_g=theoretical_capacity_mAh_g,
+                ),
+            )
             _rate_meas = None
-            if _proto.get('available') and _proto.get('blocks'):
-                _rate_meas = _proto['blocks'][0].get('c_rate')
-            if _proto.get('is_variable'):
-                print(f"  {_S.VALUE}This cell was cycled at "
-                      f"{_proto['n_blocks']} different rates "
-                      f"({_proto['label']}){_S.RESET} — read from the "
-                      f"recorded current, so you are not asked for one.")
-                for _b in _proto['blocks']:
-                    print(f"      {_b['label']:>6}  cycles "
-                          f"{_b['first_cycle']}-{_b['last_cycle']}")
-                if _proto.get('transition_cycles'):
-                    print(f"      rate-transition cycle(s) in no block: "
-                          + ", ".join(str(c)
-                                      for c in _proto['transition_cycles']))
-                if _proto.get('returns_to_start'):
-                    print(f"      returns to {_proto['blocks'][0]['label']} "
-                          f"at the end — recovery will be reported")
-                charge_rate_c = float(snap_crate(_rate_meas)) if _rate_meas else (
-                    meta.get('c_rate') or 0.1)
+            if _proto.get("available") and _proto.get("blocks"):
+                _rate_meas = _proto["blocks"][0].get("c_rate")
+            if _proto.get("is_variable"):
+                print(
+                    f"  {_S.VALUE}This cell was cycled at "
+                    f"{_proto['n_blocks']} different rates "
+                    f"({_proto['label']}){_S.RESET} — read from the "
+                    f"recorded current, so you are not asked for one."
+                )
+                for _b in _proto["blocks"]:
+                    print(
+                        f"      {_b['label']:>6}  cycles "
+                        f"{_b['first_cycle']}-{_b['last_cycle']}"
+                    )
+                if _proto.get("transition_cycles"):
+                    print(
+                        f"      rate-transition cycle(s) in no block: "
+                        + ", ".join(str(c) for c in _proto["transition_cycles"])
+                    )
+                if _proto.get("returns_to_start"):
+                    print(
+                        f"      returns to {_proto['blocks'][0]['label']} "
+                        f"at the end — recovery will be reported"
+                    )
+                charge_rate_c = (
+                    float(snap_crate(_rate_meas))
+                    if _rate_meas
+                    else (meta.get("c_rate") or 0.1)
+                )
             else:
                 charge_rate_c = _ask(
                     "C-rate",
@@ -1188,11 +1320,18 @@ def collect_parameters(electrochemical_data, cycler_metadata=None,
                     # None when the file does not state a rate, so `.get`'s
                     # default was unreachable and the prompt had no default at
                     # all — which a headless run cannot answer.
-                    (round(float(snap_crate(_rate_meas)), 4)
-                     if _rate_meas else (meta.get('c_rate') or 0.1)),
-                    cast_type=float, min_val=0.001,
-                    source=('measured' if _rate_meas else
-                            ('file' if meta.get('c_rate') else None))
+                    (
+                        round(float(snap_crate(_rate_meas)), 4)
+                        if _rate_meas
+                        else (meta.get("c_rate") or 0.1)
+                    ),
+                    cast_type=float,
+                    min_val=0.001,
+                    source=(
+                        "measured"
+                        if _rate_meas
+                        else ("file" if meta.get("c_rate") else None)
+                    ),
                 )
             # ----- VOLTAGE WINDOW -----
             # The file's 'Volt. upper' and 'Volt. lower' are the channel safety
@@ -1223,50 +1362,63 @@ def collect_parameters(electrochemical_data, cycler_metadata=None,
             _v_meas_lo = _v_meas_hi = None
             _v_source = None
             try:
-                if {'Cycle', 'Voltage'} <= set(df.columns) and not df.empty:
-                    _pc = df.groupby('Cycle')['Voltage'].agg(['min', 'max'])
+                if {"Cycle", "Voltage"} <= set(df.columns) and not df.empty:
+                    _pc = df.groupby("Cycle")["Voltage"].agg(["min", "max"])
                     if len(_pc) >= 3:
-                        _v_meas_lo = round(float(_pc['min'].median()), 2)
-                        _v_meas_hi = round(float(_pc['max'].median()), 2)
-                        _v_source = 'measured from data'
+                        _v_meas_lo = round(float(_pc["min"].median()), 2)
+                        _v_meas_hi = round(float(_pc["max"].median()), 2)
+                        _v_source = "measured from data"
                     elif len(_pc) >= 1:
-                        _v_meas_lo = round(float(_pc['min'].min()), 2)
-                        _v_meas_hi = round(float(_pc['max'].max()), 2)
-                        _v_source = 'observed range (short record)'
+                        _v_meas_lo = round(float(_pc["min"].min()), 2)
+                        _v_meas_hi = round(float(_pc["max"].max()), 2)
+                        _v_source = "observed range (short record)"
             except Exception:
                 pass
 
-            _v_file_lo = meta.get('voltage_lower_V')
-            _v_file_hi = meta.get('voltage_upper_V')
+            _v_file_lo = meta.get("voltage_lower_V")
+            _v_file_hi = meta.get("voltage_upper_V")
 
             if _v_meas_lo is not None:
                 voltage_lower_V, voltage_upper_V = _v_meas_lo, _v_meas_hi
                 voltage_window_source = _v_source
-                if _v_source == 'measured from data':
-                    print(f"  {_S.FILE}Voltage window measured from data: "
-                          f"{voltage_lower_V}--{voltage_upper_V} V{_S.RESET}")
+                if _v_source == "measured from data":
+                    print(
+                        f"  {_S.FILE}Voltage window measured from data: "
+                        f"{voltage_lower_V}--{voltage_upper_V} V{_S.RESET}"
+                    )
                 else:
-                    print(f"  {_S.WARN}Only "
-                          f"{len(_pc)} cycle(s) — too few to measure the "
-                          f"protocol window from the per-cycle medians. Using "
-                          f"the range the cell was OBSERVED to reach, "
-                          f"{voltage_lower_V}--{voltage_upper_V} V: the "
-                          f"protocol window is at least this wide.{_S.RESET}")
-                if (_v_file_lo is not None and _v_file_hi is not None
-                        and (abs(float(_v_file_lo) - voltage_lower_V) > 0.05
-                             or abs(float(_v_file_hi) - voltage_upper_V) > 0.05)):
-                    print(f"  {_S.FILE}(file reports "
-                          f"{_v_file_lo}--{_v_file_hi} V, which are the channel "
-                          f"limits rather than the protocol){_S.RESET}")
+                    print(
+                        f"  {_S.WARN}Only "
+                        f"{len(_pc)} cycle(s) — too few to measure the "
+                        f"protocol window from the per-cycle medians. Using "
+                        f"the range the cell was OBSERVED to reach, "
+                        f"{voltage_lower_V}--{voltage_upper_V} V: the "
+                        f"protocol window is at least this wide.{_S.RESET}"
+                    )
+                if (
+                    _v_file_lo is not None
+                    and _v_file_hi is not None
+                    and (
+                        abs(float(_v_file_lo) - voltage_lower_V) > 0.05
+                        or abs(float(_v_file_hi) - voltage_upper_V) > 0.05
+                    )
+                ):
+                    print(
+                        f"  {_S.FILE}(file reports "
+                        f"{_v_file_lo}--{_v_file_hi} V, which are the channel "
+                        f"limits rather than the protocol){_S.RESET}"
+                    )
             else:
                 voltage_lower_V, voltage_upper_V = _v_file_lo, _v_file_hi
-                voltage_window_source = 'channel limits from file'
+                voltage_window_source = "channel limits from file"
                 if voltage_lower_V is not None:
-                    print(f"  {_S.WARN}Voltage window taken from the file's "
-                          f"channel limits ({voltage_lower_V}--"
-                          f"{voltage_upper_V} V). Too few cycles to measure the "
-                          f"tested window, so this may be wider than the "
-                          f"protocol.{_S.RESET}")
+                    print(
+                        f"  {_S.WARN}Voltage window taken from the file's "
+                        f"channel limits ({voltage_lower_V}--"
+                        f"{voltage_upper_V} V). Too few cycles to measure the "
+                        f"tested window, so this may be wider than the "
+                        f"protocol.{_S.RESET}"
+                    )
             while True:
                 key_cycles_str = input(
                     f"Key cycles to plot "
@@ -1280,8 +1432,7 @@ def collect_parameters(electrochemical_data, cycler_metadata=None,
                     key_cycles = list(default_key_cycles)
                     break
                 try:
-                    key_cycles = [int(c.strip())
-                                  for c in key_cycles_str.split(",")]
+                    key_cycles = [int(c.strip()) for c in key_cycles_str.split(",")]
                     break
                 except ValueError:
                     print(f"  {_S.WARN}Enter comma-separated integers.{_S.RESET}")
@@ -1292,8 +1443,11 @@ def collect_parameters(electrochemical_data, cycler_metadata=None,
             # sees only cycles 1..max_cycle with no other code changes. Blank
             # keeps all cycles. Use this to trim post-failure 'bad' data from a
             # faulty cell once its reliable range is known from the full run.
-            _cyc_hint = (f" (file reports {meta['cycle_count']} cycles)"
-                         if meta.get('cycle_count') else "")
+            _cyc_hint = (
+                f" (file reports {meta['cycle_count']} cycles)"
+                if meta.get("cycle_count")
+                else ""
+            )
             # CARRIED FORWARD, AND OVERRIDABLE — the same shape as the
             # electrolyte question below. Blank keeps what the previous dataset
             # used; a number changes it; 'all' removes the cap for this dataset
@@ -1302,17 +1456,21 @@ def collect_parameters(electrochemical_data, cycler_metadata=None,
             # word that drops it and it is named in the prompt rather than
             # left to be guessed.
             if _MAX_CYCLE_CARRIED is not None:
-                print(f"  Current: {_S.VALUE}cycles 1-{_MAX_CYCLE_CARRIED}"
-                      f"{_S.RESET} {_S.FILE}(carried from the previous "
-                      f"dataset){_S.RESET}")
+                print(
+                    f"  Current: {_S.VALUE}cycles 1-{_MAX_CYCLE_CARRIED}"
+                    f"{_S.RESET} {_S.FILE}(carried from the previous "
+                    f"dataset){_S.RESET}"
+                )
                 _maxcyc_prompt = (
                     f"Maximum cycle to analyse for this dataset{_cyc_hint} "
                     f"— blank keeps {_MAX_CYCLE_CARRIED}, a number changes "
-                    f"it, 'all' removes the cap: ")
+                    f"it, 'all' removes the cap: "
+                )
             else:
                 _maxcyc_prompt = (
                     f"Maximum cycle to analyse for this dataset{_cyc_hint} "
-                    f"(leave blank for all cycles): ")
+                    f"(leave blank for all cycles): "
+                )
             while True:
                 _maxcyc_str = input(_maxcyc_prompt).strip()
                 if not _maxcyc_str:
@@ -1326,20 +1484,27 @@ def collect_parameters(electrochemical_data, cycler_metadata=None,
                     max_cycle = int(_maxcyc_str)
                     if max_cycle >= 1:
                         break
-                    print(f"  {_S.WARN}Enter a cycle number >= 1, "
-                          f"'all' for no cap, or leave blank.{_S.RESET}")
+                    print(
+                        f"  {_S.WARN}Enter a cycle number >= 1, "
+                        f"'all' for no cap, or leave blank.{_S.RESET}"
+                    )
                 except ValueError:
-                    print(f"  {_S.WARN}Enter a whole number, 'all' for no "
-                          f"cap, or leave blank.{_S.RESET}")
+                    print(
+                        f"  {_S.WARN}Enter a whole number, 'all' for no "
+                        f"cap, or leave blank.{_S.RESET}"
+                    )
             # Carry whatever this dataset settled on, including 'all': if the
             # cap is dropped here it stays dropped for the next one, and the
             # prompt goes back to its original form.
             _MAX_CYCLE_CARRIED = max_cycle
             # ----- CELL ASSEMBLY -----
-            print(f"\n{_S.SECTION}--- Cell assembly (for methods section) ---{_S.RESET}")
-            separator_type = input(
-                "Separator type (leave blank for GF/6): "
-            ) or "SLS Select GF/6 glass microfibre (SLS4522)"
+            print(
+                f"\n{_S.SECTION}--- Cell assembly (for methods section) ---{_S.RESET}"
+            )
+            separator_type = (
+                input("Separator type (leave blank for GF/6): ")
+                or "SLS Select GF/6 glass microfibre (SLS4522)"
+            )
             while True:
                 elyte_vol_input = input(
                     "Electrolyte volume in uL (leave blank for 100): "
@@ -1356,8 +1521,10 @@ def collect_parameters(electrochemical_data, cycler_metadata=None,
                     print(f"  {_S.WARN}Please enter a number.{_S.RESET}")
             print(f"\n{_S.SECTION}Electrolyte composition:{_S.RESET}")
             if _ELECTROLYTE_COMP_GLOBAL is not None:
-                print(f"  Current: {_S.VALUE}{_ELECTROLYTE_COMP_GLOBAL}{_S.RESET} "
-                      f"{_S.FILE}(set on first dataset){_S.RESET}")
+                print(
+                    f"  Current: {_S.VALUE}{_ELECTROLYTE_COMP_GLOBAL}{_S.RESET} "
+                    f"{_S.FILE}(set on first dataset){_S.RESET}"
+                )
                 _elyte_override = input(
                     "Press Enter to keep, or enter 1-4 to change: "
                 ).strip()
@@ -1365,16 +1532,16 @@ def collect_parameters(electrochemical_data, cycler_metadata=None,
                     electrolyte_composition = _ELECTROLYTE_COMP_GLOBAL
                 else:
                     elyte_choice = _elyte_override
-                    if elyte_choice == '1':
+                    if elyte_choice == "1":
                         electrolyte_composition = "1M LiPF6 in EC:DMC 1:1 v/v"
-                    elif elyte_choice == '2':
+                    elif elyte_choice == "2":
                         electrolyte_composition = "1M NaPF6 in EC:DMC 1:1 v/v"
-                    elif elyte_choice == '3':
+                    elif elyte_choice == "3":
                         electrolyte_composition = "1M NaPF6 in EC:PC 1:1 v/v"
-                    elif elyte_choice == '4':
-                        electrolyte_composition = input(
-                            "Enter electrolyte composition: "
-                        ) or "Not specified"
+                    elif elyte_choice == "4":
+                        electrolyte_composition = (
+                            input("Enter electrolyte composition: ") or "Not specified"
+                        )
                     else:
                         print(f"  {_S.WARN}Invalid choice, keeping previous.{_S.RESET}")
                         electrolyte_composition = _ELECTROLYTE_COMP_GLOBAL
@@ -1390,19 +1557,19 @@ def collect_parameters(electrochemical_data, cycler_metadata=None,
                     if not elyte_choice:
                         electrolyte_composition = "Not specified"
                         break
-                    elif elyte_choice == '1':
+                    elif elyte_choice == "1":
                         electrolyte_composition = "1M LiPF6 in EC:DMC 1:1 v/v"
                         break
-                    elif elyte_choice == '2':
+                    elif elyte_choice == "2":
                         electrolyte_composition = "1M NaPF6 in EC:DMC 1:1 v/v"
                         break
-                    elif elyte_choice == '3':
+                    elif elyte_choice == "3":
                         electrolyte_composition = "1M NaPF6 in EC:PC 1:1 v/v"
                         break
-                    elif elyte_choice == '4':
-                        electrolyte_composition = input(
-                            "Enter electrolyte composition: "
-                        ) or "Not specified"
+                    elif elyte_choice == "4":
+                        electrolyte_composition = (
+                            input("Enter electrolyte composition: ") or "Not specified"
+                        )
                         break
                     else:
                         print(f"  {_S.WARN}Enter 1, 2, 3, 4, or leave blank.{_S.RESET}")
@@ -1417,27 +1584,38 @@ def collect_parameters(electrochemical_data, cycler_metadata=None,
             # inference itself from the composition and the electrolyte, both
             # of which are known by here.
             _ce_metal, _ce_metal_src = counter_electrode_metal(
-                composition, electrolyte=electrolyte_composition)
+                composition, electrolyte=electrolyte_composition
+            )
             if _ce_metal_src in ("library", "assumed"):
-                _why = ("from the composition library — a lithium material can "
-                        "still be cycled in a sodium cell, so confirm it"
-                        if _ce_metal_src == "library" else
-                        "a guess: neither the electrolyte nor the composition "
-                        "names a working ion")
-                print(f"  {_S.WARN}Counter electrode metal not established "
-                      f"({_why}).{_S.RESET}")
+                _why = (
+                    "from the composition library — a lithium material can "
+                    "still be cycled in a sodium cell, so confirm it"
+                    if _ce_metal_src == "library"
+                    else "a guess: neither the electrolyte nor the composition "
+                    "names a working ion"
+                )
+                print(
+                    f"  {_S.WARN}Counter electrode metal not established "
+                    f"({_why}).{_S.RESET}"
+                )
                 while True:
-                    _m = input(f"Counter electrode metal (Li or Na) "
-                               f"[{_ce_metal}]: ").strip().title()
+                    _m = (
+                        input(f"Counter electrode metal (Li or Na) [{_ce_metal}]: ")
+                        .strip()
+                        .title()
+                    )
                     if not _m:
-                        _ce_metal_src = ("library" if _ce_metal_src == "library"
-                                         else "assumed")
+                        _ce_metal_src = (
+                            "library" if _ce_metal_src == "library" else "assumed"
+                        )
                         break
                     if _m in _COUNTER_METAL_DENSITY:
                         _ce_metal, _ce_metal_src = _m, "stated"
                         break
-                    print(f"  {_S.WARN}Enter Li or Na, or leave blank for "
-                          f"{_ce_metal}.{_S.RESET}")
+                    print(
+                        f"  {_S.WARN}Enter Li or Na, or leave blank for "
+                        f"{_ce_metal}.{_S.RESET}"
+                    )
             while True:
                 ce_input = input(
                     "Counter electrode mass in mg "
@@ -1457,12 +1635,18 @@ def collect_parameters(electrochemical_data, cycler_metadata=None,
                     print(f"  {_S.WARN}Please enter a number.{_S.RESET}")
             # ----- OUTPUT PREFERENCES -----
             print(f"\n{_S.SECTION}--- Output preferences ---{_S.RESET}")
-            print(f"Recommended colour palettes "
-                  f"{_S.FILE}(all are valid matplotlib colormaps){_S.RESET}:")
+            print(
+                f"Recommended colour palettes "
+                f"{_S.FILE}(all are valid matplotlib colormaps){_S.RESET}:"
+            )
             for i, p in enumerate(recommended_palettes):
-                print(f"  {i+1:>2}. {p}")
-            print(f"\n  {_S.WARN}Note: seaborn-only names (bright, deep, dark, hls, husl,")
-            print(f"  Greys_d, etc.) are not valid here — they will crash at Cell 5.{_S.RESET}")
+                print(f"  {i + 1:>2}. {p}")
+            print(
+                f"\n  {_S.WARN}Note: seaborn-only names (bright, deep, dark, hls, husl,"
+            )
+            print(
+                f"  Greys_d, etc.) are not valid here — they will crash at Cell 5.{_S.RESET}"
+            )
             while True:
                 palette_choice = input(
                     f"\nEnter number or colormap name "
@@ -1476,10 +1660,14 @@ def collect_parameters(electrochemical_data, cycler_metadata=None,
                     idx = int(palette_choice) - 1
                     if 0 <= idx < len(recommended_palettes):
                         colour_palette = recommended_palettes[idx]
-                        print(f"  {_S.CONFIRM}Colour palette: {colour_palette} ✓{_S.RESET}")
+                        print(
+                            f"  {_S.CONFIRM}Colour palette: {colour_palette} ✓{_S.RESET}"
+                        )
                         break
-                    print(f"  {_S.WARN}Enter a number between 1 and "
-                          f"{len(recommended_palettes)}.{_S.RESET}")
+                    print(
+                        f"  {_S.WARN}Enter a number between 1 and "
+                        f"{len(recommended_palettes)}.{_S.RESET}"
+                    )
                     continue
                 except ValueError:
                     pass
@@ -1488,16 +1676,27 @@ def collect_parameters(electrochemical_data, cycler_metadata=None,
                     print(f"  {_S.CONFIRM}Colour palette: {colour_palette} ✓{_S.RESET}")
                     break
                 else:
-                    _suggestions = sorted([
-                        c for c in _VALID_CMAPS
-                        if palette_choice.lower().replace('_d', '').replace('_r', '')
-                        in c.lower()
-                    ])[:6]
-                    print(f"  {_S.WARN}✗ '{palette_choice}' is not a valid matplotlib colormap.{_S.RESET}")
+                    _suggestions = sorted(
+                        [
+                            c
+                            for c in _VALID_CMAPS
+                            if palette_choice.lower()
+                            .replace("_d", "")
+                            .replace("_r", "")
+                            in c.lower()
+                        ]
+                    )[:6]
+                    print(
+                        f"  {_S.WARN}✗ '{palette_choice}' is not a valid matplotlib colormap.{_S.RESET}"
+                    )
                     if _suggestions:
-                        print(f"    Did you mean: {_S.VALUE}{', '.join(_suggestions)}{_S.RESET}?")
+                        print(
+                            f"    Did you mean: {_S.VALUE}{', '.join(_suggestions)}{_S.RESET}?"
+                        )
                     else:
-                        print(f"    Check spelling, or choose a number from the list above.")
+                        print(
+                            f"    Check spelling, or choose a number from the list above."
+                        )
             if _FILE_FORMAT_GLOBAL is None:
                 while True:
                     file_format = input(
@@ -1510,8 +1709,10 @@ def collect_parameters(electrochemical_data, cycler_metadata=None,
                     print(f"  {_S.WARN}Enter 'png' or 'tiff'.{_S.RESET}")
             else:
                 file_format = _FILE_FORMAT_GLOBAL
-                print(f"File format: {_S.VALUE}{file_format}{_S.RESET} "
-                      f"{_S.FILE}(set on first dataset){_S.RESET}")
+                print(
+                    f"File format: {_S.VALUE}{file_format}{_S.RESET} "
+                    f"{_S.FILE}(set on first dataset){_S.RESET}"
+                )
             # =====================================================================
             # C. COMPUTED VALUES
             # =====================================================================
@@ -1523,18 +1724,18 @@ def collect_parameters(electrochemical_data, cycler_metadata=None,
             total_electrode_coating_mg = active_material_mass_mg / active_fraction
             active_loading_mg_cm2 = active_material_mass_mg / electrode_area_cm2
             total_loading_mg_cm2 = total_electrode_coating_mg / electrode_area_cm2
-            theoretical_capacity_mAh = (active_material_mass_g *
-                                        theoretical_capacity_mAh_g)
-            theoretical_charge_current_mA = (charge_rate_c *
-                                             theoretical_capacity_mAh)
-            theoretical_charge_rate_mAh_g = (theoretical_charge_current_mA /
-                                             active_material_mass_g)
+            theoretical_capacity_mAh = (
+                active_material_mass_g * theoretical_capacity_mAh_g
+            )
+            theoretical_charge_current_mA = charge_rate_c * theoretical_capacity_mAh
+            theoretical_charge_rate_mAh_g = (
+                theoretical_charge_current_mA / active_material_mass_g
+            )
 
             # Infer battery chemistry from electrolyte and composition (v1.7.2)
             # Used by Cell 6c for areal capacity benchmarks and Cell 14 NAMCC
             # for counter electrode metal selection.
-            battery_chemistry = infer_chemistry(composition,
-                                                electrolyte_composition)
+            battery_chemistry = infer_chemistry(composition, electrolyte_composition)
             # =====================================================================
             # BUILD PARAMETERS DICTIONARY
             # =====================================================================
@@ -1542,7 +1743,8 @@ def collect_parameters(electrochemical_data, cycler_metadata=None,
             # "97.6 mg of sodium" is a different claim from "97.6 mg", and
             # the declarative path already recorded it.
             _ce_est_mg, _ce_metal = _estimate_counter_electrode_mass_mg(
-                battery_chemistry=battery_chemistry, metal=_ce_metal)
+                battery_chemistry=battery_chemistry, metal=_ce_metal
+            )
 
             sample_parameters = {
                 "composition": composition,
@@ -1557,8 +1759,7 @@ def collect_parameters(electrochemical_data, cycler_metadata=None,
                 # Its ABSENCE here — the declarative path has always set it —
                 # meant an operator who answered "negative" still got figures
                 # and CSV columns labelled Charge/Discharge.
-                "anode_labels_swapped": (str(electrode_type).lower()
-                                         == "negative"),
+                "anode_labels_swapped": (str(electrode_type).lower() == "negative"),
                 "electrode_diameter_mm": electrode_diameter_mm,
                 "electrode_area_cm2": electrode_area_cm2,
                 "active_fraction": active_fraction,
@@ -1580,17 +1781,19 @@ def collect_parameters(electrochemical_data, cycler_metadata=None,
                 "separator_type": separator_type,
                 "electrolyte_volume_uL": electrolyte_volume_uL,
                 "electrolyte_composition": electrolyte_composition,
-                "counter_electrode_mass_mg": (counter_electrode_mass_mg
-                                              if counter_electrode_measured
-                                              else _ce_est_mg),
+                "counter_electrode_mass_mg": (
+                    counter_electrode_mass_mg
+                    if counter_electrode_measured
+                    else _ce_est_mg
+                ),
                 "counter_electrode_metal": _ce_metal,
                 "counter_electrode_metal_source": _ce_metal_src,
                 "counter_electrode_measured": counter_electrode_measured,
                 "battery_chemistry": battery_chemistry,
-                "barcode": meta.get('barcode'),
-                "test_start_date": meta.get('test_start_date'),
-                "charge_current_A_from_file": meta.get('charge_current_A'),
-                "discharge_current_A_from_file": meta.get('discharge_current_A'),
+                "barcode": meta.get("barcode"),
+                "test_start_date": meta.get("test_start_date"),
+                "charge_current_A_from_file": meta.get("charge_current_A"),
+                "discharge_current_A_from_file": meta.get("discharge_current_A"),
                 "colour_palette": colour_palette,
                 "file_format": file_format,
                 # The analysis knobs, from the one table. See
@@ -1600,27 +1803,35 @@ def collect_parameters(electrochemical_data, cycler_metadata=None,
             # =====================================================================
             # REVIEW
             # =====================================================================
-            mass_src = f" {_S.FILE}[from file]{_S.RESET}" if meta.get('active_material_mass_mg') else ""
+            mass_src = (
+                f" {_S.FILE}[from file]{_S.RESET}"
+                if meta.get("active_material_mass_mg")
+                else ""
+            )
             # SAY WHERE THE NUMBER CAME FROM, not where a number was
             # available. Marking a measured rate "[from file]" credits the
             # header for an answer the current gave.
-            if _proto.get('is_variable'):
-                rate_src = (f" {_S.FILE}[reference block of "
-                            f"{_proto['n_blocks']}; this run used "
-                            f"{_proto['label']}]{_S.RESET}")
+            if _proto.get("is_variable"):
+                rate_src = (
+                    f" {_S.FILE}[reference block of "
+                    f"{_proto['n_blocks']}; this run used "
+                    f"{_proto['label']}]{_S.RESET}"
+                )
             elif _rate_meas:
                 rate_src = f" {_S.FILE}[measured from the current]{_S.RESET}"
-            elif meta.get('c_rate'):
+            elif meta.get("c_rate"):
                 rate_src = f" {_S.FILE}[from file]{_S.RESET}"
             else:
                 rate_src = ""
-            print(f"\n{_S.HEADER}{'='*60}")
+            print(f"\n{_S.HEADER}{'=' * 60}")
             print(f"  Review parameters for: {name}")
-            print(f"{'='*60}{_S.RESET}")
+            print(f"{'=' * 60}{_S.RESET}")
             print(f"\n{_S.SECTION}  Material:{_S.RESET}")
             print(f"    Composition:          {_S.VALUE}{composition}{_S.RESET}")
-            print(f"    Cell identifier:      {_S.VALUE}"
-                  f"{cell_id or '(not recorded)'}{_S.RESET}")
+            print(
+                f"    Cell identifier:      {_S.VALUE}"
+                f"{cell_id or '(not recorded)'}{_S.RESET}"
+            )
             print(f"    Battery chemistry:    {_S.VALUE}{battery_chemistry}{_S.RESET}")
             # WHAT THE FIGURES WILL CALL THE HALF-CYCLES, said here where the
             # answer can still be changed. A negative electrode names the
@@ -1632,76 +1843,121 @@ def collect_parameters(electrochemical_data, cycler_metadata=None,
             # says what to do about it.
             if str(electrode_type).lower().startswith("neg"):
                 _ci, _co = half_cycle_labels(
-                    dict(anode_labels_swapped=True,
-                         counter_electrode_metal=_ce_metal,
-                         counter_electrode_metal_source=_ce_metal_src,
-                         battery_chemistry=battery_chemistry))
+                    dict(
+                        anode_labels_swapped=True,
+                        counter_electrode_metal=_ce_metal,
+                        counter_electrode_metal_source=_ce_metal_src,
+                        battery_chemistry=battery_chemistry,
+                    )
+                )
                 if _ci == "Charge":
-                    print(f"    Half-cycle labels:    {_S.WARN}Charge / "
-                          f"Discharge{_S.RESET}")
-                    print(f"      {_S.WARN}The working ion is not "
-                          f"established, so the figures will not name the "
-                          f"process. Give the electrolyte, or a formula "
-                          f"rather than an abbreviation, or state the "
-                          f"counter electrode metal.{_S.RESET}")
+                    print(
+                        f"    Half-cycle labels:    {_S.WARN}Charge / "
+                        f"Discharge{_S.RESET}"
+                    )
+                    print(
+                        f"      {_S.WARN}The working ion is not "
+                        f"established, so the figures will not name the "
+                        f"process. Give the electrolyte, or a formula "
+                        f"rather than an abbreviation, or state the "
+                        f"counter electrode metal.{_S.RESET}"
+                    )
                 else:
-                    print(f"    Half-cycle labels:    {_S.VALUE}{_ci} / "
-                          f"{_co}{_S.RESET} (working ion "
-                          f"{_ce_metal}, {_ce_metal_src})")
-            print(f"    Theoretical capacity: {_S.VALUE}{theoretical_capacity_mAh_g:.1f} mAh/g{_S.RESET}")
+                    print(
+                        f"    Half-cycle labels:    {_S.VALUE}{_ci} / "
+                        f"{_co}{_S.RESET} (working ion "
+                        f"{_ce_metal}, {_ce_metal_src})"
+                    )
+            print(
+                f"    Theoretical capacity: {_S.VALUE}{theoretical_capacity_mAh_g:.1f} mAh/g{_S.RESET}"
+            )
             print(f"    Electrode type:       {_S.VALUE}{electrode_type}{_S.RESET}")
             print(f"\n{_S.SECTION}  Electrode:{_S.RESET}")
-            print(f"    Active mass:          {_S.VALUE}{active_material_mass_mg:.2f} mg{_S.RESET}{mass_src}")
-            print(f"    Blend:                {_S.VALUE}{blend} ({active_fraction*100:.1f}% active){_S.RESET}")
-            print(f"    Punch diameter:       {_S.VALUE}{electrode_diameter_mm:.1f} mm "
-                  f"(area = {electrode_area_cm2:.3f} cm2){_S.RESET}")
-            print(f"    Active loading:       {_S.VALUE}{active_loading_mg_cm2:.2f} mg/cm2{_S.RESET}")
-            print(f"    Total loading:        {_S.VALUE}{total_loading_mg_cm2:.2f} mg/cm2{_S.RESET}")
+            print(
+                f"    Active mass:          {_S.VALUE}{active_material_mass_mg:.2f} mg{_S.RESET}{mass_src}"
+            )
+            print(
+                f"    Blend:                {_S.VALUE}{blend} ({active_fraction * 100:.1f}% active){_S.RESET}"
+            )
+            print(
+                f"    Punch diameter:       {_S.VALUE}{electrode_diameter_mm:.1f} mm "
+                f"(area = {electrode_area_cm2:.3f} cm2){_S.RESET}"
+            )
+            print(
+                f"    Active loading:       {_S.VALUE}{active_loading_mg_cm2:.2f} mg/cm2{_S.RESET}"
+            )
+            print(
+                f"    Total loading:        {_S.VALUE}{total_loading_mg_cm2:.2f} mg/cm2{_S.RESET}"
+            )
             print(f"\n{_S.SECTION}  Cycling:{_S.RESET}")
-            print(f"    C-rate:               {_S.VALUE}{charge_rate_c:.2f} C{_S.RESET}{rate_src}")
-            print(f"    Theoretical current:  {_S.VALUE}{theoretical_charge_current_mA:.3f} mA{_S.RESET}")
+            print(
+                f"    C-rate:               {_S.VALUE}{charge_rate_c:.2f} C{_S.RESET}{rate_src}"
+            )
+            print(
+                f"    Theoretical current:  {_S.VALUE}{theoretical_charge_current_mA:.3f} mA{_S.RESET}"
+            )
             # The window BEING STORED, not the file's. The file's figures
             # are channel safety limits — an LTO cell cycled 1.2-2.5 V
             # reports 0-3.25 V — and the code above deliberately prefers the
             # measured window. Showing the file's under "are these correct?"
             # asked the operator to confirm a number that was not being used.
             if voltage_lower_V is not None and voltage_upper_V is not None:
-                print(f"    Voltage window:       {_S.VALUE}"
-                      f"{voltage_lower_V:.3f}--{voltage_upper_V:.3f} V"
-                      f"{_S.RESET} {_S.FILE}[{voltage_window_source}]"
-                      f"{_S.RESET}")
+                print(
+                    f"    Voltage window:       {_S.VALUE}"
+                    f"{voltage_lower_V:.3f}--{voltage_upper_V:.3f} V"
+                    f"{_S.RESET} {_S.FILE}[{voltage_window_source}]"
+                    f"{_S.RESET}"
+                )
             print(f"    Key cycles:           {_S.VALUE}{key_cycles}{_S.RESET}")
             if max_cycle is not None:
-                print(f"    Cycle cut-off:        {_S.VALUE}cycles 1-{max_cycle} "
-                      f"(later cycles removed){_S.RESET}")
+                print(
+                    f"    Cycle cut-off:        {_S.VALUE}cycles 1-{max_cycle} "
+                    f"(later cycles removed){_S.RESET}"
+                )
             else:
-                print(f"    Cycle cut-off:        {_S.VALUE}none "
-                      f"(all cycles){_S.RESET}")
-            if meta.get('charge_current_A') is not None:
-                file_current_mA = meta['charge_current_A'] * 1000
+                print(
+                    f"    Cycle cut-off:        {_S.VALUE}none (all cycles){_S.RESET}"
+                )
+            if meta.get("charge_current_A") is not None:
+                file_current_mA = meta["charge_current_A"] * 1000
                 calc_current_mA = theoretical_charge_current_mA
-                pct_diff = (abs(file_current_mA - calc_current_mA) /
-                            max(file_current_mA, 1e-9) * 100)
+                pct_diff = (
+                    abs(file_current_mA - calc_current_mA)
+                    / max(file_current_mA, 1e-9)
+                    * 100
+                )
                 if pct_diff > 5:
-                    print(f"    {_S.WARN}WARNING: Current mismatch: calculated "
-                          f"{calc_current_mA:.4f} mA vs file "
-                          f"{file_current_mA:.4f} mA "
-                          f"({pct_diff:.0f}% difference)")
-                    print(f"      Check active mass and theoretical capacity.{_S.RESET}")
+                    print(
+                        f"    {_S.WARN}WARNING: Current mismatch: calculated "
+                        f"{calc_current_mA:.4f} mA vs file "
+                        f"{file_current_mA:.4f} mA "
+                        f"({pct_diff:.0f}% difference)"
+                    )
+                    print(
+                        f"      Check active mass and theoretical capacity.{_S.RESET}"
+                    )
                 else:
-                    print(f"    {_S.CONFIRM}Current matches file: "
-                          f"{file_current_mA:.4f} mA ✓{_S.RESET}")
+                    print(
+                        f"    {_S.CONFIRM}Current matches file: "
+                        f"{file_current_mA:.4f} mA ✓{_S.RESET}"
+                    )
             print(f"\n{_S.SECTION}  Cell assembly:{_S.RESET}")
             print(f"    Separator:            {_S.VALUE}{separator_type}{_S.RESET}")
             if electrolyte_volume_uL is not None:
-                print(f"    Electrolyte:          {_S.VALUE}{electrolyte_composition} "
-                      f"({electrolyte_volume_uL:.0f} uL){_S.RESET}")
+                print(
+                    f"    Electrolyte:          {_S.VALUE}{electrolyte_composition} "
+                    f"({electrolyte_volume_uL:.0f} uL){_S.RESET}"
+                )
             else:
-                print(f"    Electrolyte:          {_S.VALUE}{electrolyte_composition}{_S.RESET}")
+                print(
+                    f"    Electrolyte:          {_S.VALUE}{electrolyte_composition}{_S.RESET}"
+                )
             if counter_electrode_measured:
-                print(f"    Counter electrode:    {_S.VALUE}"
-                      f"{counter_electrode_mass_mg:.1f} mg "
-                      f"(weighed){_S.RESET}")
+                print(
+                    f"    Counter electrode:    {_S.VALUE}"
+                    f"{counter_electrode_mass_mg:.1f} mg "
+                    f"(weighed){_S.RESET}"
+                )
             else:
                 # THE SAME METAL THE PARAMETERS RECORD. This line used to
                 # recompute the estimate without it, so a cell whose counter
@@ -1709,46 +1965,64 @@ def collect_parameters(electrochemical_data, cycler_metadata=None,
                 # metal)" — the sodium figure — while the stored parameter
                 # said Li. Two call sites, one of them not told the answer.
                 _est_ce, _est_metal = _estimate_counter_electrode_mass_mg(
-                    battery_chemistry=battery_chemistry, metal=_ce_metal)
-                _src_word = {"stated": "you said so",
-                             "chemistry": "from the electrolyte / formula",
-                             "library": "from the composition library",
-                             "assumed": "ASSUMED"}.get(_ce_metal_src, "")
-                print(f"    Counter electrode:    {_S.VALUE}"
-                      f"~{_est_ce:.0f} mg ({_est_metal} metal, "
-                      f"{_DEFAULT_COUNTER_DIAMETER_MM:.0f} mm x "
-                      f"{_DEFAULT_COUNTER_THICKNESS_MM:.1f} mm, "
-                      f"estimated){_S.RESET}"
-                      + (f" {_S.FILE}[{_src_word}]{_S.RESET}"
-                         if _src_word else ""))
+                    battery_chemistry=battery_chemistry, metal=_ce_metal
+                )
+                _src_word = {
+                    "stated": "you said so",
+                    "chemistry": "from the electrolyte / formula",
+                    "library": "from the composition library",
+                    "assumed": "ASSUMED",
+                }.get(_ce_metal_src, "")
+                print(
+                    f"    Counter electrode:    {_S.VALUE}"
+                    f"~{_est_ce:.0f} mg ({_est_metal} metal, "
+                    f"{_DEFAULT_COUNTER_DIAMETER_MM:.0f} mm x "
+                    f"{_DEFAULT_COUNTER_THICKNESS_MM:.1f} mm, "
+                    f"estimated){_S.RESET}"
+                    + (f" {_S.FILE}[{_src_word}]{_S.RESET}" if _src_word else "")
+                )
             print(f"\n{_S.SECTION}  Analysis:{_S.RESET}")
-            pe_str = f"{_S.CONFIRM}ON{_S.RESET}" if power_energy_analysis else f"{_S.WARN}SKIP{_S.RESET}"
-            pk_str = f"{_S.CONFIRM}ON{_S.RESET}" if RUN_PEAK_FITTING else f"{_S.WARN}SKIP{_S.RESET}"
+            pe_str = (
+                f"{_S.CONFIRM}ON{_S.RESET}"
+                if power_energy_analysis
+                else f"{_S.WARN}SKIP{_S.RESET}"
+            )
+            pk_str = (
+                f"{_S.CONFIRM}ON{_S.RESET}"
+                if RUN_PEAK_FITTING
+                else f"{_S.WARN}SKIP{_S.RESET}"
+            )
             print(f"    Power/energy (Cell 6c):           {pe_str}")
             print(f"    dQ/dV curves (Cell 7):            {_S.CONFIRM}ON{_S.RESET}")
             print(f"    dQ/dV peak fitting (Cells 8-12):  {pk_str}")
             # dQ/dV preprocessing summary
-            _sw = sample_parameters['smoothing_window']
-            _sr = sample_parameters['spike_removal']
-            _st = sample_parameters['spike_threshold_multiplier']
-            _auto_count = sum(1 for v in [_sw, _sr, _st] if v == 'auto')
+            _sw = sample_parameters["smoothing_window"]
+            _sr = sample_parameters["spike_removal"]
+            _st = sample_parameters["spike_threshold_multiplier"]
+            _auto_count = sum(1 for v in [_sw, _sr, _st] if v == "auto")
             if _auto_count == 3:
-                print(f"    dQ/dV preprocessing:               "
-                      f"{_S.CONFIRM}AUTO{_S.RESET} "
-                      f"(adapts to material type)")
+                print(
+                    f"    dQ/dV preprocessing:               "
+                    f"{_S.CONFIRM}AUTO{_S.RESET} "
+                    f"(adapts to material type)"
+                )
             elif _auto_count > 0:
-                print(f"    dQ/dV preprocessing:               "
-                      f"{_S.VALUE}MIXED{_S.RESET} "
-                      f"({_auto_count} auto, {3-_auto_count} manual)")
+                print(
+                    f"    dQ/dV preprocessing:               "
+                    f"{_S.VALUE}MIXED{_S.RESET} "
+                    f"({_auto_count} auto, {3 - _auto_count} manual)"
+                )
             else:
-                print(f"    dQ/dV preprocessing:               "
-                      f"{_S.VALUE}MANUAL{_S.RESET} "
-                      f"(window={_sw}, spike={_sr}, "
-                      f"threshold={_st})")
+                print(
+                    f"    dQ/dV preprocessing:               "
+                    f"{_S.VALUE}MANUAL{_S.RESET} "
+                    f"(window={_sw}, spike={_sr}, "
+                    f"threshold={_st})"
+                )
             print(f"\n{_S.SECTION}  Output:{_S.RESET}")
             print(f"    Palette:              {_S.VALUE}{colour_palette}{_S.RESET}")
             print(f"    File format:          {_S.VALUE}{file_format}{_S.RESET}")
-            print(f"\n{_S.HEADER}{'='*60}{_S.RESET}")
+            print(f"\n{_S.HEADER}{'=' * 60}{_S.RESET}")
             while True:
                 confirmation = input(
                     "\nAre these parameters correct? (yes/no): "
@@ -1769,36 +2043,45 @@ def collect_parameters(electrochemical_data, cycler_metadata=None,
     # =============================================================================
     # FINAL SUMMARY
     # =============================================================================
-    print(f"\n{_S.HEADER}{'='*60}")
+    print(f"\n{_S.HEADER}{'=' * 60}")
     print(f"  Parameters set for {len(user_parameters)} dataset(s)")
-    print(f"{'='*60}{_S.RESET}")
+    print(f"{'=' * 60}{_S.RESET}")
     for name, params in user_parameters.items():
         display = _get_display_name(name, params, user_parameters)
-        mass    = params['active_material_mass_mg']
-        loading = params['active_loading_mg_cm2']
-        rate    = params['charge_rate_c']
-        pe_flag = (f"{_S.CONFIRM}ON{_S.RESET}"
-                   if params.get('power_energy_analysis', True)
-                   else f"{_S.WARN}SKIP{_S.RESET}")
+        mass = params["active_material_mass_mg"]
+        loading = params["active_loading_mg_cm2"]
+        rate = params["charge_rate_c"]
+        pe_flag = (
+            f"{_S.CONFIRM}ON{_S.RESET}"
+            if params.get("power_energy_analysis", True)
+            else f"{_S.WARN}SKIP{_S.RESET}"
+        )
         print(f"  {_S.VALUE}{display}{_S.RESET}")
-        print(f"    {mass:.2f} mg active | "
-              f"{loading:.2f} mg/cm2 | "
-              f"{rate:.2f} C | "
-              f"P/E: {pe_flag}")
+        print(
+            f"    {mass:.2f} mg active | "
+            f"{loading:.2f} mg/cm2 | "
+            f"{rate:.2f} C | "
+            f"P/E: {pe_flag}"
+        )
 
     print(f"\n{_S.SECTION}  Pipeline-level:{_S.RESET}")
-    pk_flag = (f"{_S.CONFIRM}ON{_S.RESET}" if RUN_PEAK_FITTING
-               else f"{_S.WARN}SKIP{_S.RESET}")
+    pk_flag = (
+        f"{_S.CONFIRM}ON{_S.RESET}" if RUN_PEAK_FITTING else f"{_S.WARN}SKIP{_S.RESET}"
+    )
     print(f"    dQ/dV peak fitting (Cells 8-12):  {pk_flag}")
     if not RUN_PEAK_FITTING:
         print(f"    {_S.FILE}(Cell 7 still runs. To enable fitting later,")
         print(f"     set RUN_PEAK_FITTING = True above and re-run Cell 3.){_S.RESET}")
 
-    print(f"{_S.HEADER}{'='*60}{_S.RESET}")
-    print(f"\n{_S.SECTION}  Helper functions available for all downstream cells:{_S.RESET}")
+    print(f"{_S.HEADER}{'=' * 60}{_S.RESET}")
+    print(
+        f"\n{_S.SECTION}  Helper functions available for all downstream cells:{_S.RESET}"
+    )
     print(f"    _get_display_name(name, params, user_parameters)")
     print(f"    _force_integer_cycles(ax)")
-    print(f"    _skip_module(module_name)  {_S.FILE}— used by Modules 3-8 guards{_S.RESET}")
+    print(
+        f"    _skip_module(module_name)  {_S.FILE}— used by Modules 3-8 guards{_S.RESET}"
+    )
 
     # =============================================================================
     # CYCLE TRUNCATION  (v1.8.5)
@@ -1814,17 +2097,20 @@ def collect_parameters(electrochemical_data, cycler_metadata=None,
     # `electrochemical_data`, which the notebook then rebuilt from the
     # untruncated Dataset two lines later — so the answer was collected,
     # applied, discarded, and reported as done.
-    _all_cuts = {n: user_parameters.get(n, {}).get('max_cycle')
-                 for n in electrochemical_data}
+    _all_cuts = {
+        n: user_parameters.get(n, {}).get("max_cycle") for n in electrochemical_data
+    }
     _cuts = {n: c for n, c in _all_cuts.items() if c}
     if _cuts:
-        print(f"\n{_S.HEADER}{'='*60}")
+        print(f"\n{_S.HEADER}{'=' * 60}")
         print(f"  Cycle cut-offs recorded")
-        print(f"{'='*60}{_S.RESET}")
+        print(f"{'=' * 60}{_S.RESET}")
         for n, c in _cuts.items():
-            print(f"  {_S.VALUE}"
-                  f"{_get_display_name(n, user_parameters[n], user_parameters)}"
-                  f"{_S.RESET}: cycles above {c} will be excluded")
+            print(
+                f"  {_S.VALUE}"
+                f"{_get_display_name(n, user_parameters[n], user_parameters)}"
+                f"{_S.RESET}: cycles above {c} will be excluded"
+            )
         # DO THEY AGREE? Datasets analysed together are compared with each
         # other — the comparative capacity, retention and fade figures put
         # them on one axis. Different cut-offs there mean those figures span
@@ -1833,16 +2119,22 @@ def collect_parameters(electrochemical_data, cycler_metadata=None,
         # here rather than left to be noticed.
         if len(_all_cuts) > 1 and len(set(_all_cuts.values())) > 1:
             _uncapped = [n for n, c in _all_cuts.items() if not c]
-            print(f"\n  {_S.WARN}The cut-offs are not the same for every "
-                  f"dataset.{_S.RESET}")
+            print(
+                f"\n  {_S.WARN}The cut-offs are not the same for every "
+                f"dataset.{_S.RESET}"
+            )
             if _uncapped:
-                print(f"  {_S.FILE}No cap on: "
-                      f"{', '.join(_get_display_name(n, user_parameters[n], user_parameters) for n in _uncapped)}"
-                      f"{_S.RESET}")
-            print(f"  Cells 6b and 6c draw these on shared axes, so those "
-                  f"figures will compare different cycle ranges. Deliberate "
-                  f"for a cell that died early; otherwise re-run this cell.")
-        print(f"{_S.HEADER}{'='*60}{_S.RESET}")
+                print(
+                    f"  {_S.FILE}No cap on: "
+                    f"{', '.join(_get_display_name(n, user_parameters[n], user_parameters) for n in _uncapped)}"
+                    f"{_S.RESET}"
+                )
+            print(
+                f"  Cells 6b and 6c draw these on shared axes, so those "
+                f"figures will compare different cycle ranges. Deliberate "
+                f"for a cell that died early; otherwise re-run this cell."
+            )
+        print(f"{_S.HEADER}{'=' * 60}{_S.RESET}")
     return user_parameters, RUN_PEAK_FITTING
 
 
@@ -1894,38 +2186,48 @@ def parameters_from_dict(specs, cycler_metadata=None, verbose=True):
         # required — it is what the lookup is made from.
         _lib_formula = None
         if spec.get("theoretical_capacity_mAh_g") in (None, ""):
-            _lib_cap, _lib_formula, _lib_note = \
-                lookup_specific_capacity(spec.get("composition"))
+            _lib_cap, _lib_formula, _lib_note = lookup_specific_capacity(
+                spec.get("composition")
+            )
             if _lib_cap is not None:
                 spec["theoretical_capacity_mAh_g"] = _lib_cap
                 spec.setdefault("theoretical_capacity_source", "library")
                 if verbose:
-                    print(f"  {name}: theoretical capacity {_lib_cap} mAh/g "
-                          f"from the library ({_lib_formula}, {_lib_note})")
+                    print(
+                        f"  {name}: theoretical capacity {_lib_cap} mAh/g "
+                        f"from the library ({_lib_formula}, {_lib_note})"
+                    )
         missing = [k for k in _REQUIRED if spec.get(k) in (None, "")]
         if missing:
-            raise ValueError(f"{name}: {', '.join(missing)} must be given — "
-                             f"the cycler file cannot supply "
-                             f"{'them' if len(missing) > 1 else 'it'}.")
+            raise ValueError(
+                f"{name}: {', '.join(missing)} must be given — "
+                f"the cycler file cannot supply "
+                f"{'them' if len(missing) > 1 else 'it'}."
+            )
         # A theoretical capacity of NaN is not a missing value the guards can
         # see: `x > 1.2 * nan` is False, so the over-theoretical check simply
         # stopped firing and said nothing. Rejected here instead.
         _tc = spec.get("theoretical_capacity_mAh_g")
         try:
             _tc = float(_tc)
-        except (TypeError, ValueError):
-            raise ValueError(f"{name}: theoretical_capacity_mAh_g must be a "
-                             f"number, not {spec.get('theoretical_capacity_mAh_g')!r}")
+        except TypeError, ValueError:
+            raise ValueError(
+                f"{name}: theoretical_capacity_mAh_g must be a "
+                f"number, not {spec.get('theoretical_capacity_mAh_g')!r}"
+            )
         if not np.isfinite(_tc) or _tc <= 0:
-            raise ValueError(f"{name}: theoretical_capacity_mAh_g is {_tc} — "
-                             f"it must be a positive number, because the "
-                             f"over-theoretical capacity check compares "
-                             f"against it and a NaN silently disables it.")
+            raise ValueError(
+                f"{name}: theoretical_capacity_mAh_g is {_tc} — "
+                f"it must be a positive number, because the "
+                f"over-theoretical capacity check compares "
+                f"against it and a NaN silently disables it."
+            )
         spec["theoretical_capacity_mAh_g"] = _tc
         if str(spec["electrode_type"]).strip().title() not in _ELECTRODE_TYPES:
             raise ValueError(
                 f"{name}: electrode_type is {spec['electrode_type']!r}; it "
-                f"must be one of {', '.join(_ELECTRODE_TYPES)}.")
+                f"must be one of {', '.join(_ELECTRODE_TYPES)}."
+            )
         spec["electrode_type"] = str(spec["electrode_type"]).strip().title()
 
         def g(key, default=None, meta_key=None):
@@ -1936,15 +2238,16 @@ def parameters_from_dict(specs, cycler_metadata=None, verbose=True):
                 return meta[meta_key]
             return default
 
-        mass = float(g("active_material_mass_mg", 0.0,
-                       "active_material_mass_mg") or 0.0)
+        mass = float(
+            g("active_material_mass_mg", 0.0, "active_material_mass_mg") or 0.0
+        )
         diameter = float(g("electrode_diameter_mm", default_electrode_diameter_mm))
-        area = np.pi * (diameter / 20.0) ** 2          # mm -> cm, then pi r^2
+        area = np.pi * (diameter / 20.0) ** 2  # mm -> cm, then pi r^2
         blend = str(g("blend", "80/10/10"))
         try:
             parts = [float(x) for x in blend.split("/")]
             frac = parts[0] / sum(parts) if sum(parts) else 0.8
-        except (ValueError, ZeroDivisionError):
+        except ValueError, ZeroDivisionError:
             frac = 0.8
         coating = mass / frac if frac else np.nan
         theo_g = float(spec["theoretical_capacity_mAh_g"])
@@ -1952,20 +2255,25 @@ def parameters_from_dict(specs, cycler_metadata=None, verbose=True):
         c_rate = g("charge_rate_c", None, "c_rate")
         try:
             c_rate_f = float(c_rate)
-        except (TypeError, ValueError):
+        except TypeError, ValueError:
             c_rate_f = np.nan
 
-        _chem = g("battery_chemistry",
-                  infer_chemistry(spec.get("composition"),
-                                  g("electrolyte_composition", "")))
+        _chem = g(
+            "battery_chemistry",
+            infer_chemistry(spec.get("composition"), g("electrolyte_composition", "")),
+        )
         # Same order as the interactive path, minus the question it cannot
         # ask. `assumed` is recorded and printed as such rather than passing
         # for an inference.
         _ce_metal, _ce_metal_src = counter_electrode_metal(
-            spec.get("composition"), stated=g("counter_electrode_metal", None),
-            battery_chemistry=_chem, electrolyte=g("electrolyte_composition", ""))
+            spec.get("composition"),
+            stated=g("counter_electrode_metal", None),
+            battery_chemistry=_chem,
+            electrolyte=g("electrolyte_composition", ""),
+        )
         _counter = _estimate_counter_electrode_mass_mg(
-            battery_chemistry=_chem, metal=_ce_metal)
+            battery_chemistry=_chem, metal=_ce_metal
+        )
         _pal = str(g("colour_palette", default_palette))
         if not isinstance(_counter, tuple):
             _counter = (_counter, None)
@@ -1976,8 +2284,7 @@ def parameters_from_dict(specs, cycler_metadata=None, verbose=True):
             "blend": blend,
             "active_material_mass_mg": mass,
             "theoretical_capacity_mAh_g": theo_g,
-            "theoretical_capacity_source": g("theoretical_capacity_source",
-                                             "given"),
+            "theoretical_capacity_source": g("theoretical_capacity_source", "given"),
             "theoretical_capacity_library_formula": _lib_formula,
             "electrode_type": g("electrode_type", "Positive"),
             "electrode_diameter_mm": diameter,
@@ -1990,8 +2297,7 @@ def parameters_from_dict(specs, cycler_metadata=None, verbose=True):
             # The COERCED rate. Storing the raw answer let a string or None
             # through, which printed as "None C" in the report and the
             # dataset_info file while the derived currents used the float.
-            "charge_rate_c": (float(c_rate_f)
-                              if np.isfinite(c_rate_f) else None),
+            "charge_rate_c": (float(c_rate_f) if np.isfinite(c_rate_f) else None),
             "key_cycles": list(g("key_cycles", default_key_cycles)),
             "max_cycle": g("max_cycle"),
             "theoretical_capacity_mAh": theo_mAh,
@@ -1999,9 +2305,11 @@ def parameters_from_dict(specs, cycler_metadata=None, verbose=True):
             "theoretical_charge_rate_mAh_g": theo_g * c_rate_f,
             "voltage_upper_V": g("voltage_upper_V", None, "voltage_upper_V"),
             "voltage_lower_V": g("voltage_lower_V", None, "voltage_lower_V"),
-            "voltage_window_source": ("file" if meta.get("voltage_upper_V")
-                                      and "voltage_upper_V" not in spec
-                                      else "operator"),
+            "voltage_window_source": (
+                "file"
+                if meta.get("voltage_upper_V") and "voltage_upper_V" not in spec
+                else "operator"
+            ),
             "voltage_limit_upper_V_from_file": meta.get("voltage_upper_V"),
             "voltage_limit_lower_V_from_file": meta.get("voltage_lower_V"),
             "separator_type": g("separator_type", "glass fibre"),
@@ -2010,8 +2318,7 @@ def parameters_from_dict(specs, cycler_metadata=None, verbose=True):
             # The estimator returns (mass, metal); 1.8.6 unpacked it and kept
             # both, because "97.6 mg of sodium" is a very different claim from
             # "97.6 mg" on its own.
-            "counter_electrode_mass_mg": g("counter_electrode_mass_mg",
-                                           _counter[0]),
+            "counter_electrode_mass_mg": g("counter_electrode_mass_mg", _counter[0]),
             "counter_electrode_metal": _counter[1],
             "counter_electrode_metal_source": _ce_metal_src,
             "counter_electrode_measured": "counter_electrode_mass_mg" in spec,
@@ -2023,23 +2330,24 @@ def parameters_from_dict(specs, cycler_metadata=None, verbose=True):
             # `_validate_palette` returns a BOOLEAN — it answers "is this a
             # real matplotlib colormap", not "give me one". Storing its result
             # put True in the palette field and seaborn tried to iterate it.
-            "colour_palette": (_pal if _validate_palette(_pal)
-                               else default_palette),
+            "colour_palette": (_pal if _validate_palette(_pal) else default_palette),
             "file_format": g("file_format", "png"),
             # The analysis knobs, from the one table — the SAME defaults the
             # interactive path uses, taken from the same place so they cannot
             # drift apart again. 'auto' hands the choice to the code that
             # reads this dataset's own curve; give a number to override it.
             **{k: g(k, v) for k, v in ANALYSIS_DEFAULTS.items()},
-            "anode_labels_swapped": str(g("electrode_type", "Positive")
-                                        ).lower() == "negative",
+            "anode_labels_swapped": str(g("electrode_type", "Positive")).lower()
+            == "negative",
         }
         out[name] = rec
         if verbose:
             src = "file" if meta.get("active_material_mass_mg") else "given"
-            print(f"  {name}: {rec['composition']} cell {rec['cell_id']}, "
-                  f"{mass:.2f} mg [{src}], {rec['electrode_type'].lower()} "
-                  f"electrode, {rec['active_loading_mg_cm2']:.2f} mg/cm2")
+            print(
+                f"  {name}: {rec['composition']} cell {rec['cell_id']}, "
+                f"{mass:.2f} mg [{src}], {rec['electrode_type'].lower()} "
+                f"electrode, {rec['active_loading_mg_cm2']:.2f} mg/cm2"
+            )
     return out
 
 
@@ -2127,9 +2435,9 @@ def pick_files_dialog(initialdir=None, title="Select one or more cycler files"):
         root.update()
         paths = filedialog.askopenfilenames(
             title=title,
-            initialdir=initialdir if initialdir and os.path.isdir(initialdir)
-            else None,
-            filetypes=[("Excel files", "*.xlsx *.xls"), ("All files", "*.*")])
+            initialdir=initialdir if initialdir and os.path.isdir(initialdir) else None,
+            filetypes=[("Excel files", "*.xlsx *.xls"), ("All files", "*.*")],
+        )
     except Exception:
         return None
     finally:
@@ -2141,8 +2449,15 @@ def pick_files_dialog(initialdir=None, title="Select one or more cycler files"):
     return [os.path.abspath(p) for p in paths]
 
 
-def select_files(candidates, *, initialdir=None, verbose=True, headless=False,
-                 answer=None, use_dialog=None):
+def select_files(
+    candidates,
+    *,
+    initialdir=None,
+    verbose=True,
+    headless=False,
+    answer=None,
+    use_dialog=None,
+):
     """
     Ask which files to load: a file dialog where there is one, a list where not.
 
@@ -2163,10 +2478,10 @@ def select_files(candidates, *, initialdir=None, verbose=True, headless=False,
             # An explicit Cancel. Fall through to the typed list rather than
             # loading everything, which is what Cancel plainly does not mean.
             if verbose:
-                print("  File dialog cancelled — choose from the folder "
-                      "listing instead.")
-    return choose_files(candidates, verbose=verbose, headless=headless,
-                        answer=answer)
+                print(
+                    "  File dialog cancelled — choose from the folder listing instead."
+                )
+    return choose_files(candidates, verbose=verbose, headless=headless, answer=answer)
 
 
 def choose_files(paths, verbose=True, headless=False, answer=None):
@@ -2228,8 +2543,7 @@ def choose_files(paths, verbose=True, headless=False, answer=None):
                 picked.append(int(part))
             except ValueError:
                 continue
-    out = [paths[i - 1] for i in sorted(set(picked))
-           if 1 <= i <= len(paths)]
+    out = [paths[i - 1] for i in sorted(set(picked)) if 1 <= i <= len(paths)]
     if not out:
         if verbose:
             print("  nothing recognised in that answer — loading all")
@@ -2254,8 +2568,10 @@ def describe_defaults(metadata):
             bits.append(f"{meta['voltage_lower_V']}-{meta['voltage_upper_V']} V")
         if meta.get("cycle_count"):
             bits.append(f"{meta['cycle_count']} cycles planned")
-        out.append(f"  {name}: " + (", ".join(bits) if bits
-                                    else "no 'test' sheet — nothing pre-filled"))
+        out.append(
+            f"  {name}: "
+            + (", ".join(bits) if bits else "no 'test' sheet — nothing pre-filled")
+        )
     return "\n".join(out)
 
 
@@ -2371,30 +2687,50 @@ def find_data_dir(pattern="*.xlsx", extra=(), verbose=True):
                 break
             empty.append(cand)
         except OSError:
-            continue                      # unreadable mount, keep looking
+            continue  # unreadable mount, keep looking
 
     find_data_dir.searched = tried
     find_data_dir.empty = empty
     if verbose:
         if found:
-            _why = ("$" + DATA_DIR_ENV if env and found == env
-                    else f"{len(_glob.glob(os.path.join(found, pattern)))} "
-                         f"file(s) matching {pattern}")
+            _why = (
+                "$" + DATA_DIR_ENV
+                if env and found == env
+                else f"{len(_glob.glob(os.path.join(found, pattern)))} "
+                f"file(s) matching {pattern}"
+            )
             print(entry("data folder", "found", _why))
             print(entry("", found[:70]))
         elif empty:
-            print(entry("data folder", "none with data",
-                        f"{len(empty)} folder(s) exist but hold no {pattern}"))
+            print(
+                entry(
+                    "data folder",
+                    "none with data",
+                    f"{len(empty)} folder(s) exist but hold no {pattern}",
+                )
+            )
         else:
-            print(entry("data folder", "not found",
-                        f"searched {len(tried)} location(s)"))
+            print(
+                entry("data folder", "not found", f"searched {len(tried)} location(s)")
+            )
     return found
 
 
-def validate_run_settings(*, data_dir, output_base, files, pattern,
-                          parameter_mode, parameters, max_cycle,
-                          dqdv_computation, dqdv_bin_mV, closure_sample,
-                          run_peak_fitting, verbose=True):
+def validate_run_settings(
+    *,
+    data_dir,
+    output_base,
+    files,
+    pattern,
+    parameter_mode,
+    parameters,
+    max_cycle,
+    dqdv_computation,
+    dqdv_bin_mV,
+    closure_sample,
+    run_peak_fitting,
+    verbose=True,
+):
     """
     Read Cell 2 back and refuse the run if it says something impossible.
 
@@ -2422,8 +2758,7 @@ def validate_run_settings(*, data_dir, output_base, files, pattern,
         _empty = list(getattr(find_data_dir, "empty", ()) or ())
         _msg = ["DATA_DIR is empty and no data folder was found."]
         if _empty:
-            _msg.append(
-                "These folders exist but hold no file matching the pattern:")
+            _msg.append("These folders exist but hold no file matching the pattern:")
             _msg += [f"    {p}" for p in _empty[:5]]
         elif _tried:
             _msg.append(f"{len(_tried)} location(s) were searched, including:")
@@ -2442,100 +2777,172 @@ def validate_run_settings(*, data_dir, output_base, files, pattern,
             f"Check the drive letter and that any network or Drive folder "
             f"is mounted. To stop naming one machine's drive, clear DATA_DIR "
             f"in Cell 2 and it will be searched for, or set the "
-            f"{DATA_DIR_ENV} environment variable.")
+            f"{DATA_DIR_ENV} environment variable."
+        )
 
     if not isinstance(output_base, str) or not output_base.strip():
-        raise ValueError("OUTPUT_BASE is empty — set it to the folder the "
-                         "run folders should be created in.")
+        raise ValueError(
+            "OUTPUT_BASE is empty — set it to the folder the "
+            "run folders should be created in."
+        )
     # The folder itself is created by `start_run`; what cannot be created is
     # a missing drive, and that is worth saying before an hour of fitting.
     anchor = os.path.splitdrive(os.path.abspath(output_base))[0]
     if anchor and not os.path.exists(anchor + os.sep):
         raise NotADirectoryError(
-            f"OUTPUT_BASE is on {anchor} which is not available:\n"
-            f"    {output_base}")
+            f"OUTPUT_BASE is on {anchor} which is not available:\n    {output_base}"
+        )
 
     if isinstance(files, str):
-        raise TypeError("FILES must be a list of file names, not a single "
-                        f"string. Write FILES = [{files!r}].")
+        raise TypeError(
+            "FILES must be a list of file names, not a single "
+            f"string. Write FILES = [{files!r}]."
+        )
     files = list(files or [])
     for f in files:
         if not isinstance(f, str):
             raise TypeError(f"FILES contains {f!r}, which is not a file name.")
-    missing = [f for f in files
-               if not os.path.isfile(os.path.join(data_dir, f))]
+    missing = [f for f in files if not os.path.isfile(os.path.join(data_dir, f))]
     if missing:
         raise FileNotFoundError(
             "FILES names files that are not in DATA_DIR:\n"
             + "\n".join(f"    {m}" for m in missing)
-            + f"\n  looked in {data_dir}")
+            + f"\n  looked in {data_dir}"
+        )
     if not files and (not isinstance(pattern, str) or not pattern.strip()):
-        raise ValueError("PATTERN is empty and FILES is empty, so nothing "
-                         "would be listed. Use \"*.xlsx\".")
+        raise ValueError(
+            "PATTERN is empty and FILES is empty, so nothing "
+            'would be listed. Use "*.xlsx".'
+        )
 
     mode = str(parameter_mode).strip().lower()
     if mode not in modes:
-        raise ValueError(f"PARAMETER_MODE is {parameter_mode!r}; it must be "
-                         f"one of {', '.join(repr(m) for m in modes)}.")
+        raise ValueError(
+            f"PARAMETER_MODE is {parameter_mode!r}; it must be "
+            f"one of {', '.join(repr(m) for m in modes)}."
+        )
     if mode == "dict" and not parameters:
         raise ValueError(
-            "PARAMETER_MODE is \"dict\" but PARAMETERS is empty. Dict mode "
+            'PARAMETER_MODE is "dict" but PARAMETERS is empty. Dict mode '
             "takes every parameter from PARAMETERS and there is nothing to "
-            "take — fill it in, or set PARAMETER_MODE = \"ask\".")
+            'take — fill it in, or set PARAMETER_MODE = "ask".'
+        )
 
     method = str(dqdv_computation).strip().lower()
     if method not in methods:
-        raise ValueError(f"DQDV_COMPUTATION is {dqdv_computation!r}; it must "
-                         f"be one of {', '.join(repr(m) for m in methods)}.")
+        raise ValueError(
+            f"DQDV_COMPUTATION is {dqdv_computation!r}; it must "
+            f"be one of {', '.join(repr(m) for m in methods)}."
+        )
 
     if max_cycle is not None:
         if not isinstance(max_cycle, (int, np.integer)) or max_cycle < 1:
-            raise ValueError(f"MAX_CYCLE is {max_cycle!r}; it must be None or "
-                             f"a whole number of cycles, 1 or more.")
+            raise ValueError(
+                f"MAX_CYCLE is {max_cycle!r}; it must be None or "
+                f"a whole number of cycles, 1 or more."
+            )
     if dqdv_bin_mV is not None:
-        if not isinstance(dqdv_bin_mV, (int, float, np.number)) \
-                or not np.isfinite(dqdv_bin_mV) or not 0.05 <= dqdv_bin_mV <= 50:
+        if (
+            not isinstance(dqdv_bin_mV, (int, float, np.number))
+            or not np.isfinite(dqdv_bin_mV)
+            or not 0.05 <= dqdv_bin_mV <= 50
+        ):
             raise ValueError(
                 f"DQDV_BIN_MV is {dqdv_bin_mV!r}; it must be None (let the "
                 f"measured profile choose) or a bin width in mV between "
-                f"0.05 and 50.")
+                f"0.05 and 50."
+            )
     if closure_sample is not None:
         if not isinstance(closure_sample, (int, np.integer)) or closure_sample < 3:
             raise ValueError(
                 f"CLOSURE_SAMPLE is {closure_sample!r}; it must be None "
                 f"(every half-cycle) or at least 3 — a median and a pass "
-                f"fraction over fewer than three fits is not a measurement.")
+                f"fraction over fewer than three fits is not a measurement."
+            )
     if not isinstance(run_peak_fitting, (bool, np.bool_)):
-        raise TypeError(f"RUN_PEAK_FITTING is {run_peak_fitting!r}; it must "
-                        f"be True or False.")
+        raise TypeError(
+            f"RUN_PEAK_FITTING is {run_peak_fitting!r}; it must be True or False."
+        )
 
     settings = dict(
-        data_dir=data_dir, output_base=output_base, files=files,
-        pattern=pattern, parameter_mode=mode, parameter_count=len(parameters or {}),
-        max_cycle=max_cycle, dqdv_computation=method, dqdv_bin_mV=dqdv_bin_mV,
-        closure_sample=closure_sample, run_peak_fitting=bool(run_peak_fitting))
+        data_dir=data_dir,
+        output_base=output_base,
+        files=files,
+        pattern=pattern,
+        parameter_mode=mode,
+        parameter_count=len(parameters or {}),
+        max_cycle=max_cycle,
+        dqdv_computation=method,
+        dqdv_bin_mV=dqdv_bin_mV,
+        closure_sample=closure_sample,
+        run_peak_fitting=bool(run_peak_fitting),
+    )
 
     if verbose:
-        print(entry("data", os.path.basename(data_dir.rstrip("\\/")) or data_dir,
-                    data_dir, value_width=34))
-        print(entry("output", os.path.basename(output_base.rstrip("\\/")),
-                    output_base, value_width=34))
-        print(entry("files",
-                    f"{len(files)} named" if files else "chosen at Cell 3a",
-                    "" if files else f"pattern {pattern}", value_width=34))
-        print(entry("parameters", mode,
-                    "prompted, pre-filled from the file" if mode == "ask"
-                    else f"{len(parameters or {})} taken from PARAMETERS",
-                    value_width=34))
-        print(entry("dQ/dV", method,
-                    f"{dqdv_bin_mV} mV bins" if dqdv_bin_mV
-                    else "bin width from the measured profile",
-                    value_width=34))
-        print(entry("peak fitting", "yes" if run_peak_fitting else "no",
-                    (f"closure on {closure_sample} half-cycles"
-                     if closure_sample else "closure on every half-cycle")
-                    if run_peak_fitting else "cycling analysis only",
-                    value_width=34))
-        print(entry("cycles", f"to {max_cycle}" if max_cycle else "all",
-                    "" if max_cycle else "no cap set", value_width=34))
+        print(
+            entry(
+                "data",
+                os.path.basename(data_dir.rstrip("\\/")) or data_dir,
+                data_dir,
+                value_width=34,
+            )
+        )
+        print(
+            entry(
+                "output",
+                os.path.basename(output_base.rstrip("\\/")),
+                output_base,
+                value_width=34,
+            )
+        )
+        print(
+            entry(
+                "files",
+                f"{len(files)} named" if files else "chosen at Cell 3a",
+                "" if files else f"pattern {pattern}",
+                value_width=34,
+            )
+        )
+        print(
+            entry(
+                "parameters",
+                mode,
+                "prompted, pre-filled from the file"
+                if mode == "ask"
+                else f"{len(parameters or {})} taken from PARAMETERS",
+                value_width=34,
+            )
+        )
+        print(
+            entry(
+                "dQ/dV",
+                method,
+                f"{dqdv_bin_mV} mV bins"
+                if dqdv_bin_mV
+                else "bin width from the measured profile",
+                value_width=34,
+            )
+        )
+        print(
+            entry(
+                "peak fitting",
+                "yes" if run_peak_fitting else "no",
+                (
+                    f"closure on {closure_sample} half-cycles"
+                    if closure_sample
+                    else "closure on every half-cycle"
+                )
+                if run_peak_fitting
+                else "cycling analysis only",
+                value_width=34,
+            )
+        )
+        print(
+            entry(
+                "cycles",
+                f"to {max_cycle}" if max_cycle else "all",
+                "" if max_cycle else "no cap set",
+                value_width=34,
+            )
+        )
     return settings

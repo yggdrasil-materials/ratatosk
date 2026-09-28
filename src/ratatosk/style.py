@@ -28,9 +28,23 @@ import math
 import os
 import sys
 
-__all__ = ["Style", "S", "supports_colour", "set_colour", "rule", "heading",
-           "section", "entry", "verdict", "bullet", "RULE_WIDTH",
-           "ENTRY_LINE_WIDTH", "image_format", "saved", "nice_axis_limit"]
+__all__ = [
+    "Style",
+    "S",
+    "supports_colour",
+    "set_colour",
+    "rule",
+    "heading",
+    "section",
+    "entry",
+    "verdict",
+    "bullet",
+    "RULE_WIDTH",
+    "ENTRY_LINE_WIDTH",
+    "image_format",
+    "saved",
+    "nice_axis_limit",
+]
 
 RULE_WIDTH = 76
 
@@ -47,15 +61,16 @@ def _enable_windows_vt():
         return True
     try:
         import ctypes
+
         k = ctypes.windll.kernel32
-        for handle in (-11, -12):                 # stdout, stderr
+        for handle in (-11, -12):  # stdout, stderr
             h = k.GetStdHandle(handle)
             mode = ctypes.c_uint32()
             if not k.GetConsoleMode(h, ctypes.byref(mode)):
                 continue
-            k.SetConsoleMode(h, mode.value | 0x0004)   # VIRTUAL_TERMINAL
+            k.SetConsoleMode(h, mode.value | 0x0004)  # VIRTUAL_TERMINAL
         return True
-    except Exception:                              # noqa: BLE001
+    except Exception:  # noqa: BLE001
         return False
 
 
@@ -68,9 +83,10 @@ def supports_colour():
     # A notebook's stdout is not a tty but does render ANSI.
     try:
         from IPython import get_ipython
+
         if get_ipython() is not None:
             return _enable_windows_vt()
-    except Exception:                              # noqa: BLE001
+    except Exception:  # noqa: BLE001
         pass
     if not hasattr(sys.stdout, "isatty") or not sys.stdout.isatty():
         return False
@@ -79,24 +95,26 @@ def supports_colour():
 
 class Style:
     """The palette. Semantic names only — nothing here is called 'red'."""
+
     # Sheffield purple banner, from 1.8.7's parameter review.
-    HEADER  = '\033[1;48;5;54;97m'
-    SECTION = '\033[1;96m'          # bold cyan   — section labels
-    VALUE   = '\033[92m'            # green       — confirmed values
-    FILE    = '\033[38;5;117m'      # light blue  — values read from the file
-    WARN    = '\033[1;91m'          # bold red    — warnings and errors
-    CONFIRM = '\033[1;92m'          # bold green  — confirmed / accepted
-    OK      = '\033[92m'            # green       — a measurement that passed
-    CAUTION = '\033[93m'            # amber       — passed, with a caveat
-    BAD     = '\033[91m'            # red         — did not pass
-    DIM     = '\033[2m'             # de-emphasis — units, notes, provenance
-    BOLD    = '\033[1m'
-    RULE    = '\033[38;5;98m'       # muted purple — separators
-    RESET   = '\033[0m'
+    HEADER = "\033[1;48;5;54;97m"
+    SECTION = "\033[1;96m"  # bold cyan   — section labels
+    VALUE = "\033[92m"  # green       — confirmed values
+    FILE = "\033[38;5;117m"  # light blue  — values read from the file
+    WARN = "\033[1;91m"  # bold red    — warnings and errors
+    CONFIRM = "\033[1;92m"  # bold green  — confirmed / accepted
+    OK = "\033[92m"  # green       — a measurement that passed
+    CAUTION = "\033[93m"  # amber       — passed, with a caveat
+    BAD = "\033[91m"  # red         — did not pass
+    DIM = "\033[2m"  # de-emphasis — units, notes, provenance
+    BOLD = "\033[1m"
+    RULE = "\033[38;5;98m"  # muted purple — separators
+    RESET = "\033[0m"
 
 
 class _NoStyle:
     """Every attribute is an empty string, so styled code needs no branches."""
+
     def __getattr__(self, _name):
         return ""
 
@@ -148,7 +166,7 @@ def set_colour(on):
 WORKING_ION_WORDS = {
     "Li": ("Lithiation", "Delithiation"),
     "Na": ("Sodiation", "Desodiation"),
-    "K":  ("Potassiation", "Depotassiation"),
+    "K": ("Potassiation", "Depotassiation"),
     "Mg": ("Magnesiation", "Demagnesiation"),
     "Ca": ("Calciation", "Decalciation"),
     "Zn": ("Zincation", "Dezincation"),
@@ -161,7 +179,8 @@ WORKING_ION_WORDS = {
 # (`analyse.cycle_column`, two in `report`) already listed Li and Na only and
 # would have silently stopped matching the moment a third ion existed.
 CAPACITY_COLUMN_ALIASES = tuple(
-    ["Discharge_mAh_g"] + [f"{_d}_mAh_g" for _c, _d in WORKING_ION_WORDS.values()])
+    ["Discharge_mAh_g"] + [f"{_d}_mAh_g" for _c, _d in WORKING_ION_WORDS.values()]
+)
 
 
 def working_ion(params):
@@ -253,6 +272,7 @@ def entry(label, value, note="", label_width=22, value_width=16, indent=2):
     stays scannable.
     """
     import textwrap
+
     pad = " " * indent
     # A LABEL LONGER THAN ITS COLUMN must not run into the value. `f"{x:<22}"`
     # pads a short label and does nothing at all to a long one, so
@@ -278,11 +298,13 @@ def entry(label, value, note="", label_width=22, value_width=16, indent=2):
     # gutter and break a sentence every four words, so it drops WHOLE onto
     # continuation lines under the label instead — the same block `bullet`
     # produces, and the value column stays scannable above it.
-    block = "\n".join(f"{' ' * (indent + label_width)}{S.DIM}{ln}{S.RESET}"
-                      for ln in textwrap.wrap(
-                          str(note),
-                          width=max(20, RULE_WIDTH - indent - label_width)))
-    return (out.rstrip() + "\n" + block)
+    block = "\n".join(
+        f"{' ' * (indent + label_width)}{S.DIM}{ln}{S.RESET}"
+        for ln in textwrap.wrap(
+            str(note), width=max(20, RULE_WIDTH - indent - label_width)
+        )
+    )
+    return out.rstrip() + "\n" + block
 
 
 _MARK = {"ok": ("✓", "OK"), "caution": ("!", "CAUTION"), "bad": ("✗", "BAD")}
@@ -296,6 +318,7 @@ def verdict(level, text, label="verdict", label_width=22, indent=2):
     into an email, a log, or a colourblind reader's terminal.
     """
     import textwrap
+
     glyph, _ = _MARK.get(level, ("", ""))
     col = {"ok": S.OK, "caution": S.CAUTION, "bad": S.BAD}.get(level, "")
     pad = " " * indent
@@ -320,9 +343,11 @@ def bullet(text, indent=4, label_width=22, width=RULE_WIDTH):
     having written it.
     """
     import textwrap
+
     pad = " " * (indent + label_width - 2)
     lines = textwrap.wrap(str(text), width=max(20, width - len(pad))) or [""]
     return "\n".join(f"{pad}{S.DIM}{ln}{S.RESET}" for ln in lines)
+
 
 def image_format(params, requested=None):
     """The image format the OPERATOR asked for, in Cell 3b.
@@ -338,7 +363,7 @@ def image_format(params, requested=None):
     """
     if requested:
         return str(requested)
-    return str((params or {}).get('file_format', 'png') or 'png')
+    return str((params or {}).get("file_format", "png") or "png")
 
 
 def saved(path):
@@ -349,6 +374,7 @@ def saved(path):
     Cell 3b, and nothing else about the path changes between figures.
     """
     import os as _os
+
     print(entry("saved", _os.path.basename(str(path))))
 
 
@@ -371,7 +397,7 @@ def nice_axis_limit(vmax, target_ticks=6):
     """
     try:
         vmax = float(vmax)
-    except (TypeError, ValueError):
+    except TypeError, ValueError:
         return vmax, None
     if not math.isfinite(vmax) or vmax <= 0:
         return vmax, None

@@ -44,23 +44,44 @@ from .style import entry, bullet
 import pandas as pd
 from scipy.signal import savgol_filter
 
-__all__ = ["histogram_dqdv", "dqdv_sign", "DQDV_METHOD",
-           "terminal_trim", "apply_terminal_trim", "TERMINAL_TRIM",
-           "TERMINAL_TRIM_FIXED_MV",
-           "TERMINAL_TRIM_FACTOR", "TERMINAL_TRIM_MAX_FRACTION",
-           "TERMINAL_TRIM_BAND_MV",
-           "histogram_bin_for_profile", "HISTOGRAM_BIN_BY_PROFILE",
-           "histogram_smooth_for_profile", "HISTOGRAM_SMOOTH_BY_PROFILE",
-           "DQDV_METHODS",
-           "Reversal", "HalfCycleSignal", "preprocess_half_cycle",
-           "voltage_window",
-           "reversals", "half_cycle_report",
-           "classify_dqdv_profile", "auto_preprocess_params",
-           "remove_spikes", "smooth_dqdv", "rebin_dqdv", "strip_cv_hold",
-           "orient_dqdv", "ORIENT_PLATEAU_RECORDS",
-           "rebin_sensitivity", "plateau_structure", "REBIN_WEIGHTED",
-           "EXCLUDE_CV_HOLD", "CV_CURRENT_FRACTION", "CV_DV_FRACTION",
-           "CV_MIN_POINTS"]
+__all__ = [
+    "histogram_dqdv",
+    "dqdv_sign",
+    "DQDV_METHOD",
+    "terminal_trim",
+    "apply_terminal_trim",
+    "TERMINAL_TRIM",
+    "TERMINAL_TRIM_FIXED_MV",
+    "TERMINAL_TRIM_FACTOR",
+    "TERMINAL_TRIM_MAX_FRACTION",
+    "TERMINAL_TRIM_BAND_MV",
+    "histogram_bin_for_profile",
+    "HISTOGRAM_BIN_BY_PROFILE",
+    "histogram_smooth_for_profile",
+    "HISTOGRAM_SMOOTH_BY_PROFILE",
+    "DQDV_METHODS",
+    "Reversal",
+    "HalfCycleSignal",
+    "preprocess_half_cycle",
+    "voltage_window",
+    "reversals",
+    "half_cycle_report",
+    "classify_dqdv_profile",
+    "auto_preprocess_params",
+    "remove_spikes",
+    "smooth_dqdv",
+    "rebin_dqdv",
+    "strip_cv_hold",
+    "orient_dqdv",
+    "ORIENT_PLATEAU_RECORDS",
+    "rebin_sensitivity",
+    "plateau_structure",
+    "REBIN_WEIGHTED",
+    "EXCLUDE_CV_HOLD",
+    "CV_CURRENT_FRACTION",
+    "CV_DV_FRACTION",
+    "CV_MIN_POINTS",
+]
 
 
 # =============================================================================
@@ -68,13 +89,13 @@ __all__ = ["histogram_dqdv", "dqdv_sign", "DQDV_METHOD",
 # =============================================================================
 
 EXCLUDE_CV_HOLD = True
-CV_CURRENT_FRACTION = 0.99   # trailing |I| below this x the step median = hold
-CV_DV_FRACTION = 0.10        # fallback: trailing |dV| below this x median
-CV_MIN_POINTS = 3            # ignore shorter runs; not worth trimming
+CV_CURRENT_FRACTION = 0.99  # trailing |I| below this x the step median = hold
+CV_DV_FRACTION = 0.10  # fallback: trailing |dV| below this x median
+CV_MIN_POINTS = 3  # ignore shorter runs; not worth trimming
 
 # Profile classification thresholds, from 1.8.7 Module 1.
-_SHARP_IQR_FRACTION = 0.08      # IQR < 8% of range  -> two-phase plateau
-_MODERATE_IQR_FRACTION = 0.20   # IQR < 20% of range -> moderate
+_SHARP_IQR_FRACTION = 0.08  # IQR < 8% of range  -> two-phase plateau
+_MODERATE_IQR_FRACTION = 0.20  # IQR < 20% of range -> moderate
 
 
 def classify_dqdv_profile(df, verbose=True):
@@ -123,21 +144,21 @@ def classify_dqdv_profile(df, verbose=True):
             'description': str (human-readable summary)
         }
     """
-    required = ['Voltage', 'Cycle', 'Step']
+    required = ["Voltage", "Cycle", "Step"]
     if not all(c in df.columns for c in required):
         if verbose:
             print(entry("profile", "broad", "assumed — no Voltage/Cycle/Step column"))
         return {
-            'class': 'broad',
-            'iqr_fraction': np.nan,
-            'plateau_fraction': np.nan,
-            'description': 'Missing required columns; using default (broad) profile'
+            "class": "broad",
+            "iqr_fraction": np.nan,
+            "plateau_fraction": np.nan,
+            "description": "Missing required columns; using default (broad) profile",
         }
 
     # --- Analyse representative half-cycles ---
     # Use cycles 2-5 (or whatever is available after cycle 1) to avoid
     # first-cycle formation effects. Examine both charge and discharge.
-    cycles = sorted(df['Cycle'].dropna().unique())
+    cycles = sorted(df["Cycle"].dropna().unique())
     if len(cycles) < 2:
         analysis_cycles = cycles[:1]
     else:
@@ -149,10 +170,10 @@ def classify_dqdv_profile(df, verbose=True):
     plateau_fractions = []
 
     for cycle in analysis_cycles:
-        df_cycle = df[df['Cycle'] == cycle]
-        for step in ['Charge', 'Discharge']:
-            df_step = df_cycle[df_cycle['Step'] == step]
-            voltages = df_step['Voltage'].dropna()
+        df_cycle = df[df["Cycle"] == cycle]
+        for step in ["Charge", "Discharge"]:
+            df_step = df_cycle[df_cycle["Step"] == step]
+            voltages = df_step["Voltage"].dropna()
 
             if len(voltages) < 20:
                 continue
@@ -172,19 +193,26 @@ def classify_dqdv_profile(df, verbose=True):
             # Plateau fraction: what proportion of data points sit
             # within +/-20 mV of the median voltage?
             v_median = voltages.median()
-            near_median = ((voltages >= v_median - 0.020) &
-                          (voltages <= v_median + 0.020))
+            near_median = (voltages >= v_median - 0.020) & (
+                voltages <= v_median + 0.020
+            )
             plat_frac = near_median.sum() / len(voltages)
             plateau_fractions.append(plat_frac)
 
     if not iqr_fractions:
         if verbose:
-            print(entry("profile", "broad", "assumed — no half-cycle had 20+ records spanning 10 mV"))
+            print(
+                entry(
+                    "profile",
+                    "broad",
+                    "assumed — no half-cycle had 20+ records spanning 10 mV",
+                )
+            )
         return {
-            'class': 'broad',
-            'iqr_fraction': np.nan,
-            'plateau_fraction': np.nan,
-            'description': 'No analysable half-cycles; using default (broad) profile'
+            "class": "broad",
+            "iqr_fraction": np.nan,
+            "plateau_fraction": np.nan,
+            "description": "No analysable half-cycles; using default (broad) profile",
         }
 
     mean_iqr_frac = np.mean(iqr_fractions)
@@ -194,32 +222,32 @@ def classify_dqdv_profile(df, verbose=True):
     # Primary criterion: IQR fraction
     # Secondary criterion: plateau fraction (catches edge cases)
     if mean_iqr_frac < _SHARP_IQR_FRACTION or mean_plat_frac > 0.6:
-        profile_class = 'sharp'
+        profile_class = "sharp"
         description = (
-            f'Sharp two-phase profile. '
-            f'Typical of LTO, LFP, or other flat-plateau materials. '
-            f'Spike removal disabled; smoothing window reduced.'
+            f"Sharp two-phase profile. "
+            f"Typical of LTO, LFP, or other flat-plateau materials. "
+            f"Spike removal disabled; smoothing window reduced."
         )
     elif mean_iqr_frac < _MODERATE_IQR_FRACTION or mean_plat_frac > 0.35:
-        profile_class = 'moderate'
+        profile_class = "moderate"
         description = (
-            f'Moderate peak sharpness. '
-            f'Mixed or moderately defined phase transitions. '
-            f'Spike threshold raised; smoothing window reduced.'
+            f"Moderate peak sharpness. "
+            f"Mixed or moderately defined phase transitions. "
+            f"Spike threshold raised; smoothing window reduced."
         )
     else:
-        profile_class = 'broad'
+        profile_class = "broad"
         description = (
-            f'Broad solid-solution profile. '
-            f'Typical of layered oxides (NMC, NNM, etc.). '
-            f'Standard preprocessing applied.'
+            f"Broad solid-solution profile. "
+            f"Typical of layered oxides (NMC, NNM, etc.). "
+            f"Standard preprocessing applied."
         )
 
     out = {
-        'class': profile_class,
-        'iqr_fraction': mean_iqr_frac,
-        'plateau_fraction': mean_plat_frac,
-        'description': description
+        "class": profile_class,
+        "iqr_fraction": mean_iqr_frac,
+        "plateau_fraction": mean_plat_frac,
+        "description": description,
     }
     # `verbose` was accepted, documented, and never read. The profile class
     # is the ONLY decision this function makes and it sets the smoothing
@@ -228,9 +256,13 @@ def classify_dqdv_profile(df, verbose=True):
     # run that does not say which class it chose does not say how any of its
     # numbers were produced. It was silent for four releases.
     if verbose:
-        print(entry("profile", profile_class,
-                           f"IQR/range {mean_iqr_frac:.3f}, "
-                           f"plateau fraction {mean_plat_frac:.2f}"))
+        print(
+            entry(
+                "profile",
+                profile_class,
+                f"IQR/range {mean_iqr_frac:.3f}, plateau fraction {mean_plat_frac:.2f}",
+            )
+        )
         print(bullet(description))
     return out
 
@@ -285,45 +317,45 @@ def auto_preprocess_params(profile, user_params=None):
     if user_params is None:
         user_params = {}
 
-    profile_class = profile.get('class', 'broad')
+    profile_class = profile.get("class", "broad")
 
     # --- Auto-selected defaults by profile class ---
-    if profile_class == 'sharp':
+    if profile_class == "sharp":
         auto = {
-            'smoothing_window': 5,
-            'polyorder': 3,
-            'spike_removal': False,
-            'spike_window_size': 5,
-            'spike_threshold_multiplier': 10.0,
-            'second_smooth_window': 11,
-            'rebin_width_mV': 2.0,
+            "smoothing_window": 5,
+            "polyorder": 3,
+            "spike_removal": False,
+            "spike_window_size": 5,
+            "spike_threshold_multiplier": 10.0,
+            "second_smooth_window": 11,
+            "rebin_width_mV": 2.0,
         }
-    elif profile_class == 'moderate':
+    elif profile_class == "moderate":
         auto = {
-            'smoothing_window': 9,
-            'polyorder': 3,
-            'spike_removal': True,
-            'spike_window_size': 5,
-            'spike_threshold_multiplier': 6.0,
-            'second_smooth_window': None,
-            'rebin_width_mV': None,
+            "smoothing_window": 9,
+            "polyorder": 3,
+            "spike_removal": True,
+            "spike_window_size": 5,
+            "spike_threshold_multiplier": 6.0,
+            "second_smooth_window": None,
+            "rebin_width_mV": None,
         }
     else:  # broad
         auto = {
-            'smoothing_window': 15,
-            'polyorder': 3,
-            'spike_removal': True,
-            'spike_window_size': 5,
-            'spike_threshold_multiplier': 3.0,
-            'second_smooth_window': None,
-            'rebin_width_mV': None,
+            "smoothing_window": 15,
+            "polyorder": 3,
+            "spike_removal": True,
+            "spike_window_size": 5,
+            "spike_threshold_multiplier": 3.0,
+            "second_smooth_window": None,
+            "rebin_width_mV": None,
         }
 
     # --- Apply user overrides (non-'auto' values take priority) ---
     final = {}
     for key in auto:
-        user_val = user_params.get(key, 'auto')
-        if user_val == 'auto':
+        user_val = user_params.get(key, "auto")
+        if user_val == "auto":
             final[key] = auto[key]
         else:
             final[key] = user_val
@@ -331,17 +363,17 @@ def auto_preprocess_params(profile, user_params=None):
     # The histogram path's one parameter, chosen the same way everything else
     # here is: from the measured profile class. Only set if the caller has
     # not already fixed it.
-    final.setdefault('histogram_bin_mV',
-                     histogram_bin_for_profile(profile_class))
-    final.setdefault('histogram_smooth_bins',
-                     histogram_smooth_for_profile(profile_class))
+    final.setdefault("histogram_bin_mV", histogram_bin_for_profile(profile_class))
+    final.setdefault(
+        "histogram_smooth_bins", histogram_smooth_for_profile(profile_class)
+    )
 
     # --- Metadata ---
-    final['auto_detected'] = True
-    final['profile_class'] = profile_class
-    final['profile_description'] = profile.get('description', '')
-    final['iqr_fraction'] = profile.get('iqr_fraction', np.nan)
-    final['plateau_fraction'] = profile.get('plateau_fraction', np.nan)
+    final["auto_detected"] = True
+    final["profile_class"] = profile_class
+    final["profile_description"] = profile.get("description", "")
+    final["iqr_fraction"] = profile.get("iqr_fraction", np.nan)
+    final["plateau_fraction"] = profile.get("plateau_fraction", np.nan)
 
     return final
 
@@ -383,9 +415,10 @@ def remove_spikes(series, window_size=5, threshold_multiplier=3.0):
 
     # MAD scaled to approximate std for normal distributions
     abs_dev = (series - rolling_median).abs()
-    rolling_mad = abs_dev.rolling(
-        window=window_size, center=True, min_periods=1
-    ).median() * 1.4826
+    rolling_mad = (
+        abs_dev.rolling(window=window_size, center=True, min_periods=1).median()
+        * 1.4826
+    )
 
     # Floor to prevent division issues in constant regions
     mad_floor = series.abs().max() * 1e-6
@@ -439,8 +472,10 @@ def smooth_dqdv(values, window_size, polyorder=3):
     try:
         return savgol_filter(values, window_size, polyorder), True
     except Exception as e:
-        print(f"  Warning: Savitzky-Golay smoothing failed ({e}). "
-              f"Returning unsmoothed data.")
+        print(
+            f"  Warning: Savitzky-Golay smoothing failed ({e}). "
+            f"Returning unsmoothed data."
+        )
         return values.copy(), False
 
 
@@ -536,8 +571,10 @@ HISTOGRAM_BIN_BY_PROFILE = {"sharp": 1.0, "moderate": 2.0, "broad": 5.0}
 
 def histogram_bin_for_profile(profile, default=HISTOGRAM_BIN_MV):
     """Bin width in mV for a measured profile class. See the table above."""
-    cls = (profile.get("class") if isinstance(profile, dict) else profile)
+    cls = profile.get("class") if isinstance(profile, dict) else profile
     return float(HISTOGRAM_BIN_BY_PROFILE.get(str(cls), default))
+
+
 # Flores and Clark report good smoothness and voltage reconstruction with a
 # Gaussian kernel of one — a weighted average of each bin with its immediate
 # neighbours. 0 disables it. Anything larger starts reintroducing the
@@ -592,8 +629,10 @@ HISTOGRAM_SMOOTH_BY_PROFILE = {"sharp": 1, "moderate": 3, "broad": 16}
 
 def histogram_smooth_for_profile(profile, default=HISTOGRAM_SMOOTH_KERNEL):
     """Smoothing half-width in bins for a measured profile class."""
-    cls = (profile.get("class") if isinstance(profile, dict) else profile)
+    cls = profile.get("class") if isinstance(profile, dict) else profile
     return int(HISTOGRAM_SMOOTH_BY_PROFILE.get(str(cls), default))
+
+
 # A bin much narrower than the voltage step between records produces empty
 # bins and a sparse, noisy curve. Below this multiple of the median record
 # spacing the requested width is widened, and the fact is reported.
@@ -739,14 +778,18 @@ def _charge_in_bins(v0, v1, dq, edges):
     G = np.zeros(edges.size, dtype=float)
 
     if np.any(moving):
-        l = lo[moving]; h = hi[moving]; w = dq[moving]
+        l = lo[moving]
+        h = hi[moving]
+        w = dq[moving]
         # Chunked so a long half-cycle cannot build a huge intermediate.
         chunk = max(1, int(4_000_000 // max(edges.size, 1)))
         for a in range(0, l.size, chunk):
             b = min(a + chunk, l.size)
             frac = np.clip(
                 (edges[None, :] - l[a:b, None]) / (h[a:b, None] - l[a:b, None]),
-                0.0, 1.0)
+                0.0,
+                1.0,
+            )
             G += (w[a:b, None] * frac).sum(axis=0)
 
     if np.any(~moving):
@@ -761,9 +804,16 @@ def _charge_in_bins(v0, v1, dq, edges):
     return np.diff(G)
 
 
-def histogram_dqdv(voltage, capacity, *, bin_width_mV=None,
-                   window=None, smooth_kernel=None, sign=1.0,
-                   phase=0.0):
+def histogram_dqdv(
+    voltage,
+    capacity,
+    *,
+    bin_width_mV=None,
+    window=None,
+    smooth_kernel=None,
+    sign=1.0,
+    phase=0.0,
+):
     """
     dQ/dV without differentiating anything. See the block comment above.
 
@@ -793,9 +843,16 @@ def histogram_dqdv(voltage, capacity, *, bin_width_mV=None,
     q = np.asarray(capacity, float)
     m = np.isfinite(v) & np.isfinite(q)
     v, q = v[m], q[m]
-    info = dict(bin_width_mV=float(bin_width_mV), n_bins=0, n_empty=0,
-                charge_in_window=np.nan, charge_total=np.nan, widened=False,
-                widened_by="", unvisited_mV=0.0)
+    info = dict(
+        bin_width_mV=float(bin_width_mV),
+        n_bins=0,
+        n_empty=0,
+        charge_in_window=np.nan,
+        charge_total=np.nan,
+        widened=False,
+        widened_by="",
+        unvisited_mV=0.0,
+    )
     if v.size < 5:
         return np.empty(0), np.empty(0), info
 
@@ -803,7 +860,7 @@ def histogram_dqdv(voltage, capacity, *, bin_width_mV=None,
     # record carries none — it is the start of the count, not an increment.
     dq = np.abs(np.diff(q))
     v_lo_all, v_hi_all = v[:-1], v[1:]  # the span the charge was passed ACROSS
-    v_mid = 0.5 * (v[1:] + v[:-1])      # the charge was passed BETWEEN them
+    v_mid = 0.5 * (v[1:] + v[:-1])  # the charge was passed BETWEEN them
     good = np.isfinite(dq) & np.isfinite(v_mid)
     dq, v_mid = dq[good], v_mid[good]
     v_lo_all, v_hi_all = v_lo_all[good], v_hi_all[good]
@@ -811,8 +868,11 @@ def histogram_dqdv(voltage, capacity, *, bin_width_mV=None,
         return np.empty(0), np.empty(0), info
     info["charge_total"] = float(dq.sum())
 
-    lo, hi = (float(np.min(v_mid)), float(np.max(v_mid))) if window is None \
+    lo, hi = (
+        (float(np.min(v_mid)), float(np.max(v_mid)))
+        if window is None
         else (float(window[0]), float(window[1]))
+    )
     inside = (v_mid >= lo) & (v_mid <= hi)
     info["charge_in_window"] = float(dq[inside].sum())
     if not np.any(inside) or hi <= lo:
@@ -851,18 +911,19 @@ def histogram_dqdv(voltage, capacity, *, bin_width_mV=None,
     # and the wider one wins: the median record spacing (local scale), and the
     # width that gives at least HISTOGRAM_MIN_OCCUPANCY records per bin on
     # average across the window (global count). See both constants above.
-    step = float(np.median(np.abs(np.diff(np.sort(v_mid))))) if v_mid.size > 2 \
-        else 0.0
+    step = float(np.median(np.abs(np.diff(np.sort(v_mid))))) if v_mid.size > 2 else 0.0
     width = float(bin_width_mV) / 1000.0
     n_rec = int(np.count_nonzero(inside))
-    w_occ = (float(HISTOGRAM_MIN_OCCUPANCY) * (hi - lo) / n_rec) \
-        if n_rec > 0 else 0.0
+    w_occ = (float(HISTOGRAM_MIN_OCCUPANCY) * (hi - lo) / n_rec) if n_rec > 0 else 0.0
     floor = max(HISTOGRAM_MIN_BIN_FACTOR * step, w_occ)
     if floor > 0 and width < floor:
         width = floor
         info["widened"] = True
-        info["widened_by"] = ("occupancy" if w_occ >= HISTOGRAM_MIN_BIN_FACTOR * step
-                              else "record spacing")
+        info["widened_by"] = (
+            "occupancy"
+            if w_occ >= HISTOGRAM_MIN_BIN_FACTOR * step
+            else "record spacing"
+        )
         info["bin_width_mV"] = width * 1000.0
 
     # THE PHASE OFFSET IS APPLIED HERE, AFTER THE VISITED-SPAN CLIP.
@@ -885,12 +946,11 @@ def histogram_dqdv(voltage, capacity, *, bin_width_mV=None,
     # `weights=dq` is the whole method: the bin's value is the CHARGE that
     # passed inside it, not the number of records that happened to land there.
     if HISTOGRAM_EXACT_CHARGE:
-        totals = _charge_in_bins(v_lo_all[inside], v_hi_all[inside],
-                                 dq[inside], edges)
+        totals = _charge_in_bins(v_lo_all[inside], v_hi_all[inside], dq[inside], edges)
     else:
         totals, _ = np.histogram(v_mid[inside], bins=edges, weights=dq[inside])
     centres = 0.5 * (edges[:-1] + edges[1:])
-    y = totals / width                      # mAh/g per volt
+    y = totals / width  # mAh/g per volt
 
     # OCCUPANCY: how many raw records actually landed in each bin.
     #
@@ -930,8 +990,9 @@ def histogram_dqdv(voltage, capacity, *, bin_width_mV=None,
     # it is the QUANTUM of the histogram: a bin's value can only be an integer
     # multiple of `dq_per_record / width`. See `quantisation_ripple`.
     _dqi = dq[inside]
-    info["dq_per_record"] = float(np.median(_dqi[_dqi > 0])) \
-        if np.any(_dqi > 0) else np.nan
+    info["dq_per_record"] = (
+        float(np.median(_dqi[_dqi > 0])) if np.any(_dqi > 0) else np.nan
+    )
 
     # THE KERNEL IS TRIMMED TO FIT THE CURVE. `np.convolve(..., mode="same")`
     # returns an array of length max(len(signal), len(kernel)) — NOT the
@@ -971,11 +1032,12 @@ def histogram_dqdv(voltage, capacity, *, bin_width_mV=None,
     # same `edges`, and the one operation that could break that is fixed
     # above — but a curve whose two halves disagree in length is the kind of
     # thing that should never leave this function silently.
-    if y.size != centres.size:                                  # pragma: no cover
+    if y.size != centres.size:  # pragma: no cover
         raise AssertionError(
             f"histogram_dqdv produced {centres.size} voltages and {y.size} "
             f"dQ/dV values; they are built from one set of bin edges and "
-            f"cannot differ.")
+            f"cannot differ."
+        )
     return centres, sign * y, info
 
 
@@ -987,8 +1049,9 @@ def binomial_kernel(half_width):
     return k / k.sum()
 
 
-def quantisation_ripple(centres, dqdv, *, dq_per_record, bin_width_V,
-                        smooth_kernel, window_bins=None):
+def quantisation_ripple(
+    centres, dqdv, *, dq_per_record, bin_width_V, smooth_kernel, window_bins=None
+):
     """
     How much structure would this binning invent on a perfectly smooth curve?
 
@@ -1017,8 +1080,13 @@ def quantisation_ripple(centres, dqdv, *, dq_per_record, bin_width_V,
     y = np.abs(np.asarray(dqdv, float))
     v = np.asarray(centres, float)
     n = y.size
-    if n < 8 or not np.isfinite(dq_per_record) or dq_per_record <= 0 \
-            or not np.isfinite(bin_width_V) or bin_width_V <= 0:
+    if (
+        n < 8
+        or not np.isfinite(dq_per_record)
+        or dq_per_record <= 0
+        or not np.isfinite(bin_width_V)
+        or bin_width_V <= 0
+    ):
         return np.zeros(max(n, 0))
 
     # Where the records would fall on a curve exactly this smooth.
@@ -1060,7 +1128,7 @@ def quantisation_ripple(centres, dqdv, *, dq_per_record, bin_width_V,
         window_bins = max(9, 2 * (kk if kk > 0 else 4) + 1)
     w = int(window_bins) | 1
     pad = w // 2
-    padded = np.pad(resid ** 2, pad, mode="edge")
+    padded = np.pad(resid**2, pad, mode="edge")
     csum = np.concatenate(([0.0], np.cumsum(padded)))
     ms = (csum[w:] - csum[:-w]) / w
     return np.sqrt(np.maximum(ms[:n], 0.0))
@@ -1168,8 +1236,12 @@ def plateau_structure(voltage, capacity, n=40):
     m = np.isfinite(v) & np.isfinite(q)
     v, q = v[m], q[m]
     if v.size < 20:
-        return {"flattest_V": np.nan, "second_flattest_V": np.nan,
-                "separation_mV": np.nan, "n_minima": 0}
+        return {
+            "flattest_V": np.nan,
+            "second_flattest_V": np.nan,
+            "separation_mV": np.nan,
+            "n_minima": 0,
+        }
     o = np.argsort(q, kind="mergesort")
     v, q = v[o], q[o]
     qg = np.linspace(q[5], q[-5], n)
@@ -1178,14 +1250,17 @@ def plateau_structure(voltage, capacity, n=40):
     k = int(np.argmin(a[3:-3])) + 3
     far = [i for i in range(3, len(a) - 3) if abs(qg[i] - qg[k]) > 15]
     k2 = far[int(np.argmin(a[far]))] if far else None
-    n_min = sum(1 for i in range(2, len(a) - 2)
-                if a[i] < a[i - 1] and a[i] < a[i + 1]
-                and a[i] < a[i - 2] and a[i] < a[i + 2])
-    return {"flattest_V": float(vg[k]),
-            "second_flattest_V": float(vg[k2]) if k2 else np.nan,
-            "separation_mV": (abs(float(vg[k2]) - float(vg[k])) * 1000.0
-                              if k2 else np.nan),
-            "n_minima": int(n_min)}
+    n_min = sum(
+        1
+        for i in range(2, len(a) - 2)
+        if a[i] < a[i - 1] and a[i] < a[i + 1] and a[i] < a[i - 2] and a[i] < a[i + 2]
+    )
+    return {
+        "flattest_V": float(vg[k]),
+        "second_flattest_V": float(vg[k2]) if k2 else np.nan,
+        "separation_mV": (abs(float(vg[k2]) - float(vg[k])) * 1000.0 if k2 else np.nan),
+        "n_minima": int(n_min),
+    }
 
 
 def rebin_sensitivity(voltage, dqdv, widths=(1.0, 2.0, 4.0)):
@@ -1217,9 +1292,11 @@ def rebin_sensitivity(voltage, dqdv, widths=(1.0, 2.0, 4.0)):
     a = np.array(out["apex_V"], float)
     ar = np.array(out["area"], float)
     out["apex_spread_mV"] = float(np.nanmax(a) - np.nanmin(a)) * 1000.0
-    out["area_spread_frac"] = float(
-        (np.nanmax(ar) - np.nanmin(ar)) / np.nanmedian(ar)) if np.isfinite(
-        np.nanmedian(ar)) and np.nanmedian(ar) else np.nan
+    out["area_spread_frac"] = (
+        float((np.nanmax(ar) - np.nanmin(ar)) / np.nanmedian(ar))
+        if np.isfinite(np.nanmedian(ar)) and np.nanmedian(ar)
+        else np.nan
+    )
     out["apex_stable"] = bool(out["apex_spread_mV"] <= 10.0)
     out["area_stable"] = bool(out["area_spread_frac"] <= 0.10)
     return out
@@ -1255,8 +1332,7 @@ def rebin_sensitivity(voltage, dqdv, widths=(1.0, 2.0, 4.0)):
 ORIENT_PLATEAU_RECORDS = True
 
 
-def orient_dqdv(df_step, direction, *, capacity_col=None,
-                current_col="Current(A)"):
+def orient_dqdv(df_step, direction, *, capacity_col=None, current_col="Current(A)"):
     """
     Give every record the sign its own half-cycle's honest records carry.
 
@@ -1277,8 +1353,7 @@ def orient_dqdv(df_step, direction, *, capacity_col=None,
     # half-cycle is going: those are the ones whose dQ/dV sign is not in
     # question. Fall back to the signed area if there are too few.
     ref = y[forward & np.isfinite(y)]
-    target = (np.sign(np.median(ref)) if ref.size >= 3
-              else np.sign(np.nansum(y)))
+    target = np.sign(np.median(ref)) if ref.size >= 3 else np.sign(np.nansum(y))
     if target == 0:
         return df_step, 0
 
@@ -1289,11 +1364,11 @@ def orient_dqdv(df_step, direction, *, capacity_col=None,
         i = pd.to_numeric(d[current_col], errors="coerce").to_numpy()
         i_ref = np.nanmedian(i)
         if np.isfinite(i_ref) and i_ref != 0:
-            ok &= (np.sign(i) == np.sign(i_ref))
+            ok &= np.sign(i) == np.sign(i_ref)
     if capacity_col and capacity_col in d.columns:
         q = pd.to_numeric(d[capacity_col], errors="coerce").to_numpy()
         dq = np.diff(q, prepend=q[0])
-        ok &= ~(dq < 0)          # NaN-safe: only a real decrease disqualifies
+        ok &= ~(dq < 0)  # NaN-safe: only a real decrease disqualifies
 
     n = int(ok.sum())
     if not n:
@@ -1312,7 +1387,7 @@ def strip_cv_hold(df_step):
     defined by what happened last in time, not by where it sits in voltage.
     """
     if not EXCLUDE_CV_HOLD or len(df_step) < 2 * CV_MIN_POINTS:
-        return df_step, 0, 'off'
+        return df_step, 0, "off"
     d = df_step.sort_index()
 
     def _trailing(mask):
@@ -1322,59 +1397,62 @@ def strip_cv_hold(df_step):
             k -= 1
         return n
 
-    cur_col = next((c for c in ('Current(A)', 'Current', 'current(A)')
-                    if c in d.columns), None)
+    cur_col = next(
+        (c for c in ("Current(A)", "Current", "current(A)") if c in d.columns), None
+    )
     if cur_col is not None:
-        i = pd.to_numeric(d[cur_col], errors='coerce').abs().values
+        i = pd.to_numeric(d[cur_col], errors="coerce").abs().values
         if np.isfinite(i).sum() >= CV_MIN_POINTS:
             med = np.nanmedian(i)
             if np.isfinite(med) and med > 0:
-                n = _trailing(np.nan_to_num(i, nan=np.inf)
-                              < med * CV_CURRENT_FRACTION)
+                n = _trailing(np.nan_to_num(i, nan=np.inf) < med * CV_CURRENT_FRACTION)
                 if n >= CV_MIN_POINTS:
-                    return d.iloc[:len(d) - n], n, 'current decay'
-                return df_step, 0, 'current decay'
+                    return d.iloc[: len(d) - n], n, "current decay"
+                return df_step, 0, "current decay"
 
-    v = pd.to_numeric(d['Voltage'], errors='coerce').values
+    v = pd.to_numeric(d["Voltage"], errors="coerce").values
     dv = np.abs(np.diff(v))
     pos = dv[dv > 0]
     if pos.size == 0:
-        return df_step, 0, 'no criterion'
+        return df_step, 0, "no criterion"
     med = np.median(pos)
     n = _trailing(np.r_[False, dv < med * CV_DV_FRACTION])
     if n >= CV_MIN_POINTS:
-        return d.iloc[:len(d) - n], n, 'voltage stall'
-    return df_step, 0, 'voltage stall'
+        return d.iloc[: len(d) - n], n, "voltage stall"
+    return df_step, 0, "voltage stall"
 
 
 # =============================================================================
 # NEW IN 1.9.0 — measurement only
 # =============================================================================
 
+
 @dataclass
 class Reversal:
     """One contiguous run where the potential moved the wrong way."""
+
     i0: int
-    i1: int                    # inclusive index of the last reversed step
-    charge: float              # mAh/g passed during it
+    i1: int  # inclusive index of the last reversed step
+    charge: float  # mAh/g passed during it
     v_start: float
     v_end: float
-    span_mV: float             # widest excursion, |v_end - v_start|
+    span_mV: float  # widest excursion, |v_end - v_start|
     seconds: float
-    at_full_current: bool      # |I| still at the step median -> not a CV taper
+    at_full_current: bool  # |I| still at the step median -> not a CV taper
     n_records: int
 
 
 @dataclass
 class HalfCycleSignal:
     """Everything one half-cycle contributes, measured and processed."""
+
     cycle: int
     step: str
-    direction: float                       # +1 rising, -1 falling. MEASURED.
+    direction: float  # +1 rising, -1 falling. MEASURED.
     voltage: np.ndarray = field(default_factory=lambda: np.empty(0))
     dqdv_raw: np.ndarray = field(default_factory=lambda: np.empty(0))
     dqdv: np.ndarray = field(default_factory=lambda: np.empty(0))
-    capacity: float = float("nan")         # from the cycler's counter
+    capacity: float = float("nan")  # from the cycler's counter
     n_records_raw: int = 0
     cv_points_removed: int = 0
     cv_method: str = "off"
@@ -1415,8 +1493,7 @@ class HalfCycleSignal:
     @property
     def reversed_charge_at_current(self) -> float:
         """mAh/g passed backwards while the current was still at full CC."""
-        return float(sum(r.charge for r in self.reversals
-                         if r.at_full_current))
+        return float(sum(r.charge for r in self.reversals if r.at_full_current))
 
     @property
     def widest_reversal_mV(self) -> float:
@@ -1440,12 +1517,15 @@ def reversals(df_step, direction, *, capacity_col=None, min_records=1):
     if capacity_col and capacity_col in d.columns:
         q = pd.to_numeric(d[capacity_col], errors="coerce").values.astype(float)
 
-    cur_col = next((c for c in ("Current(A)", "Current", "current(A)")
-                    if c in d.columns), None)
-    i_abs = (pd.to_numeric(d[cur_col], errors="coerce").abs().values
-             if cur_col else None)
-    med_i = (float(np.nanmedian(i_abs[np.isfinite(i_abs)]))
-             if i_abs is not None and np.isfinite(i_abs).any() else np.nan)
+    cur_col = next(
+        (c for c in ("Current(A)", "Current", "current(A)") if c in d.columns), None
+    )
+    i_abs = pd.to_numeric(d[cur_col], errors="coerce").abs().values if cur_col else None
+    med_i = (
+        float(np.nanmedian(i_abs[np.isfinite(i_abs)]))
+        if i_abs is not None and np.isfinite(i_abs).any()
+        else np.nan
+    )
 
     secs = None
     if "Time" in d.columns:
@@ -1463,21 +1543,38 @@ def reversals(df_step, direction, *, capacity_col=None, min_records=1):
         while j + 1 < back.size and back[j + 1]:
             j += 1
         idx = slice(k, j + 1)
-        charge = (float(np.nansum(np.abs(np.diff(q[k:j + 2]))))
-                  if q is not None else float("nan"))
-        dt = (float(secs[j + 1] - secs[k]) if secs is not None
-              and np.isfinite(secs[k]) and np.isfinite(secs[j + 1]) else float("nan"))
-        full = bool(np.isfinite(med_i) and med_i > 0 and i_abs is not None
-                    and np.nanmedian(i_abs[k:j + 2]) > 0.99 * med_i)
+        charge = (
+            float(np.nansum(np.abs(np.diff(q[k : j + 2]))))
+            if q is not None
+            else float("nan")
+        )
+        dt = (
+            float(secs[j + 1] - secs[k])
+            if secs is not None and np.isfinite(secs[k]) and np.isfinite(secs[j + 1])
+            else float("nan")
+        )
+        full = bool(
+            np.isfinite(med_i)
+            and med_i > 0
+            and i_abs is not None
+            and np.nanmedian(i_abs[k : j + 2]) > 0.99 * med_i
+        )
         if (j - k + 1) >= min_records:
-            out.append(Reversal(
-                i0=int(k), i1=int(j), charge=charge,
-                v_start=float(v[k]), v_end=float(v[j + 1]),
-                span_mV=float(abs(v[j + 1] - v[k]) * 1000.0),
-                seconds=dt, at_full_current=full, n_records=int(j - k + 1)))
+            out.append(
+                Reversal(
+                    i0=int(k),
+                    i1=int(j),
+                    charge=charge,
+                    v_start=float(v[k]),
+                    v_end=float(v[j + 1]),
+                    span_mV=float(abs(v[j + 1] - v[k]) * 1000.0),
+                    seconds=dt,
+                    at_full_current=full,
+                    n_records=int(j - k + 1),
+                )
+            )
         k = j + 1
     return out
-
 
 
 # --- the cut-off approach, and trimming it -------------------------------
@@ -1568,8 +1665,7 @@ TERMINAL_TRIM_BAND_MV = 20.0
 TERMINAL_TRIM_INTERIOR = (0.2, 0.8)
 
 
-def terminal_trim(voltage, dqdv, *, factor=None, max_fraction=None,
-                  band_mV=None):
+def terminal_trim(voltage, dqdv, *, factor=None, max_fraction=None, band_mV=None):
     """How far in from each end the curve is still the cut-off approach.
 
     Returns `(low_V, high_V)` — the span to remove at the bottom and top of
@@ -1584,16 +1680,14 @@ def terminal_trim(voltage, dqdv, *, factor=None, max_fraction=None,
     half-cycle, which has no such rise. Neither was put in by hand.
     """
     factor = TERMINAL_TRIM_FACTOR if factor is None else factor
-    max_fraction = (TERMINAL_TRIM_MAX_FRACTION if max_fraction is None
-                    else max_fraction)
+    max_fraction = TERMINAL_TRIM_MAX_FRACTION if max_fraction is None else max_fraction
     band = (TERMINAL_TRIM_BAND_MV if band_mV is None else band_mV) / 1000.0
     v = np.asarray(voltage, float)
     y = np.abs(np.asarray(dqdv, float))
     n = v.size
     if n < 40 or y.size != n or band <= 0:
         return 0.0, 0.0
-    a, b = (int(TERMINAL_TRIM_INTERIOR[0] * n),
-            int(TERMINAL_TRIM_INTERIOR[1] * n))
+    a, b = (int(TERMINAL_TRIM_INTERIOR[0] * n), int(TERMINAL_TRIM_INTERIOR[1] * n))
     interior = float(np.median(y[a:b])) if b > a else float("nan")
     if not np.isfinite(interior) or interior <= 0:
         return 0.0, 0.0
@@ -1629,21 +1723,29 @@ def apply_terminal_trim(sig, low_V, high_V):
     to match would hide the thing this is meant to surface.
     """
     import dataclasses
+
     v = np.asarray(sig.voltage, float)
     if v.size == 0 or (low_V <= 0 and high_V <= 0):
         return sig
     keep = (v >= v.min() + low_V) & (v <= v.max() - high_V)
-    if keep.sum() < 10:                    # nothing usable would be left
+    if keep.sum() < 10:  # nothing usable would be left
         return sig
     out = dataclasses.replace(
-        sig, voltage=v[keep],
+        sig,
+        voltage=v[keep],
         dqdv=np.asarray(sig.dqdv, float)[keep],
-        dqdv_raw=(np.asarray(sig.dqdv_raw, float)[keep]
-                  if np.size(sig.dqdv_raw) == v.size else sig.dqdv_raw))
+        dqdv_raw=(
+            np.asarray(sig.dqdv_raw, float)[keep]
+            if np.size(sig.dqdv_raw) == v.size
+            else sig.dqdv_raw
+        ),
+    )
     return out
 
-def voltage_window(dataset, voltage_trim_mV=50,
-                   required=("Voltage", "Cycle", "Step", "dQ/dV")):
+
+def voltage_window(
+    dataset, voltage_trim_mV=50, required=("Voltage", "Cycle", "Step", "dQ/dV")
+):
     """
     The trimmed voltage window, computed ONCE PER DATASET.
 
@@ -1661,7 +1763,7 @@ def voltage_window(dataset, voltage_trim_mV=50,
     v = pd.to_numeric(clean["Voltage"], errors="coerce")
     lo, hi = float(v.min()), float(v.max())
     trim = voltage_trim_mV / 1000.0
-    if lo + trim >= hi - trim:            # 1.8.7 falls back to a 10 mV trim
+    if lo + trim >= hi - trim:  # 1.8.7 falls back to a 10 mV trim
         trim = 0.010
     return lo + trim, hi - trim
 
@@ -1681,8 +1783,9 @@ DQDV_METHOD = "histogram"
 DQDV_METHODS = ("derivative", "histogram")
 
 
-def preprocess_half_cycle(df_step, params, *, direction, window,
-                          capacity_col=None, step=None):
+def preprocess_half_cycle(
+    df_step, params, *, direction, window, capacity_col=None, step=None
+):
     """
     One half-cycle, from raw records to a curve ready for detection.
 
@@ -1704,29 +1807,47 @@ def preprocess_half_cycle(df_step, params, *, direction, window,
 
     method = str(params.get("dqdv_method") or DQDV_METHOD).lower()
     if method not in DQDV_METHODS:
-        raise ValueError(f"dqdv_method must be one of {DQDV_METHODS}, "
-                         f"not {method!r}")
+        raise ValueError(f"dqdv_method must be one of {DQDV_METHODS}, not {method!r}")
 
     if method == "histogram":
-        qcol = capacity_col or ("Discharge_Capacity"
-                               if str(step).lower().startswith("dis")
-                               else "Charge_Capacity")
+        qcol = capacity_col or (
+            "Discharge_Capacity"
+            if str(step).lower().startswith("dis")
+            else "Charge_Capacity"
+        )
         if qcol not in stripped.columns:
-            return None, dict(n_cv=n_cv, cv_method=how, raw_n=raw_n,
-                              n_oriented=0, dqdv_method=method,
-                              note=f"no {qcol} column for the histogram path")
-        bw = params.get("histogram_bin_mV") or params.get("rebin_width_mV") \
+            return None, dict(
+                n_cv=n_cv,
+                cv_method=how,
+                raw_n=raw_n,
+                n_oriented=0,
+                dqdv_method=method,
+                note=f"no {qcol} column for the histogram path",
+            )
+        bw = (
+            params.get("histogram_bin_mV")
+            or params.get("rebin_width_mV")
             or HISTOGRAM_BIN_MV
+        )
         v_all = pd.to_numeric(stripped["Voltage"], errors="coerce").to_numpy()
         q_all = pd.to_numeric(stripped[qcol], errors="coerce").to_numpy()
         centres, y, hinfo = histogram_dqdv(
-            v_all, q_all, bin_width_mV=float(bw), window=window,
+            v_all,
+            q_all,
+            bin_width_mV=float(bw),
+            window=window,
             smooth_kernel=params.get("histogram_smooth_bins"),
-            sign=dqdv_sign(step) if step is not None else 1.0)
+            sign=dqdv_sign(step) if step is not None else 1.0,
+        )
         if centres.size < 5:
-            return None, dict(n_cv=n_cv, cv_method=how, raw_n=raw_n,
-                              n_oriented=0, dqdv_method=method,
-                              note="too few filled bins for a curve")
+            return None, dict(
+                n_cv=n_cv,
+                cv_method=how,
+                raw_n=raw_n,
+                n_oriented=0,
+                dqdv_method=method,
+                note="too few filled bins for a curve",
+            )
         # A closure that rebuilds this curve with the bin EDGES shifted by a
         # fraction of a bin. Everything else is held: the same records, the
         # same width actually used, the same kernel, the same sign. Detection
@@ -1739,35 +1860,56 @@ def preprocess_half_cycle(df_step, params, *, direction, window,
         _kern = params.get("histogram_smooth_bins")
         _sign = dqdv_sign(step) if step is not None else 1.0
 
-        def _rebin_at_phase(frac, _v=v_all, _q=q_all, _w=_w_used,
-                            _win=window, _k=_kern, _s=_sign):
+        def _rebin_at_phase(
+            frac, _v=v_all, _q=q_all, _w=_w_used, _win=window, _k=_kern, _s=_sign
+        ):
             # `phase=` rather than a shifted window: see the note beside the
             # grid anchor in `histogram_dqdv`. Shifting the window was undone
             # by the visited-span clip on exactly the half-cycles this test
             # matters for.
-            c2, y2, _i2 = histogram_dqdv(_v, _q, bin_width_mV=_w,
-                                         window=_win, smooth_kernel=_k,
-                                         sign=_s, phase=float(frac))
+            c2, y2, _i2 = histogram_dqdv(
+                _v,
+                _q,
+                bin_width_mV=_w,
+                window=_win,
+                smooth_kernel=_k,
+                sign=_s,
+                phase=float(frac),
+            )
             return c2, y2
 
-        return (dict(voltage=centres, dqdv_raw=y, dqdv=y,
-                     occupancy=hinfo.get("occupancy"),
-                     rebin_at_phase=_rebin_at_phase),
-                dict(n_cv=n_cv, cv_method=how, raw_n=raw_n, n_spikes=0,
-                     n_oriented=0, smoothed=bool(HISTOGRAM_SMOOTH_KERNEL),
-                     dqdv_method=method, note="",
-                     bin_width_mV=hinfo["bin_width_mV"],
-                     n_empty_bins=hinfo["n_empty"],
-                     charge_outside_window=float(
-                         hinfo["charge_total"] - hinfo["charge_in_window"])
-                     if np.isfinite(hinfo["charge_total"]) else np.nan))
+        return (
+            dict(
+                voltage=centres,
+                dqdv_raw=y,
+                dqdv=y,
+                occupancy=hinfo.get("occupancy"),
+                rebin_at_phase=_rebin_at_phase,
+            ),
+            dict(
+                n_cv=n_cv,
+                cv_method=how,
+                raw_n=raw_n,
+                n_spikes=0,
+                n_oriented=0,
+                smoothed=bool(HISTOGRAM_SMOOTH_KERNEL),
+                dqdv_method=method,
+                note="",
+                bin_width_mV=hinfo["bin_width_mV"],
+                n_empty_bins=hinfo["n_empty"],
+                charge_outside_window=float(
+                    hinfo["charge_total"] - hinfo["charge_in_window"]
+                )
+                if np.isfinite(hinfo["charge_total"])
+                else np.nan,
+            ),
+        )
 
     # --- the derivative path -------------------------------------------
     # BEFORE the sort — see `orient_dqdv`. The sort is what turns a wobbling
     # plateau voltage into an inverted peak. The histogram path above needs
     # none of this, which is most of the argument for it.
-    stripped, n_oriented = orient_dqdv(stripped, direction,
-                                       capacity_col=capacity_col)
+    stripped, n_oriented = orient_dqdv(stripped, direction, capacity_col=capacity_col)
 
     # kind="mergesort" is a STABLE sort, and that is deliberate.
     #
@@ -1788,9 +1930,14 @@ def preprocess_half_cycle(df_step, params, *, direction, window,
     lo, hi = window
     d = d[(d["Voltage"] >= lo) & (d["Voltage"] <= hi)]
     if len(d) < 5:
-        return None, dict(n_cv=n_cv, cv_method=how, raw_n=raw_n,
-                          n_oriented=n_oriented, dqdv_method=method,
-                          note="fewer than 5 points after trimming")
+        return None, dict(
+            n_cv=n_cv,
+            cv_method=how,
+            raw_n=raw_n,
+            n_oriented=n_oriented,
+            dqdv_method=method,
+            note="fewer than 5 points after trimming",
+        )
 
     voltage = pd.to_numeric(d["Voltage"], errors="coerce").values.copy()
     dqdv_raw = pd.to_numeric(d["dQ/dV"], errors="coerce").values.copy()
@@ -1803,23 +1950,34 @@ def preprocess_half_cycle(df_step, params, *, direction, window,
     n_spikes = 0
     if params.get("spike_removal"):
         work, n_spikes = remove_spikes(
-            work, params.get("spike_window_size", 5),
-            params.get("spike_threshold_multiplier", 3.0))
+            work,
+            params.get("spike_window_size", 5),
+            params.get("spike_threshold_multiplier", 3.0),
+        )
 
-    smoothed, was = smooth_dqdv(work.values, params.get("smoothing_window"),
-                                params.get("polyorder", 3))
+    smoothed, was = smooth_dqdv(
+        work.values, params.get("smoothing_window"), params.get("polyorder", 3)
+    )
     second = params.get("second_smooth_window")
     if second:
         smoothed, _ = smooth_dqdv(smoothed, second, params.get("polyorder", 3))
 
-    return (dict(voltage=voltage, dqdv_raw=dqdv_raw, dqdv=smoothed),
-            dict(n_cv=n_cv, cv_method=how, raw_n=raw_n, n_spikes=n_spikes,
-                 n_oriented=n_oriented, smoothed=bool(was),
-                 dqdv_method=method, note=""))
+    return (
+        dict(voltage=voltage, dqdv_raw=dqdv_raw, dqdv=smoothed),
+        dict(
+            n_cv=n_cv,
+            cv_method=how,
+            raw_n=raw_n,
+            n_spikes=n_spikes,
+            n_oriented=n_oriented,
+            smoothed=bool(was),
+            dqdv_method=method,
+            note="",
+        ),
+    )
 
 
-def half_cycle_report(dataset, cycle, step, params, *, window=None,
-                      voltage_trim_mV=50):
+def half_cycle_report(dataset, cycle, step, params, *, window=None, voltage_trim_mV=50):
     """
     Assemble a `HalfCycleSignal`: the curve, plus what was measured on it.
 
@@ -1830,18 +1988,22 @@ def half_cycle_report(dataset, cycle, step, params, *, window=None,
         window = voltage_window(dataset, voltage_trim_mV)
     df = dataset.half_cycle(cycle, step)
     direction = dataset.step_direction(cycle, step)
-    cap_col = ("Charge_Capacity" if str(step).lower().startswith("c")
-               else "Discharge_Capacity")
+    cap_col = (
+        "Charge_Capacity" if str(step).lower().startswith("c") else "Discharge_Capacity"
+    )
 
-    sig = HalfCycleSignal(cycle=int(cycle), step=str(step),
-                          direction=float(direction),
-                          capacity=dataset.capacity(cycle, step),
-                          n_records_raw=len(df))
+    sig = HalfCycleSignal(
+        cycle=int(cycle),
+        step=str(step),
+        direction=float(direction),
+        capacity=dataset.capacity(cycle, step),
+        n_records_raw=len(df),
+    )
     sig.reversals = reversals(df, direction, capacity_col=cap_col)
 
-    curve, info = preprocess_half_cycle(df, params, direction=direction,
-                                        window=window, capacity_col=cap_col,
-                                        step=step)
+    curve, info = preprocess_half_cycle(
+        df, params, direction=direction, window=window, capacity_col=cap_col, step=step
+    )
     sig.cv_points_removed = info["n_cv"]
     sig.cv_method = info["cv_method"]
     sig.n_oriented = int(info.get("n_oriented", 0))
@@ -1859,6 +2021,5 @@ def half_cycle_report(dataset, cycle, step, params, *, window=None,
     sig.dqdv_method = info.get("dqdv_method", "")
     sig.bin_width_mV = float(info.get("bin_width_mV", float("nan")))
     sig.n_empty_bins = int(info.get("n_empty_bins", 0))
-    sig.charge_outside_window = float(
-        info.get("charge_outside_window", float("nan")))
+    sig.charge_outside_window = float(info.get("charge_outside_window", float("nan")))
     return sig

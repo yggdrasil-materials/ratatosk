@@ -36,25 +36,38 @@ import re
 import numpy as np
 import pandas as pd
 
-from .analyse import (cycle_column, cell_integrity_verdict,
-                      UNATTRIBUTED_WITHHOLD_ABOVE, AREA_GROWTH_HEADROOM_PCT,
-                      AREA_LOWER_BOUND_REPORTABLE)
+from .analyse import (
+    cycle_column,
+    cell_integrity_verdict,
+    UNATTRIBUTED_WITHHOLD_ABOVE,
+    AREA_GROWTH_HEADROOM_PCT,
+    AREA_LOWER_BOUND_REPORTABLE,
+)
 from .style import CAPACITY_COLUMN_ALIASES
 
 
-__all__ = ["build_report", "write_report", "build_run_summary",
-           "write_run_summary", "FIGURE_GUIDE"]
+__all__ = [
+    "build_report",
+    "write_report",
+    "build_run_summary",
+    "write_run_summary",
+    "FIGURE_GUIDE",
+]
 
 
 # Which four, and what to say about each. Ordered as a reader should meet them:
 # does the cell work, is it dying, what is the mechanism, is the mechanism
 # moving. Each entry is (folder, filename suffix, title, what to look for).
 FIGURE_GUIDE = [
-    ("1_cycling", "_cycle_life.png", "Does the cell work?",
-     "Capacity and coulombic efficiency against cycle number. CE should sit "
-     "at or just under 100% from a few cycles in. A first cycle well below "
-     "that is formation; a later dip is charge going somewhere it should not, "
-     "and section 2 above says where."),
+    (
+        "1_cycling",
+        "_cycle_life.png",
+        "Does the cell work?",
+        "Capacity and coulombic efficiency against cycle number. CE should sit "
+        "at or just under 100% from a few cycles in. A first cycle well below "
+        "that is formation; a later dip is charge going somewhere it should not, "
+        "and section 2 above says where.",
+    ),
     # RUN-WIDE. `capacity_retention` draws ONE figure for the whole run, so
     # there is no per-cell file to find; `organise_run` mirrors it into each
     # cell folder as `comparative_capacity_retention_vs_cycle.png`. `_find`
@@ -62,20 +75,33 @@ FIGURE_GUIDE = [
     # where a cell's own was asked for — so this tile resolved to nothing and
     # every START_HERE report in every run has said "(figure not found)"
     # against question 2 of 4.
-    ("1_cycling", "capacity_retention_vs_cycle.png", "Is it dying, and how fast?",
-     "Discharge capacity as a percentage of the reference cycle. A straight "
-     "decline is ordinary ageing. A cliff is an event — cross-reference the "
-     "cycle number against section 2.", True),
-    ("4_dqdv", "_dQdV_waterfall_Discharge.png", "What is the mechanism?",
-     "Every cycle's differential capacity, stacked. Each peak is a redox "
-     "process. A peak that shifts is polarising; one that broadens is losing "
-     "kinetics; one that shrinks is losing the material behind it. This is "
-     "the figure that says WHY the capacity curve does what it does."),
-    ("6_descriptors", "_peak_trends_Discharge.png", "Is the mechanism moving?",
-     "Each tracked peak's centre and area against cycle number. A redox peak "
-     "at C/10 should drift a few mV per cycle. Tens of mV per cycle is a "
-     "fitting artefact, not chemistry — the coherence table in "
-     "5_peak_fitting says which peaks passed that test."),
+    (
+        "1_cycling",
+        "capacity_retention_vs_cycle.png",
+        "Is it dying, and how fast?",
+        "Discharge capacity as a percentage of the reference cycle. A straight "
+        "decline is ordinary ageing. A cliff is an event — cross-reference the "
+        "cycle number against section 2.",
+        True,
+    ),
+    (
+        "4_dqdv",
+        "_dQdV_waterfall_Discharge.png",
+        "What is the mechanism?",
+        "Every cycle's differential capacity, stacked. Each peak is a redox "
+        "process. A peak that shifts is polarising; one that broadens is losing "
+        "kinetics; one that shrinks is losing the material behind it. This is "
+        "the figure that says WHY the capacity curve does what it does.",
+    ),
+    (
+        "6_descriptors",
+        "_peak_trends_Discharge.png",
+        "Is the mechanism moving?",
+        "Each tracked peak's centre and area against cycle number. A redox peak "
+        "at C/10 should drift a few mV per cycle. Tens of mV per cycle is a "
+        "fitting artefact, not chemistry — the coherence table in "
+        "5_peak_fitting says which peaks passed that test.",
+    ),
 ]
 
 _CSS = """
@@ -135,8 +161,14 @@ def _md_inline(t):
     return re.sub(r"`([^`]+?)`", r"<code>\1</code>", t)
 
 
-_MIME = {".png": "image/png", ".jpg": "image/jpeg", ".jpeg": "image/jpeg",
-         ".svg": "image/svg+xml", ".gif": "image/gif", ".webp": "image/webp"}
+_MIME = {
+    ".png": "image/png",
+    ".jpg": "image/jpeg",
+    ".jpeg": "image/jpeg",
+    ".svg": "image/svg+xml",
+    ".gif": "image/gif",
+    ".webp": "image/webp",
+}
 
 
 def _embed(path):
@@ -148,8 +180,7 @@ def _embed(path):
         return None
     try:
         with open(path, "rb") as fh:
-            return (f"data:{mime};base64,"
-                    + base64.b64encode(fh.read()).decode("ascii"))
+            return f"data:{mime};base64," + base64.b64encode(fh.read()).decode("ascii")
     except OSError:
         return None
 
@@ -238,9 +269,22 @@ def _find(folder, suffix, name, run_wide=False):
     return None
 
 
-def _facts(name, params, integrity, cycle_table, fit_limit, detection,
-           tracking, attribution, closure, profile, in_progress=None,
-           coherence=None, resolvability=None, parameters=None):
+def _facts(
+    name,
+    params,
+    integrity,
+    cycle_table,
+    fit_limit,
+    detection,
+    tracking,
+    attribution,
+    closure,
+    profile,
+    in_progress=None,
+    coherence=None,
+    resolvability=None,
+    parameters=None,
+):
     """Everything both renderers need, computed once."""
     f = {"name": name, "params": params or {}}
     # THE MECHANISM VERDICT. `quality.assess_resolvability` decides, before a
@@ -257,36 +301,48 @@ def _facts(name, params, integrity, cycle_table, fit_limit, detection,
     f["fit_quality"] = {}
     if parameters is not None and not getattr(parameters, "empty", True):
         _pp = parameters
-        _cols = ["height_ratio", "overshoot", "max_residual_frac",
-                 "residual_runs_z", "r_squared"]
+        _cols = [
+            "height_ratio",
+            "overshoot",
+            "max_residual_frac",
+            "residual_runs_z",
+            "r_squared",
+        ]
         if all(c in getattr(_pp, "columns", []) for c in _cols):
             _hc = _pp.groupby(["step", "cycle"])[_cols].first().reset_index()
             for _st, _g in _hc.groupby("step"):
-                f["fit_quality"][str(_st)] = {
-                    c: float(_g[c].median()) for c in _cols}
+                f["fit_quality"][str(_st)] = {c: float(_g[c].median()) for c in _cols}
                 f["fit_quality"][str(_st)]["n"] = int(len(_g))
                 f["fit_quality"][str(_st)]["height_worst"] = float(
-                    _g["height_ratio"].min())
+                    _g["height_ratio"].min()
+                )
                 f["fit_quality"][str(_st)]["height_tallest"] = float(
-                    _g["height_ratio"].max())
+                    _g["height_ratio"].max()
+                )
                 # ...and WHERE, because "one half-cycle is at 0.57" is only
                 # actionable with a cycle number beside it.
                 _hh = _g.dropna(subset=["height_ratio"])
                 if not _hh.empty:
                     f["fit_quality"][str(_st)]["height_worst_cycle"] = int(
-                        _hh.loc[_hh["height_ratio"].idxmin(), "cycle"])
+                        _hh.loc[_hh["height_ratio"].idxmin(), "cycle"]
+                    )
                     f["fit_quality"][str(_st)]["height_tallest_cycle"] = int(
-                        _hh.loc[_hh["height_ratio"].idxmax(), "cycle"])
+                        _hh.loc[_hh["height_ratio"].idxmax(), "cycle"]
+                    )
                     f["fit_quality"][str(_st)]["n_short"] = int(
-                        (_hh["height_ratio"] < 0.85).sum())
+                        (_hh["height_ratio"] < 0.85).sum()
+                    )
                     f["fit_quality"][str(_st)]["n_tall"] = int(
-                        (_hh["height_ratio"] > 1.15).sum())
+                        (_hh["height_ratio"] > 1.15).sum()
+                    )
                 _rr = _g.dropna(subset=["r_squared"])
                 if not _rr.empty:
                     f["fit_quality"][str(_st)]["r2_worst"] = float(
-                        _rr["r_squared"].min())
+                        _rr["r_squared"].min()
+                    )
                     f["fit_quality"][str(_st)]["r2_worst_cycle"] = int(
-                        _rr.loc[_rr["r_squared"].idxmin(), "cycle"])
+                        _rr.loc[_rr["r_squared"].idxmin(), "cycle"]
+                    )
     # THE LINESHAPE. A sharp two-phase peak is asymmetric and until 1.9.0.51
     # the model could not be; where the split shape was fitted, the ratio it
     # settled on is a measurement and belongs on the page — including when it
@@ -294,11 +350,15 @@ def _facts(name, params, integrity, cycle_table, fit_limit, detection,
     f["lineshape"] = {}
     if parameters is not None and not getattr(parameters, "empty", True):
         _pp = parameters
-        if all(c in getattr(_pp, "columns", [])
-               for c in ("asymmetry_k", "asymmetry_at_bound")):
-            _hc = (_pp.groupby(["step", "cycle"])[["asymmetry_k",
-                                                   "asymmetry_at_bound"]]
-                   .first().reset_index())
+        if all(
+            c in getattr(_pp, "columns", [])
+            for c in ("asymmetry_k", "asymmetry_at_bound")
+        ):
+            _hc = (
+                _pp.groupby(["step", "cycle"])[["asymmetry_k", "asymmetry_at_bound"]]
+                .first()
+                .reset_index()
+            )
             for _st, _g in _hc.groupby("step"):
                 _k = _g["asymmetry_k"].dropna()
                 if _k.empty:
@@ -309,13 +369,18 @@ def _facts(name, params, integrity, cycle_table, fit_limit, detection,
                 # does not hold. Count how many agree with the median's sign.
                 _same = int(((_k > 1.0) == (_k.median() > 1.0)).sum())
                 f["lineshape"][str(_st)] = dict(
-                    n=int(len(_g)), k=float(_k.median()),
-                    k_lo=float(_k.min()), k_hi=float(_k.max()),
-                    same_sign=_same, n_k=int(len(_k)),
+                    n=int(len(_g)),
+                    k=float(_k.median()),
+                    k_lo=float(_k.min()),
+                    k_hi=float(_k.max()),
+                    same_sign=_same,
+                    n_k=int(len(_k)),
                     at_bound=int(_g["asymmetry_at_bound"].sum()),
                     clipped=int(_g["asymmetry_k_clipped"].sum())
-                    if "asymmetry_k_clipped" in _g else 0,
-                    split=bool((_k - 1.0).abs().median() > 0.02))
+                    if "asymmetry_k_clipped" in _g
+                    else 0,
+                    split=bool((_k - 1.0).abs().median() > 0.02),
+                )
             # ...and how often the NARROW side of the LARGEST component in a
             # half-cycle sits on the width floor. A split lineshape can put
             # one flank below what the histogram samples, and on LTO
@@ -326,8 +391,11 @@ def _facts(name, params, integrity, cycle_table, fit_limit, detection,
         # sweep: on LTO the fitted FWHM tracks the bin width almost linearly
         # over a factor of ten, so it is the histogram's width, not the peak's.
         if {"fwhm", "sample_mV"} <= set(_pp.columns):
-            _b = (pd.to_numeric(_pp["fwhm"], errors="coerce") * 1000.0
-                  / pd.to_numeric(_pp["sample_mV"], errors="coerce"))
+            _b = (
+                pd.to_numeric(_pp["fwhm"], errors="coerce")
+                * 1000.0
+                / pd.to_numeric(_pp["sample_mV"], errors="coerce")
+            )
             for _st, _gb in _pp.assign(_bins=_b).groupby("step"):
                 if str(_st) not in f["lineshape"]:
                     continue
@@ -338,15 +406,22 @@ def _facts(name, params, integrity, cycle_table, fit_limit, detection,
                     fwhm_bins=float(_v.median()),
                     n_comp=int(len(_gb)),
                     undersampled=int(_gb["width_undersampled"].fillna(False).sum())
-                    if "width_undersampled" in _gb else 0)
+                    if "width_undersampled" in _gb
+                    else 0,
+                )
         if {"at_sigma_floor", "amplitude_area"} <= set(_pp.columns):
-                _dom = (_pp.assign(_a=_pp["amplitude_area"].abs())
-                        .sort_values("_a")
-                        .groupby(["step", "cycle"]).last().reset_index())
-                for _st, _g2 in _dom.groupby("step"):
-                    if str(_st) in f["lineshape"]:
-                        f["lineshape"][str(_st)]["dominant_at_floor"] = int(
-                            _g2["at_sigma_floor"].fillna(False).sum())
+            _dom = (
+                _pp.assign(_a=_pp["amplitude_area"].abs())
+                .sort_values("_a")
+                .groupby(["step", "cycle"])
+                .last()
+                .reset_index()
+            )
+            for _st, _g2 in _dom.groupby("step"):
+                if str(_st) in f["lineshape"]:
+                    f["lineshape"][str(_st)]["dominant_at_floor"] = int(
+                        _g2["at_sigma_floor"].fillna(False).sum()
+                    )
     # HOW MANY COMPONENTS DID EACH HALF-CYCLE GET, AND HOW MANY DID THE
     # REFERENCE CYCLE GET? Components per half-cycle swing 1-5 on NMC111 with
     # no pattern, and the reference cycle got the THINNEST fit in the dataset
@@ -366,20 +441,21 @@ def _facts(name, params, integrity, cycle_table, fit_limit, detection,
     if parameters is not None and not getattr(parameters, "empty", True):
         _pp = parameters
         if {"cycle", "step"} <= set(getattr(_pp, "columns", [])):
-            _n = (_pp.groupby(["step", "cycle"]).size()
-                  .rename("n").reset_index())
+            _n = _pp.groupby(["step", "cycle"]).size().rename("n").reset_index()
             _ref = f.get("reference_cycle")
             for _st, _g in _n.groupby("step"):
                 _med = float(_g["n"].median())
-                _refrow = (_g[_g["cycle"] == _ref] if _ref is not None
-                           else _g.iloc[0:0])
+                _refrow = _g[_g["cycle"] == _ref] if _ref is not None else _g.iloc[0:0]
                 f["component_census"][str(_st)] = dict(
                     n_half_cycles=int(len(_g)),
-                    lo=int(_g["n"].min()), hi=int(_g["n"].max()),
+                    lo=int(_g["n"].min()),
+                    hi=int(_g["n"].max()),
                     median=_med,
                     reference_cycle=(int(_ref) if _ref is not None else None),
-                    reference_n=(int(_refrow.iloc[0]["n"])
-                                 if not _refrow.empty else None))
+                    reference_n=(
+                        int(_refrow.iloc[0]["n"]) if not _refrow.empty else None
+                    ),
+                )
     # ITEM 37. A HALF-CYCLE WITH NO PRIMARY PEAK AT ALL. `primaries_only`
     # drops shoulders, but guards with "keep them if there are no primaries" —
     # so when the picker finds no resolved maximum the whole half-cycle is
@@ -390,15 +466,20 @@ def _facts(name, params, integrity, cycle_table, fit_limit, detection,
     if parameters is not None and not getattr(parameters, "empty", True):
         _pp = parameters
         if {"cycle", "step", "is_shoulder"} <= set(getattr(_pp, "columns", [])):
-            _so = (_pp.groupby(["step", "cycle"])["is_shoulder"]
-                   .all().reset_index(name="all_shoulder"))
+            _so = (
+                _pp.groupby(["step", "cycle"])["is_shoulder"]
+                .all()
+                .reset_index(name="all_shoulder")
+            )
             for _st, _g in _so.groupby("step"):
                 _bad = _g[_g["all_shoulder"]]
                 if len(_bad):
                     f["shoulder_only"][str(_st)] = dict(
-                        n=int(len(_bad)), total=int(len(_g)),
+                        n=int(len(_bad)),
+                        total=int(len(_g)),
                         first=int(_bad["cycle"].min()),
-                        last=int(_bad["cycle"].max()))
+                        last=int(_bad["cycle"].max()),
+                    )
     # HOW MUCH DATA EACH FIT HAD. Reduced to a handful of numbers here rather
     # than carrying the whole parameter table into the facts dict, which both
     # renderers copy.
@@ -409,23 +490,22 @@ def _facts(name, params, integrity, cycle_table, fit_limit, detection,
         _key = [c for c in ("cycle", "step") if c in getattr(_pp, "columns", [])]
         if _key and all(c in _pp.columns for c in _need):
             _H = _pp.drop_duplicates(subset=_key)
-            _ppp = pd.to_numeric(_H["points_per_parameter"],
-                                 errors="coerce").dropna()
+            _ppp = pd.to_numeric(_H["points_per_parameter"], errors="coerce").dropna()
             if not _ppp.empty:
                 _npt = pd.to_numeric(_H["n_points"], errors="coerce").dropna()
                 _nvy = pd.to_numeric(_H["nvarys"], errors="coerce").dropna()
-                _cpl = pd.to_numeric(_H.get("n_shoulders_coupled"),
-                                     errors="coerce").dropna()
+                _cpl = pd.to_numeric(
+                    _H.get("n_shoulders_coupled"), errors="coerce"
+                ).dropna()
                 f["identifiability"] = dict(
                     n_half_cycles=int(len(_H)),
                     median=float(_ppp.median()),
                     worst=float(_ppp.min()),
                     n_thin=int((_ppp < IDENTIFIABILITY_POINTS_PER_PARAM).sum()),
-                    median_points=(float(_npt.median()) if len(_npt)
-                                   else float("nan")),
-                    median_varied=(float(_nvy.median()) if len(_nvy)
-                                   else float("nan")),
-                    coupled=(int(_cpl.sum()) if len(_cpl) else 0))
+                    median_points=(float(_npt.median()) if len(_npt) else float("nan")),
+                    median_varied=(float(_nvy.median()) if len(_nvy) else float("nan")),
+                    coupled=(int(_cpl.sum()) if len(_cpl) else 0),
+                )
 
     # WHAT `reliable` MEANS ON THIS CELL, broken out. One boolean was
     # carrying four different statements — see the note in
@@ -434,9 +514,13 @@ def _facts(name, params, integrity, cycle_table, fit_limit, detection,
     # the over-theoretical finding can say whether it did anything here.
     f["n_anomalous_components"] = int(
         parameters["half_cycle_anomalous"].fillna(False).astype(bool).sum()
-        if (parameters is not None and not getattr(parameters, "empty", True)
-            and "half_cycle_anomalous" in getattr(parameters, "columns", []))
-        else 0)
+        if (
+            parameters is not None
+            and not getattr(parameters, "empty", True)
+            and "half_cycle_anomalous" in getattr(parameters, "columns", [])
+        )
+        else 0
+    )
 
     f["reliability"] = {}
     if parameters is not None and not getattr(parameters, "empty", True):
@@ -446,32 +530,39 @@ def _facts(name, params, integrity, cycle_table, fit_limit, detection,
             _r = dict(n=int(len(_pp)), ok=int(_rel.sum()))
             if "reliability_reason" in _pp.columns:
                 _r["reasons"] = {
-                    str(k): int(v) for k, v in
-                    _pp.loc[~_rel, "reliability_reason"]
-                    .value_counts().items()}
+                    str(k): int(v)
+                    for k, v in _pp.loc[~_rel, "reliability_reason"]
+                    .value_counts()
+                    .items()
+                }
             if "area_determinacy" in _pp.columns:
                 _r["determinacy"] = {
-                    str(k): int(v) for k, v in
-                    _pp["area_determinacy"].value_counts().items()}
+                    str(k): int(v)
+                    for k, v in _pp["area_determinacy"].value_counts().items()
+                }
             # AREAS THAT ARE LOWER BOUNDS. `area_is_lower_bound` has been in
             # the parameter table for several builds and read by nothing.
             # The count that matters is not how many components are
             # truncated — it is how many are truncated AND marked reliable,
             # because those are the ones whose areas a reader will quote.
-            _out = pd.to_numeric(_pp.get("area_outside_window_frac"),
-                                 errors="coerce")
+            _out = pd.to_numeric(_pp.get("area_outside_window_frac"), errors="coerce")
             if _out is not None and _out.notna().any():
-                _lb = (_pp["area_is_lower_bound"].fillna(False).astype(bool)
-                       if "area_is_lower_bound" in _pp.columns
-                       else pd.Series(False, index=_pp.index))
+                _lb = (
+                    _pp["area_is_lower_bound"].fillna(False).astype(bool)
+                    if "area_is_lower_bound" in _pp.columns
+                    else pd.Series(False, index=_pp.index)
+                )
                 _mat = _lb & (_out > AREA_LOWER_BOUND_REPORTABLE).fillna(False)
                 _r["lower_bound"] = int(_mat.sum())
                 _r["lower_bound_reliable"] = int((_mat & _rel).sum())
-                _r["lower_bound_worst"] = (float(_out[_mat].max())
-                                           if int(_mat.sum()) else 0.0)
-                _r["lower_bound_median"] = (float(_out[_mat & _rel].median())
-                                            if int((_mat & _rel).sum())
-                                            else 0.0)
+                _r["lower_bound_worst"] = (
+                    float(_out[_mat].max()) if int(_mat.sum()) else 0.0
+                )
+                _r["lower_bound_median"] = (
+                    float(_out[_mat & _rel].median())
+                    if int((_mat & _rel).sum())
+                    else 0.0
+                )
             f["reliability"] = _r
 
     # THE CELL-LEVEL VERDICT. The page counted anomalous half-cycles and
@@ -483,13 +574,13 @@ def _facts(name, params, integrity, cycle_table, fit_limit, detection,
     # wrap it turned that ImportError into silence. The verdict vanished from
     # every notebook run and nothing said so. The flattener rewrites top-level
     # imports; `build_inline` now refuses a relative import anywhere else.
-    f["cell_integrity"] = cell_integrity_verdict(
-        getattr(integrity, "table", integrity))
+    f["cell_integrity"] = cell_integrity_verdict(getattr(integrity, "table", integrity))
     p = f["params"]
     # `or name`, not `get(..., name)`: a composition recorded as "" — which
     # the run summary already handles explicitly — gave a title of "— cell A".
-    f["title"] = (f"{p.get('composition') or name}"
-                  + (f" — cell {p['cell_id']}" if p.get("cell_id") else ""))
+    f["title"] = f"{p.get('composition') or name}" + (
+        f" — cell {p['cell_id']}" if p.get("cell_id") else ""
+    )
 
     # --- capacity and retention -----------------------------------------
     # Reported at the last cycle the cell was still WORKING, not the last row
@@ -523,7 +614,7 @@ def _facts(name, params, integrity, cycle_table, fit_limit, detection,
         icol = cycle_column(t, ("Incomplete",))
         _cmax = t["Cycle"].max()
         f["n_cycles"] = int(_cmax) if pd.notna(_cmax) else None
-        good = t[t[icol] != True] if icol else t          # noqa: E712
+        good = t[t[icol] != True] if icol else t  # noqa: E712
         # A half-cycle the export caught mid-flight is not a measurement.
         f["in_progress"] = sorted(in_progress or ())
         f["partial_final"] = _trailing_partial(good, dcol, f["in_progress"])
@@ -594,7 +685,8 @@ def _facts(name, params, integrity, cycle_table, fit_limit, detection,
                 continue
             seen.add(cyc)
             f["key_capacities"].append(
-                (cyc, float(v), 100.0 * v / base if base else None))
+                (cyc, float(v), 100.0 * v / base if base else None)
+            )
 
     # IS THIS DATASET A MEASUREMENT AT ALL?
     # `JQ_NNM_C-rate_2-4.2V_A_29042026` is a 485 kB export against 3.4 MB for
@@ -620,11 +712,13 @@ def _facts(name, params, integrity, cycle_table, fit_limit, detection,
         _unusable.append(
             f"only {f['n_cycles']} complete cycle(s) — capacity retention is "
             f"measured against cycle {UNUSABLE_MIN_CYCLES}, so there is no "
-            f"reference for it here")
+            f"reference for it here"
+        )
     if ce is not None and ce < UNUSABLE_MIN_MEDIAN_CE:
         _unusable.append(
             f"median coulombic efficiency {ce:.1f}% — more charge is lost each "
-            f"cycle than returns, which is not a working cell")
+            f"cycle than returns, which is not a working cell"
+        )
     f["unusable"] = _unusable
 
     f.setdefault("death_cycle", None)
@@ -634,8 +728,9 @@ def _facts(name, params, integrity, cycle_table, fit_limit, detection,
     # and the replicate table both pool this field across cells. Keeping the
     # arithmetic under its own key means the number is not lost, only barred
     # from being called retention.
-    f["rate_is_variable"] = bool(((params or {}).get("rate_protocol")
-                                  or {}).get("is_variable"))
+    f["rate_is_variable"] = bool(
+        ((params or {}).get("rate_protocol") or {}).get("is_variable")
+    )
     f["retention_uncorrected"] = ret
     f["retention"] = None if f["rate_is_variable"] else ret
     f["median_ce"] = ce
@@ -650,14 +745,15 @@ def _facts(name, params, integrity, cycle_table, fit_limit, detection,
         # that heading instead; listing it twice reads as two faults.
         _an = integrity[integrity["band"] == "ANOMALOUS"]
         if "over_theoretical" in _an:
-            _an = _an[_an["over_theoretical"] != True]       # noqa: E712
+            _an = _an[_an["over_theoretical"] != True]  # noqa: E712
         f["anomalous"] = _an.sort_values("parasitic_fraction", ascending=False)
         f["parasitic_total"] = float(integrity["parasitic_charge"].sum())
         f["plateau_total"] = float(integrity["plateau_charge"].sum())
         if "over_theoretical" in integrity:
-            ot = integrity["over_theoretical"] == True        # noqa: E712
+            ot = integrity["over_theoretical"] == True  # noqa: E712
             f["over_theoretical"] = integrity[ot].sort_values(
-                "capacity_ratio", ascending=False)
+                "capacity_ratio", ascending=False
+            )
             _sane_pl = integrity.loc[~ot, "plateau_charge"]
             f["plateau_sane"] = float(_sane_pl.sum())
         else:
@@ -669,8 +765,7 @@ def _facts(name, params, integrity, cycle_table, fit_limit, detection,
         _sane_pl = pd.to_numeric(_sane_pl, errors="coerce")
         _nz = _sane_pl[_sane_pl.notna() & (_sane_pl > 0)]
         f["plateau_n_half_cycles"] = int(len(_nz))
-        f["plateau_worst_mAh_g"] = (float(_nz.max()) if len(_nz)
-                                    else float("nan"))
+        f["plateau_worst_mAh_g"] = float(_nz.max()) if len(_nz) else float("nan")
 
     # --- what was withheld ------------------------------------------------
     withheld = 0
@@ -693,13 +788,12 @@ def _facts(name, params, integrity, cycle_table, fit_limit, detection,
     for step, A in (attribution or {}).items():
         if A is None or A.empty or "unattributed_fraction" not in A:
             continue
-        _u = pd.to_numeric(A["unattributed_fraction"],
-                           errors="coerce").dropna()
+        _u = pd.to_numeric(A["unattributed_fraction"], errors="coerce").dropna()
         _un.extend(_u.tolist())
         if "unattributed_withheld" in A:
             _un_with += int(A["unattributed_withheld"].sum())
-    f["unattributed"] = (float(np.median(_un)) if _un else None)
-    f["unattributed_range"] = ((min(_un), max(_un)) if _un else None)
+    f["unattributed"] = float(np.median(_un)) if _un else None
+    f["unattributed_range"] = (min(_un), max(_un)) if _un else None
     f["unattributed_withheld"] = _un_with
     # True when nothing was swept: every measured width is zero (one degree
     # only), or none could be measured at all.
@@ -709,9 +803,16 @@ def _facts(name, params, integrity, cycle_table, fit_limit, detection,
     # --- peaks ------------------------------------------------------------
     f["reference_reason"] = getattr(detection, "reference_reason", "")
     f["reference_severity"] = getattr(detection, "reference_severity", "ok")
-    f["peaks"] = {s: list(np.round(getattr(detection, "reference_voltages",
-                                           lambda _: [])(s), 3))
-                  for s in ("Charge", "Discharge")} if detection else {}
+    f["peaks"] = (
+        {
+            s: list(
+                np.round(getattr(detection, "reference_voltages", lambda _: [])(s), 3)
+            )
+            for s in ("Charge", "Discharge")
+        }
+        if detection
+        else {}
+    )
     f["tracked"] = []
     if tracking is not None and tracking.summary:
         for k in sorted(tracking.summary):
@@ -729,7 +830,9 @@ def _facts(name, params, integrity, cycle_table, fit_limit, detection,
     # ~0%. One flag, one basis, printed from where the flag put it.
     f["area_growth_basis_pct"] = float(
         getattr(tracking, "capacity_retention_pct", np.nan)
-        if tracking is not None else np.nan)
+        if tracking is not None
+        else np.nan
+    )
     # THE COHERENCE VERDICT, carried to the run summary.
     # `coherence_audit` decides, per reference peak, whether that peak moves
     # like a redox feature or like a fitting artefact. Until 1.9.0.34 the
@@ -741,19 +844,22 @@ def _facts(name, params, integrity, cycle_table, fit_limit, detection,
     f["coherence"] = []
     if coherence is not None and getattr(coherence, "empty", True) is False:
         for _r in coherence.itertuples():
-            f["coherence"].append(dict(
-                step=str(_r.step),
-                reference_voltage=float(_r.reference_voltage),
-                verdict=str(_r.verdict),
-                pairs=int(_r.pairs)))
+            f["coherence"].append(
+                dict(
+                    step=str(_r.step),
+                    reference_voltage=float(_r.reference_voltage),
+                    verdict=str(_r.verdict),
+                    pairs=int(_r.pairs),
+                )
+            )
     # Does the dQ/dV curve account for the cell's charge? Set by
     # `analyse.flag_low_fidelity`. This belongs in START_HERE and not only in
     # the console: it decides whether the peak AREAS on this page mean
     # anything, and START_HERE is where somebody reads them.
-    f["integral_fidelity"] = dict(getattr(tracking, "integral_fidelity", {})
-                                  or {})
-    f["profile"] = (profile or {}).get("class") if isinstance(profile, dict) \
-        else profile
+    f["integral_fidelity"] = dict(getattr(tracking, "integral_fidelity", {}) or {})
+    f["profile"] = (
+        (profile or {}).get("class") if isinstance(profile, dict) else profile
+    )
     return f
 
 
@@ -764,24 +870,28 @@ _MECHANISM_TEXT = {
         "one transition at a fixed potential",
         "The potential is pinned by two phases coexisting, so there is no "
         "composition window to smear over and every component was fitted as "
-        "a narrow peak on a straight baseline."),
+        "a narrow peak on a straight baseline.",
+    ),
     "multi_transition": (
         "a series of distinct transitions",
         "Each feature is a real transition in its own right, so the curve "
         "was fitted as a series of peaks — no flat-topped bands, which would "
-        "give a resolved feature a width it does not have."),
+        "give a resolved feature a width it does not have.",
+    ),
     "solid_solution": (
         "a continuum of site energies",
         "Charge is delivered across a window of composition rather than at "
         "one potential, so the components were fitted as flat-topped bands. "
         "The shoulders a peak model finds on an envelope like this are "
         "artefacts of the wrong shape, so only the primary features were "
-        "seeded."),
+        "seeded.",
+    ),
     "mixed": (
         "a solid solution with a transition on top of it",
         "Both shapes were used in the same fit: bands for the envelope, "
         "peaks for the transition riding on it, and the data decided which "
-        "each component became."),
+        "each component became.",
+    ),
 }
 
 
@@ -797,23 +907,28 @@ def _mechanism_sentence(f):
     mech = r.get("mechanism")
     if not mech:
         return []
-    what, implies = _MECHANISM_TEXT.get(
-        str(mech), (str(mech).replace("_", " "), ""))
+    what, implies = _MECHANISM_TEXT.get(str(mech), (str(mech).replace("_", " "), ""))
     why = (r.get("mechanism_reason") or "").strip().rstrip(".")
     sf = r.get("shoulder_fraction")
-    bits = [f"The run classified this dataset as **{str(mech).replace('_', ' ')}"
-            f"** — {what}."]
+    bits = [
+        f"The run classified this dataset as **{str(mech).replace('_', ' ')}"
+        f"** — {what}."
+    ]
     if why:
         bits.append(why[0].upper() + why[1:] + ".")
     elif sf is not None and np.isfinite(sf):
-        bits.append(f"{sf:.0%} of the detected components are shoulders "
-                    f"rather than resolved maxima.")
+        bits.append(
+            f"{sf:.0%} of the detected components are shoulders "
+            f"rather than resolved maxima."
+        )
     if implies:
         bits.append(implies)
-    bits.append("The classification is made on the reference half-cycle "
-                "before anything is fitted, and it is what chose the model "
-                "below; `component_kind` in the fitted-parameter table says "
-                "what each component actually became.")
+    bits.append(
+        "The classification is made on the reference half-cycle "
+        "before anything is fitted, and it is what chose the model "
+        "below; `component_kind` in the fitted-parameter table says "
+        "what each component actually became."
+    )
     return [("ok", "How this curve was modelled", " ".join(bits))]
 
 
@@ -823,21 +938,26 @@ _KIND_WORD = {"band": "flat-topped band", "peak": "peak"}
 def _kind_by_ref(f):
     """(step, reference voltage) -> the shape that feature was fitted with."""
     out = {}
-    for t in (f.get("tracked") or []):
+    for t in f.get("tracked") or []:
         k = t.get("component_kind")
         if not k:
             continue
         out[(t.get("step"), round(float(t.get("reference_voltage", np.nan)), 3))] = (
             _KIND_WORD.get(str(k), str(k))
-            + (" (band in some cycles, peak in others)"
-               if t.get("component_kind_mixed") else ""))
+            + (
+                " (band in some cycles, peak in others)"
+                if t.get("component_kind_mixed")
+                else ""
+            )
+        )
     return out
 
 
 _QUALITY_NOTE = (
     "R² is dominated by the bulk of a curve, so a composite can be half again "
     "taller than the data, or miss a peak height by a third, and still score "
-    "0.97. These say what it cannot.")
+    "0.97. These say what it cannot."
+)
 
 
 def _quality_sentence(f):
@@ -860,23 +980,31 @@ def _quality_sentence(f):
             continue
         h, o = s.get("height_ratio", np.nan), s.get("overshoot", np.nan)
         mr, z = s.get("max_residual_frac", np.nan), s.get("residual_runs_z", np.nan)
-        _p = [f"**{step}** (median of {s.get('n', 0)} half-cycles): the fitted "
-              f"peak is {h:.2f}x the height of the data"]
+        _p = [
+            f"**{step}** (median of {s.get('n', 0)} half-cycles): the fitted "
+            f"peak is {h:.2f}x the height of the data"
+        ]
         if np.isfinite(h) and h < 0.85:
-            _p.append("— the model is drawing the peak too SHORT, which is "
-                      "what a width floor looks like: it cannot be as narrow "
-                      "as the feature, so it conserves area by being wide and "
-                      "low")
+            _p.append(
+                "— the model is drawing the peak too SHORT, which is "
+                "what a width floor looks like: it cannot be as narrow "
+                "as the feature, so it conserves area by being wide and "
+                "low"
+            )
             worst = "bad"
         elif np.isfinite(h) and h > 1.15:
-            _p.append("— the model is drawing the peak TALLER than the curve, "
-                      "which is what an undetermined peak/background split "
-                      "looks like: the baseline sits high and the peaks are "
-                      "deepened to reach the data")
+            _p.append(
+                "— the model is drawing the peak TALLER than the curve, "
+                "which is what an undetermined peak/background split "
+                "looks like: the baseline sits high and the peaks are "
+                "deepened to reach the data"
+            )
             worst = "bad"
         if np.isfinite(o) and o > 0.05:
-            _p.append(f", and the composite goes {o:.0%} of the amplitude "
-                      f"outside the range the data ever reached")
+            _p.append(
+                f", and the composite goes {o:.0%} of the amplitude "
+                f"outside the range the data ever reached"
+            )
             worst = "bad"
         if np.isfinite(mr):
             _p.append(f". The largest residual is {mr:.0%} of the amplitude")
@@ -894,11 +1022,13 @@ def _quality_sentence(f):
             # is what a curve built from bins holding 0 or 1 raw record is.
             # So it says the residual has structure; it does not say what put
             # it there.
-            _p.append(f", and the residual runs the same sign far longer than "
-                      f"noise would (z = {z:.0f}) — there is structure left in "
-                      f"it. That can be the lineshape, the baseline, or a "
-                      f"curve with too little independent noise to test "
-                      f"against; z alone does not say which")
+            _p.append(
+                f", and the residual runs the same sign far longer than "
+                f"noise would (z = {z:.0f}) — there is structure left in "
+                f"it. That can be the lineshape, the baseline, or a "
+                f"curve with too little independent noise to test "
+                f"against; z alone does not say which"
+            )
             if worst == "ok":
                 worst = "warn"
         # ITEM 31. THE MEDIAN HID THE FAULT. Every number above is a median,
@@ -914,28 +1044,39 @@ def _quality_sentence(f):
         _r2w, _r2c = s.get("r2_worst", np.nan), s.get("r2_worst_cycle")
         _ex = []
         if np.isfinite(_hw) and _hw < 0.85 and _hwc is not None:
-            _ex.append(f"the WORST is cycle {_hwc} at {_hw:.2f}x"
-                       + (f", and {_ns} of {s.get('n', 0)} half-cycles are "
-                          f"below 0.85x" if _ns > 1 else ""))
+            _ex.append(
+                f"the WORST is cycle {_hwc} at {_hw:.2f}x"
+                + (
+                    f", and {_ns} of {s.get('n', 0)} half-cycles are below 0.85x"
+                    if _ns > 1
+                    else ""
+                )
+            )
         if np.isfinite(_ht) and _ht > 1.15 and _htc is not None:
-            _ex.append(f"the TALLEST is cycle {_htc} at {_ht:.2f}x"
-                       + (f", and {_nt} of {s.get('n', 0)} are above 1.15x"
-                          if _nt > 1 else ""))
+            _ex.append(
+                f"the TALLEST is cycle {_htc} at {_ht:.2f}x"
+                + (f", and {_nt} of {s.get('n', 0)} are above 1.15x" if _nt > 1 else "")
+            )
         if _ex:
-            _p.append(". A median hides a single bad half-cycle, so: "
-                      + "; ".join(_ex))
+            _p.append(". A median hides a single bad half-cycle, so: " + "; ".join(_ex))
             worst = "bad"
         elif np.isfinite(_r2w) and _r2w < 0.90 and _r2c is not None:
-            _p.append(f". The median is not the whole story — the worst "
-                      f"half-cycle is cycle {_r2c} at R2 {_r2w:.3f}")
+            _p.append(
+                f". The median is not the whole story — the worst "
+                f"half-cycle is cycle {_r2c} at R2 {_r2w:.3f}"
+            )
             if worst == "ok":
                 worst = "warn"
         bits.append(" ".join(_p).replace(" ,", ",").replace(" .", ".") + ".")
     if not bits:
         return []
-    head = ("The model does not draw this curve well" if worst == "bad"
-            else "The fit has structure left in it" if worst == "warn"
-            else "The model draws this curve well")
+    head = (
+        "The model does not draw this curve well"
+        if worst == "bad"
+        else "The fit has structure left in it"
+        if worst == "warn"
+        else "The model draws this curve well"
+    )
     return [(worst, head, " ".join(bits) + " " + _QUALITY_NOTE)]
 
 
@@ -958,8 +1099,7 @@ def _voltage_envelope_sentence(f):
         e = env.get(step)
         if not e:
             continue
-        _sp = max(float(e.get("hi_spread_mV", 0.0)),
-                  float(e.get("lo_spread_mV", 0.0)))
+        _sp = max(float(e.get("hi_spread_mV", 0.0)), float(e.get("lo_spread_mV", 0.0)))
         # `drawn` IS THE GATE. It is decided once, beside the envelope
         # measurement, using the plotting module's own thresholds, so this
         # sentence describes exactly the steps on which the heat map drew a
@@ -967,29 +1107,35 @@ def _voltage_envelope_sentence(f):
         if not e.get("drawn") or not np.isfinite(_sp):
             continue
         _hi_moves = float(e.get("hi_spread_mV", 0.0)) >= float(
-            e.get("lo_spread_mV", 0.0))
+            e.get("lo_spread_mV", 0.0)
+        )
         _a = e["hi_first"] if _hi_moves else e["lo_first"]
         _b = e["hi_last"] if _hi_moves else e["lo_last"]
         _edge = "furthest" if _hi_moves else "nearest"
         bits.append(
             f"**{step}**: the {_edge} voltage this step reached went from "
             f"{_a:.3f} V to {_b:.3f} V over {int(e.get('n', 0))} half-cycles, "
-            f"a span of {_sp:.0f} mV")
+            f"a span of {_sp:.0f} mV"
+        )
         if _sp >= ENVELOPE_SEVERE_MV:
             worst = "warn"
     if not bits:
         return []
-    return [(worst,
-             "The voltage window the cell traverses is not constant",
-             "; ".join(bits)
-             + ". This is not a capacity statement — a cell can deliver the "
-               "same charge every cycle while the window it needs to do so "
-               "moves, and that is polarisation, or a cut-off being reached "
-               "sooner, rather than active material lost. Read it beside the "
-               "retention above: the two moving together is fade, the window "
-               "moving alone is resistance. The blue step line on the dQ/dV "
-               "heatmap is this quantity, and the region beyond it is "
-               "unmeasured rather than zero.")]
+    return [
+        (
+            worst,
+            "The voltage window the cell traverses is not constant",
+            "; ".join(bits)
+            + ". This is not a capacity statement — a cell can deliver the "
+            "same charge every cycle while the window it needs to do so "
+            "moves, and that is polarisation, or a cut-off being reached "
+            "sooner, rather than active material lost. Read it beside the "
+            "retention above: the two moving together is fade, the window "
+            "moving alone is resistance. The blue step line on the dQ/dV "
+            "heatmap is this quantity, and the region beyond it is "
+            "unmeasured rather than zero.",
+        )
+    ]
 
 
 def _identifiability_sentence(f):
@@ -1009,30 +1155,50 @@ def _identifiability_sentence(f):
     _thin, _n = q["n_thin"], q["n_half_cycles"]
     _coup = q.get("coupled", 0)
     _mp, _mv = q.get("median_points"), q.get("median_varied")
-    _lead = (f"Median {_med:.0f} points per varied parameter across "
-             f"{_n} half-cycles"
-             + (f" ({_mp:.0f} bins, {_mv:.0f} parameters)"
-                if _mp is not None and np.isfinite(_mp)
-                and _mv is not None and np.isfinite(_mv) else "")
-             + f"; the thinnest fit had {_min:.1f}."
-             + (f" {_coup} shoulder parameter(s) were tied to a parent rather "
-                f"than varied freely, which is why the parameter count is "
-                f"lower than the component count implies."
-                if _coup else ""))
+    _lead = (
+        f"Median {_med:.0f} points per varied parameter across "
+        f"{_n} half-cycles"
+        + (
+            f" ({_mp:.0f} bins, {_mv:.0f} parameters)"
+            if _mp is not None
+            and np.isfinite(_mp)
+            and _mv is not None
+            and np.isfinite(_mv)
+            else ""
+        )
+        + f"; the thinnest fit had {_min:.1f}."
+        + (
+            f" {_coup} shoulder parameter(s) were tied to a parent rather "
+            f"than varied freely, which is why the parameter count is "
+            f"lower than the component count implies."
+            if _coup
+            else ""
+        )
+    )
     if _thin:
-        return [("warn", "Some fits had little data per parameter",
-                 _lead + f" {_thin} of {_n} half-cycles fell below "
-                 f"{IDENTIFIABILITY_POINTS_PER_PARAM:.0f} points per "
-                 f"parameter. Below that the standard errors, and every flag "
-                 f"derived from them — `centre_poorly_determined`, "
-                 f"`area_poorly_determined`, `reliable` — describe a fit with "
-                 f"barely more information than it has unknowns. "
-                 f"`points_per_parameter` is in the fitted-parameters table "
-                 f"per half-cycle.")]
-    return [("ok", "The fits had enough data for their parameters",
-             _lead + " Nothing here is close to the point where a "
-             "least-squares standard error stops meaning anything. "
-             "`points_per_parameter` is in the fitted-parameters table.")]
+        return [
+            (
+                "warn",
+                "Some fits had little data per parameter",
+                _lead + f" {_thin} of {_n} half-cycles fell below "
+                f"{IDENTIFIABILITY_POINTS_PER_PARAM:.0f} points per "
+                f"parameter. Below that the standard errors, and every flag "
+                f"derived from them — `centre_poorly_determined`, "
+                f"`area_poorly_determined`, `reliable` — describe a fit with "
+                f"barely more information than it has unknowns. "
+                f"`points_per_parameter` is in the fitted-parameters table "
+                f"per half-cycle.",
+            )
+        ]
+    return [
+        (
+            "ok",
+            "The fits had enough data for their parameters",
+            _lead + " Nothing here is close to the point where a "
+            "least-squares standard error stops meaning anything. "
+            "`points_per_parameter` is in the fitted-parameters table.",
+        )
+    ]
 
 
 def _reliability_sentence(f):
@@ -1059,71 +1225,80 @@ def _reliability_sentence(f):
         # inferred component means on a cell that has none is noise, and the
         # LTO page carried three sentences to cover a single pinned width.
         _gloss = {
-            "band at its width ceiling":
-                "a component at a bound has a width that is a constraint "
-                "rather than a fit — and being knife-edge, one that need not "
-                "reproduce on another machine",
-            "width at its ceiling":
-                "a component at a bound has a width that is a constraint "
-                "rather than a fit — and being knife-edge, one that need not "
-                "reproduce on another machine",
-            "width at its ceiling or area not finite":
-                "a component at a bound has a width that is a constraint "
-                "rather than a fit",
-            "not detected in this half-cycle":
-                "a component not detected in its own half-cycle carries a "
-                "centre borrowed from a neighbouring one",
-            "this half-cycle passed more charge than the material can hold":
-                "a half-cycle that passed more charge than the material can "
-                "hold did not produce a differential capacity curve of the "
-                "material, however faithfully that curve integrates — its "
-                "components are fitted, tracked and drawn, and left out of "
-                "the trends",
-            "the fit put almost no charge here":
-                "a component carrying almost no charge is the fit saying the "
-                "feature is not there",
-            "most of this component lies outside the measured window":
-                "a component sitting at an end of the voltage window has "
-                "part of its profile outside the data, and runs both flanks "
-                "to the width bound because nothing on that side stops "
-                "them — the window is the reason, not the width",
-            "area collapsed against the reference cycle":
-                "a component that has collapsed against the reference cycle "
-                "is no longer the feature it was tracked as",
+            "band at its width ceiling": "a component at a bound has a width that is a constraint "
+            "rather than a fit — and being knife-edge, one that need not "
+            "reproduce on another machine",
+            "width at its ceiling": "a component at a bound has a width that is a constraint "
+            "rather than a fit — and being knife-edge, one that need not "
+            "reproduce on another machine",
+            "width at its ceiling or area not finite": "a component at a bound has a width that is a constraint "
+            "rather than a fit",
+            "not detected in this half-cycle": "a component not detected in its own half-cycle carries a "
+            "centre borrowed from a neighbouring one",
+            "this half-cycle passed more charge than the material can hold": "a half-cycle that passed more charge than the material can "
+            "hold did not produce a differential capacity curve of the "
+            "material, however faithfully that curve integrates — its "
+            "components are fitted, tracked and drawn, and left out of "
+            "the trends",
+            "the fit put almost no charge here": "a component carrying almost no charge is the fit saying the "
+            "feature is not there",
+            "most of this component lies outside the measured window": "a component sitting at an end of the voltage window has "
+            "part of its profile outside the data, and runs both flanks "
+            "to the width bound because nothing on that side stops "
+            "them — the window is the reason, not the width",
+            "area collapsed against the reference cycle": "a component that has collapsed against the reference cycle "
+            "is no longer the feature it was tracked as",
         }
         _seen, _say = set(), []
         for _k, _ in _ordered:
             _g = _gloss.get(_k)
             if _g and _g not in _seen:
-                _seen.add(_g); _say.append(_g)
-        _lead = ("The rest are not, for reasons that are not interchangeable: "
-                 if len(_ordered) > 1 else "The rest are not: ")
+                _seen.add(_g)
+                _say.append(_g)
+        _lead = (
+            "The rest are not, for reasons that are not interchangeable: "
+            if len(_ordered) > 1
+            else "The rest are not: "
+        )
         _tail = ""
         if _say:
-            _tail = (" — " + "; ".join(_say) + ". "
-                     + ("None of these is the same as a bad measurement, and "
-                        "none is the same as the others."
-                        if len(_say) > 2 else
-                        "Neither is the same as a bad measurement, and "
-                        "neither is the same as the other."
-                        if len(_say) == 2 else
-                        "That is not the same as a bad measurement."))
+            _tail = (
+                " — "
+                + "; ".join(_say)
+                + ". "
+                + (
+                    "None of these is the same as a bad measurement, and "
+                    "none is the same as the others."
+                    if len(_say) > 2
+                    else "Neither is the same as a bad measurement, and "
+                    "neither is the same as the other."
+                    if len(_say) == 2
+                    else "That is not the same as a bad measurement."
+                )
+            )
         bits.append(_lead + "; ".join(f"{v} {k}" for k, v in _ordered) + _tail)
     det = r.get("determinacy") or {}
     if det:
         _no = int(det.get("not estimated", 0))
         _im = int(det.get("imprecise", 0))
         _de = int(det.get("determined", 0))
-        _s = (f"Separately, and NOT part of that flag: {_de} of {n} "
-              f"components have a determined area uncertainty, {_im} have one "
-              f"too large to quote, and {_no} have none at all"
-              + (" — the covariance could not be estimated, so the area has "
-                 "no error bar to put beside it." if _no else
-                 ", so every area here can be quoted with one."))
+        _s = (
+            f"Separately, and NOT part of that flag: {_de} of {n} "
+            f"components have a determined area uncertainty, {_im} have one "
+            f"too large to quote, and {_no} have none at all"
+            + (
+                " — the covariance could not be estimated, so the area has "
+                "no error bar to put beside it."
+                if _no
+                else ", so every area here can be quoted with one."
+            )
+        )
         if _no > 0.5 * n:
-            _s += (" That is most of this cell. `reliable` says nothing "
-                   "about it, so an area from here should be quoted without "
-                   "an uncertainty rather than with an implied one.")
+            _s += (
+                " That is most of this cell. `reliable` says nothing "
+                "about it, so an area from here should be quoted without "
+                "an uncertainty rather than with an implied one."
+            )
         bits.append(_s)
     # AN AREA THAT IS A LOWER BOUND, said out loud. A component centred near
     # an end of the voltage window has part of its profile outside the data;
@@ -1137,19 +1312,25 @@ def _reliability_sentence(f):
     if _lb:
         _md = float(r.get("lower_bound_median", 0.0) or 0.0)
         _wo = float(r.get("lower_bound_worst", 0.0) or 0.0)
-        _s2 = (f"Also separately: {_lb} of {n} components have more than "
-               f"{AREA_LOWER_BOUND_REPORTABLE:.0%} of their fitted profile "
-               f"outside the measured voltage window, so their areas are "
-               f"LOWER BOUNDS rather than measurements")
+        _s2 = (
+            f"Also separately: {_lb} of {n} components have more than "
+            f"{AREA_LOWER_BOUND_REPORTABLE:.0%} of their fitted profile "
+            f"outside the measured voltage window, so their areas are "
+            f"LOWER BOUNDS rather than measurements"
+        )
         if _lb_rel:
-            _s2 += (f" — and {_lb_rel} of those are marked reliable, with a "
-                    f"median {_md:.0%} outside (worst {_wo:.0%}). `reliable` "
-                    f"is a statement about the fit, not about how much of "
-                    f"the feature the window caught. Widen the window, or "
-                    f"quote these as “at least”.")
+            _s2 += (
+                f" — and {_lb_rel} of those are marked reliable, with a "
+                f"median {_md:.0%} outside (worst {_wo:.0%}). `reliable` "
+                f"is a statement about the fit, not about how much of "
+                f"the feature the window caught. Widen the window, or "
+                f"quote these as “at least”."
+            )
         else:
-            _s2 += (f", worst {_wo:.0%} outside. None of them is marked "
-                    f"reliable, so nothing quotable is affected.")
+            _s2 += (
+                f", worst {_wo:.0%} outside. None of them is marked "
+                f"reliable, so nothing quotable is affected."
+            )
         bits.append(_s2)
     _lvl = "warn" if (reasons and ok < 0.5 * n) else "ok"
     if _lb_rel:
@@ -1181,10 +1362,14 @@ def _unattributed_clause(u, rng=None):
     if rng and all(v is not None and np.isfinite(v) for v in rng):
         _r = f" (over the run, {rng[0]:+.1%} to {rng[1]:+.1%})"
     if abs(u) < 0.005:
-        return (f" The model names essentially all of the charge — the median "
-                f"unattributed fraction is under 0.5%{_r}.")
-    return (f" The model names {1 - u:.1%} of the charge, leaving "
-            f"{u:+.1%} unattributed{_r}.")
+        return (
+            f" The model names essentially all of the charge — the median "
+            f"unattributed fraction is under 0.5%{_r}."
+        )
+    return (
+        f" The model names {1 - u:.1%} of the charge, leaving "
+        f"{u:+.1%} unattributed{_r}."
+    )
 
 
 def _sentence_case(t):
@@ -1253,7 +1438,7 @@ def _lineshape_sentence(f):
         if not s or not s.get("split"):
             continue
         k = s["k"]
-        _side = ("high-voltage" if k > 1 else "low-voltage")
+        _side = "high-voltage" if k > 1 else "low-voltage"
         _ratio = k if k > 1 else (1.0 / k if k > 0 else float("nan"))
         # THE RANGE IN THE SAME ORIENTATION AS THE HEADLINE. `_ratio` is
         # flipped to 1/k when the LOW flank is the wide one, so that the
@@ -1265,60 +1450,86 @@ def _lineshape_sentence(f):
         # its ends, so k_hi becomes the lower bound.
         _klo, _khi = float(s["k_lo"]), float(s["k_hi"])
         if not (k > 1):
-            _klo, _khi = ((1.0 / _khi if _khi > 0 else float("nan")),
-                          (1.0 / _klo if _klo > 0 else float("nan")))
+            _klo, _khi = (
+                (1.0 / _khi if _khi > 0 else float("nan")),
+                (1.0 / _klo if _klo > 0 else float("nan")),
+            )
         _ss, _nk = s.get("same_sign"), s.get("n_k", s["n"])
-        _p = [f"**{step}** ({s['n']} half-cycles): the {_side} flank is "
-              f"{_ratio:.1f}x the width of the other "
-              f"(ratio {_klo:.2f}-{_khi:.2f}"
-              + (f", and {_ss} of {_nk} lean that way"
-                 if _ss is not None and _ss < _nk else "") + ")"]
+        _p = [
+            f"**{step}** ({s['n']} half-cycles): the {_side} flank is "
+            f"{_ratio:.1f}x the width of the other "
+            f"(ratio {_klo:.2f}-{_khi:.2f}"
+            + (
+                f", and {_ss} of {_nk} lean that way"
+                if _ss is not None and _ss < _nk
+                else ""
+            )
+            + ")"
+        ]
         if _ss is not None and _nk and _ss < 0.8 * _nk:
-            _p.append(f". The sign is NOT consistent — {_nk - _ss} half-cycles "
-                      f"lean the other way, so the median above describes a "
-                      f"direction this dataset does not hold")
+            _p.append(
+                f". The sign is NOT consistent — {_nk - _ss} half-cycles "
+                f"lean the other way, so the median above describes a "
+                f"direction this dataset does not hold"
+            )
             worst = "warn"
         if s.get("clipped"):
-            _p.append(f". On {s['clipped']} of {_nk}, one flank was held at "
-                      f"the width floor, so the ratio quoted is the one the "
-                      f"curve was drawn with rather than the one the "
-                      f"optimiser reached (`asymmetry_k_fitted` in the table)")
+            _p.append(
+                f". On {s['clipped']} of {_nk}, one flank was held at "
+                f"the width floor, so the ratio quoted is the one the "
+                f"curve was drawn with rather than the one the "
+                f"optimiser reached (`asymmetry_k_fitted` in the table)"
+            )
         # THE WIDTHS THEMSELVES, BEFORE THEIR RATIO. Said first, because it
         # governs everything after it: a ratio of two numbers that are both
         # the bin width is 1.0 plus noise, whatever the fit reports.
-        _fb, _us, _nc = (s.get("fwhm_bins"), int(s.get("undersampled", 0) or 0),
-                         int(s.get("n_comp", 0) or 0))
+        _fb, _us, _nc = (
+            s.get("fwhm_bins"),
+            int(s.get("undersampled", 0) or 0),
+            int(s.get("n_comp", 0) or 0),
+        )
         if _fb is not None and np.isfinite(_fb) and _fb < WIDTH_BINS_MEASURABLE:
-            _p.append(f". The width this is a ratio OF is not a measurement: "
-                      f"the fitted FWHM spans a median {_fb:.1f} bins"
-                      + (f" and {_us} of {_nc} components are flagged "
-                         f"`width_undersampled`" if _nc else "")
-                      + f", against the {WIDTH_BINS_MEASURABLE:.0f} a width "
-                        f"needs. Swept over bin widths from 0.5 to 5 mV on "
-                        f"this chemistry the fitted FWHM tracks the BIN, not "
-                        f"the peak, so neither the widths nor this ratio "
-                        f"should be quoted as a property of the material")
+            _p.append(
+                f". The width this is a ratio OF is not a measurement: "
+                f"the fitted FWHM spans a median {_fb:.1f} bins"
+                + (
+                    f" and {_us} of {_nc} components are flagged `width_undersampled`"
+                    if _nc
+                    else ""
+                )
+                + f", against the {WIDTH_BINS_MEASURABLE:.0f} a width "
+                f"needs. Swept over bin widths from 0.5 to 5 mV on "
+                f"this chemistry the fitted FWHM tracks the BIN, not "
+                f"the peak, so neither the widths nor this ratio "
+                f"should be quoted as a property of the material"
+            )
             worst = "warn"
         _daf = int(s.get("dominant_at_floor", 0) or 0)
         if _daf:
-            _p.append(f". On {_daf} of {s['n']} half-cycles the NARROW side "
-                      f"of the largest component sits exactly on the width "
-                      f"floor — the leading edge is steeper than the "
-                      f"histogram samples, so that half of the width is the "
-                      f"floor and not a measurement, and `fwhm` carries it")
+            _p.append(
+                f". On {_daf} of {s['n']} half-cycles the NARROW side "
+                f"of the largest component sits exactly on the width "
+                f"floor — the leading edge is steeper than the "
+                f"histogram samples, so that half of the width is the "
+                f"floor and not a measurement, and `fwhm` carries it"
+            )
             if worst == "ok":
                 worst = "warn"
         if s["at_bound"]:
-            _p.append(f". {s['at_bound']} of {s['n']} settled ON the ratio "
-                      f"bound, where the number is the limit and not an "
-                      f"answer — read those widths as a floor")
+            _p.append(
+                f". {s['at_bound']} of {s['n']} settled ON the ratio "
+                f"bound, where the number is the limit and not an "
+                f"answer — read those widths as a floor"
+            )
             worst = "warn"
         bits.append(" ".join(_p).replace(" .", ".") + ".")
     if not bits:
         return []
-    head = ("The peak is asymmetric and was fitted that way"
-            if worst == "ok" else
-            "The peak is asymmetric, and one flank is not resolved")
+    head = (
+        "The peak is asymmetric and was fitted that way"
+        if worst == "ok"
+        else "The peak is asymmetric, and one flank is not resolved"
+    )
     # WHAT THE TWO DIRECTIONS ACTUALLY DID. This closed with "The two
     # directions lean OPPOSITE ways" unconditionally — appended to whatever
     # `bits` held, including a single fitted step, where "the two directions"
@@ -1327,29 +1538,48 @@ def _lineshape_sentence(f):
     # to be true of the LTO cells on disk, which is how it survived. The
     # asymmetry itself is the finding; which way the two steps lean is a
     # separate observation and is only worth making when both were measured.
-    _ks = [float(q[st]["k"]) for st in ("Charge", "Discharge")
-           if q.get(st) and q[st].get("split")
-           and np.isfinite(q[st].get("k", np.nan)) and q[st]["k"] > 0]
+    _ks = [
+        float(q[st]["k"])
+        for st in ("Charge", "Discharge")
+        if q.get(st)
+        and q[st].get("split")
+        and np.isfinite(q[st].get("k", np.nan))
+        and q[st]["k"] > 0
+    ]
     if len(_ks) < 2:
-        _lean = (" Only one direction was fitted with a split lineshape, so "
-                 "there is nothing here to compare it with.")
+        _lean = (
+            " Only one direction was fitted with a split lineshape, so "
+            "there is nothing here to compare it with."
+        )
     elif (max(_ks) > 1.0) and (min(_ks) < 1.0):
-        _lean = (" The two directions lean OPPOSITE ways, which is what a "
-                 "kinetic tail or a spread of particle sizes gives and is not "
-                 "something a symmetric peak can absorb.")
+        _lean = (
+            " The two directions lean OPPOSITE ways, which is what a "
+            "kinetic tail or a spread of particle sizes gives and is not "
+            "something a symmetric peak can absorb."
+        )
     else:
-        _lean = (" Both directions lean the SAME way — towards "
-                 + ("high" if min(_ks) > 1.0 else "low") + " voltage. A "
-                 "kinetic tail reverses with the sweep, so a bias that does "
-                 "not reverse is more likely to be in the model or the "
-                 "binning than in the material, and is worth checking against "
-                 "the fits before it is read as a property of the electrode.")
-    return [(worst, head, " ".join(bits) + _lean
-             + " Read which flank is the trailing one from the direction of "
-               "the sweep, since a negative-electrode cell has its step "
-               "labels the other way round. The width columns are `sigma` "
-               "(low voltage) and `sigma_r` (high voltage); `fwhm` is their "
-               "sum, not twice either one.")]
+        _lean = (
+            " Both directions lean the SAME way — towards "
+            + ("high" if min(_ks) > 1.0 else "low")
+            + " voltage. A "
+            "kinetic tail reverses with the sweep, so a bias that does "
+            "not reverse is more likely to be in the model or the "
+            "binning than in the material, and is worth checking against "
+            "the fits before it is read as a property of the electrode."
+        )
+    return [
+        (
+            worst,
+            head,
+            " ".join(bits)
+            + _lean
+            + " Read which flank is the trailing one from the direction of "
+            "the sweep, since a negative-electrode cell has its step "
+            "labels the other way round. The width columns are `sigma` "
+            "(low voltage) and `sigma_r` (high voltage); `fwhm` is their "
+            "sum, not twice either one.",
+        )
+    ]
 
 
 def _phase_rule_sentence(f):
@@ -1374,32 +1604,37 @@ def _phase_rule_sentence(f):
         c = q.get(step)
         if not c:
             continue
-        bits.append(f"**{step}**: {c['lo']}-{c['hi']} fitted, median "
-                    f"{c['median']:.0f}")
+        bits.append(f"**{step}**: {c['lo']}-{c['hi']} fitted, median {c['median']:.0f}")
     if not bits:
         return []
-    extra = any((q.get(k) or {}).get("hi", 1) > 1 for k in ("Charge",
-                                                            "Discharge"))
-    return [(
-        "warn" if extra else "ok",
-        "What the phase rule expects here",
-        "This dataset was classified **two phase**, and a two-phase field in "
-        "a binary system at fixed temperature and pressure is invariant — the "
-        "potential is held while both phases coexist, so the expectation is "
-        "**one plateau and therefore one dQ/dV peak per transition**. "
-        + "; ".join(bits) + ". "
-        + ("Where more than one component was fitted, ask what process the "
-           "extra one would correspond to before believing it: an R² gain "
-           "from adding a component is what overfitting looks like, and "
-           "stability against a change of bin width is necessary but not "
-           "sufficient. The processing-free test is V(Q) — Q is a monotonic "
-           "integral and V a directly quantised measurement, so a second "
-           "plateau shows there if it is real. "
-           if extra else "")
-        + "Components closer together than the profile's own separation floor "
-        "cannot be admitted at all, which is what enforces the constraint "
-        "inside the plateau; components further out are outside the field the "
-        "phase rule speaks about, and are judged against the noise instead.")]
+    extra = any((q.get(k) or {}).get("hi", 1) > 1 for k in ("Charge", "Discharge"))
+    return [
+        (
+            "warn" if extra else "ok",
+            "What the phase rule expects here",
+            "This dataset was classified **two phase**, and a two-phase field in "
+            "a binary system at fixed temperature and pressure is invariant — the "
+            "potential is held while both phases coexist, so the expectation is "
+            "**one plateau and therefore one dQ/dV peak per transition**. "
+            + "; ".join(bits)
+            + ". "
+            + (
+                "Where more than one component was fitted, ask what process the "
+                "extra one would correspond to before believing it: an R² gain "
+                "from adding a component is what overfitting looks like, and "
+                "stability against a change of bin width is necessary but not "
+                "sufficient. The processing-free test is V(Q) — Q is a monotonic "
+                "integral and V a directly quantised measurement, so a second "
+                "plateau shows there if it is real. "
+                if extra
+                else ""
+            )
+            + "Components closer together than the profile's own separation floor "
+            "cannot be admitted at all, which is what enforces the constraint "
+            "inside the plateau; components further out are outside the field the "
+            "phase rule speaks about, and are judged against the noise instead.",
+        )
+    ]
 
 
 def _shoulder_only_sentence(f):
@@ -1412,18 +1647,25 @@ def _shoulder_only_sentence(f):
         s = q.get(step)
         if not s:
             continue
-        bits.append(f"**{step}**: {s['n']} of {s['total']} half-cycles, "
-                    f"cycles {s['first']}-{s['last']}")
+        bits.append(
+            f"**{step}**: {s['n']} of {s['total']} half-cycles, "
+            f"cycles {s['first']}-{s['last']}"
+        )
     if not bits:
         return []
-    return [("bad", "Some half-cycles were fitted with no primary peak",
-             "; ".join(bits) + ". The peak picker found no resolved maximum "
-             "on these, so the model was given the second-derivative "
-             "SHOULDERS instead and the whole half-cycle is described by "
-             "features the picker itself called shoulders of something. That "
-             "is not a fit to be read as a decomposition — check those "
-             "half-cycles against the dQ/dV figure before quoting anything "
-             "from them.")]
+    return [
+        (
+            "bad",
+            "Some half-cycles were fitted with no primary peak",
+            "; ".join(bits) + ". The peak picker found no resolved maximum "
+            "on these, so the model was given the second-derivative "
+            "SHOULDERS instead and the whole half-cycle is described by "
+            "features the picker itself called shoulders of something. That "
+            "is not a fit to be read as a decomposition — check those "
+            "half-cycles against the dQ/dV figure before quoting anything "
+            "from them.",
+        )
+    ]
 
 
 def _census_sentence(f):
@@ -1436,15 +1678,19 @@ def _census_sentence(f):
         s = q.get(step)
         if not s:
             continue
-        _p = [f"**{step}**: {s['lo']}-{s['hi']} components per half-cycle "
-              f"over {s['n_half_cycles']}, median {s['median']:.0f}"]
+        _p = [
+            f"**{step}**: {s['lo']}-{s['hi']} components per half-cycle "
+            f"over {s['n_half_cycles']}, median {s['median']:.0f}"
+        ]
         rn, rc = s.get("reference_n"), s.get("reference_cycle")
         if rn is not None and rc is not None:
             _p.append(f"; the reference cycle ({rc}) got {rn}")
             if rn <= s["lo"] and s["hi"] > s["lo"]:
-                _p.append(" — **the thinnest fit in the dataset**, and every "
-                          "tracked feature, every drift rate and the whole "
-                          "attribution basis is derived from it")
+                _p.append(
+                    " — **the thinnest fit in the dataset**, and every "
+                    "tracked feature, every drift rate and the whole "
+                    "attribution basis is derived from it"
+                )
                 worst = "warn"
             elif rn < s["median"]:
                 _p.append(", below the median for this dataset")
@@ -1453,16 +1699,21 @@ def _census_sentence(f):
         bits.append(" ".join(_p).replace(" ;", ";") + ".")
     if not bits:
         return []
-    head = ("The attribution basis is a thin fit" if worst == "warn"
-            else "How many components each half-cycle was fitted with")
-    tail = (" The reference cycle is chosen on the cell's integrity, not on "
-            "how well the model fitted it, and that is the right criterion — "
-            "but a basis taken from the thinnest fit in the run is worth "
-            "knowing about before the shares below are read as capacities."
-            if worst == "warn" else
-            " The attribution basis and every tracked feature come from the "
-            "reference cycle, so this is how much of the curve that basis "
-            "was built from.")
+    head = (
+        "The attribution basis is a thin fit"
+        if worst == "warn"
+        else "How many components each half-cycle was fitted with"
+    )
+    tail = (
+        " The reference cycle is chosen on the cell's integrity, not on "
+        "how well the model fitted it, and that is the right criterion — "
+        "but a basis taken from the thinnest fit in the run is worth "
+        "knowing about before the shares below are read as capacities."
+        if worst == "warn"
+        else " The attribution basis and every tracked feature come from the "
+        "reference cycle, so this is how much of the curve that basis "
+        "was built from."
+    )
     return [(worst, head, " ".join(bits) + tail)]
 
 
@@ -1470,13 +1721,17 @@ def _peak_sentences(f):
     """Findings about the peaks: are their areas capacities, and how fast do
     they move? Separate from `_sentences` only because it needs the tracking,
     which a cycling-only run does not have."""
-    out = (_quality_sentence(f) + _voltage_envelope_sentence(f)
-           + _identifiability_sentence(f)
-           + _reliability_sentence(f)
-           + _lineshape_sentence(f)
-           + _shoulder_only_sentence(f)
-           + _census_sentence(f) + _mechanism_sentence(f)
-           + _phase_rule_sentence(f))
+    out = (
+        _quality_sentence(f)
+        + _voltage_envelope_sentence(f)
+        + _identifiability_sentence(f)
+        + _reliability_sentence(f)
+        + _lineshape_sentence(f)
+        + _shoulder_only_sentence(f)
+        + _census_sentence(f)
+        + _mechanism_sentence(f)
+        + _phase_rule_sentence(f)
+    )
     fid = f.get("integral_fidelity") or {}
     low = _fidelity_outside_band(fid)
     if low:
@@ -1487,25 +1742,32 @@ def _peak_sentences(f):
         # short on one step and over on the other, and those are opposite
         # faults with opposite causes; picking the explanation from the single
         # worst value attached the under-count reason to an over-count.
-        _under = ("Charge delivered outside the analysed voltage window "
-                  "cannot appear in the integral — a constant-voltage hold "
-                  "is the usual reason, and on a finite-difference curve a "
-                  "flat two-phase plateau is another: the voltage change "
-                  "between records falls below the instrument's resolution "
-                  "and the charge delivered there has no dV to be divided "
-                  "by. No choice of fitting model recovers it.")
-        _over = ("A curve cannot contain more charge than the cell "
-                 "delivered, so the excess is an artefact — a voltage "
-                 "traversed twice, or a hold spread across voltages the "
-                 "cell never visited. No choice of fitting model removes "
-                 "it.")
+        _under = (
+            "Charge delivered outside the analysed voltage window "
+            "cannot appear in the integral — a constant-voltage hold "
+            "is the usual reason, and on a finite-difference curve a "
+            "flat two-phase plateau is another: the voltage change "
+            "between records falls below the instrument's resolution "
+            "and the charge delivered there has no dV to be divided "
+            "by. No choice of fitting model recovers it."
+        )
+        _over = (
+            "A curve cannot contain more charge than the cell "
+            "delivered, so the excess is an artefact — a voltage "
+            "traversed twice, or a hold spread across voltages the "
+            "cell never visited. No choice of fitting model removes "
+            "it."
+        )
         _lo_steps = sorted(k for k, v in low.items() if v < 1.0)
         _hi_steps = sorted(k for k, v in low.items() if v > 1.0)
         if _lo_steps and _hi_steps:
-            _why = (f"These are opposite faults. On "
-                    f"{' and '.join(s.lower() for s in _lo_steps)}: " + _under
-                    + f" On {' and '.join(s.lower() for s in _hi_steps)}: "
-                    + _over)
+            _why = (
+                f"These are opposite faults. On "
+                f"{' and '.join(s.lower() for s in _lo_steps)}: "
+                + _under
+                + f" On {' and '.join(s.lower() for s in _hi_steps)}: "
+                + _over
+            )
         else:
             _why = _under if _lo_steps else _over
         # PER STEP, NOT THE WORST OF THE TWO APPLIED TO BOTH. `worst` is the
@@ -1519,76 +1781,104 @@ def _peak_sentences(f):
         # 56% of the other read "accounts for only 145%".
         _lo_all = all(v < 1.0 for v in low.values())
         _hi_all = all(v > 1.0 for v in low.values())
-        _verb = ("accounts for only" if _lo_all else
-                 "carries" if _hi_all else "accounts for")
+        _verb = (
+            "accounts for only" if _lo_all else "carries" if _hi_all else "accounts for"
+        )
         if len(low) > 1 and (max(low.values()) - min(low.values())) >= 0.05:
             _share_clause = (
                 " Every area and area-retention figure on this page is a share "
                 "of its own step's figure — "
-                + ", ".join(f"{100 * v:.0f}% for {k.lower()}"
-                            for k, v in sorted(low.items()))
+                + ", ".join(
+                    f"{100 * v:.0f}% for {k.lower()}" for k, v in sorted(low.items())
+                )
                 + " — and the two are not interchangeable. Read them as "
-                  "descriptions of the curve, not of the cell. Peak POSITIONS "
-                  "and their drift do not depend on the integral and are "
-                  "unaffected.")
+                "descriptions of the curve, not of the cell. Peak POSITIONS "
+                "and their drift do not depend on the integral and are "
+                "unaffected."
+            )
         else:
             _share_clause = (
                 f" Every area and area-retention figure on this page is a "
                 f"share of that {100 * worst:.0f}% — read them as "
                 f"descriptions of the curve, not of the cell. Peak POSITIONS "
                 f"and their drift do not depend on the integral and are "
-                f"unaffected.")
-        out.append((
-            "bad", "Peak areas here are not capacities",
-            f"The dQ/dV curve {_verb} "
-            + ", ".join(f"{100 * v:.0f}% of the {k.lower()}"
-                        for k, v in sorted(low.items()))
-            + " capacity this cell delivered. " + _why
-            + _share_clause))
+                f"unaffected."
+            )
+        out.append(
+            (
+                "bad",
+                "Peak areas here are not capacities",
+                f"The dQ/dV curve {_verb} "
+                + ", ".join(
+                    f"{100 * v:.0f}% of the {k.lower()}" for k, v in sorted(low.items())
+                )
+                + " capacity this cell delivered. "
+                + _why
+                + _share_clause,
+            )
+        )
     # THE COHERENCE VERDICT REACHES THIS PAGE TOO. `f["coherence"]` was
     # assembled for the run summary and rendered nowhere here, so on a
     # dataset where the audit graded ZERO peaks coherent this section still
     # printed every drift rate as a green finding — while the run-level page
     # one folder up said the same peaks were excluded because none of them
     # moved like a redox feature. Two Ratatosk pages, opposite claims.
-    _verd = {(c["step"], round(c["reference_voltage"], 3)): c["verdict"]
-             for c in (f.get("coherence") or [])}
+    _verd = {
+        (c["step"], round(c["reference_voltage"], 3)): c["verdict"]
+        for c in (f.get("coherence") or [])
+    }
 
     def _grade(t):
-        return _verd.get((t.get("step"),
-                          round(float(t.get("reference_voltage", np.nan)), 3)))
+        return _verd.get(
+            (t.get("step"), round(float(t.get("reference_voltage", np.nan)), 3))
+        )
 
-    moved = [t for t in (f.get("tracked") or [])
-             if np.isfinite(t.get("voltage_drift_mV_per_cycle", np.nan))]
-    _sound = [t for t in moved
-              if _grade(t) in (None, "coherent", "questionable")]
+    moved = [
+        t
+        for t in (f.get("tracked") or [])
+        if np.isfinite(t.get("voltage_drift_mV_per_cycle", np.nan))
+    ]
+    _sound = [t for t in moved if _grade(t) in (None, "coherent", "questionable")]
     _rejected = [t for t in moved if t not in _sound]
     if _sound:
         bits = []
         for t in _sound:
             _g = _grade(t)
-            bits.append(f"{t['step'].lower()} {t['reference_voltage']:.3f} V "
-                        f"{t['voltage_drift_mV_per_cycle']:+.2f} mV/cycle"
-                        + (" (questionable)" if _g == "questionable" else ""))
-        out.append(("ok" if any(_grade(t) == "coherent" for t in _sound)
-                    else "warn",
-                    "How fast the features move",
-                    "; ".join(bits) + ". Measured between medians of three "
-                    "cycles at each end, from the reference cycle onward — a "
-                    "difference of two single cycles carries the per-cycle "
-                    "centre scatter and can be out by 15 mV."
-                    + (f" {len(_rejected)} further peak(s) moved too, and are "
-                       f"not quoted: the coherence audit found they do not "
-                       f"move like a redox feature."
-                       if _rejected else "")))
+            bits.append(
+                f"{t['step'].lower()} {t['reference_voltage']:.3f} V "
+                f"{t['voltage_drift_mV_per_cycle']:+.2f} mV/cycle"
+                + (" (questionable)" if _g == "questionable" else "")
+            )
+        out.append(
+            (
+                "ok" if any(_grade(t) == "coherent" for t in _sound) else "warn",
+                "How fast the features move",
+                "; ".join(bits) + ". Measured between medians of three "
+                "cycles at each end, from the reference cycle onward — a "
+                "difference of two single cycles carries the per-cycle "
+                "centre scatter and can be out by 15 mV."
+                + (
+                    f" {len(_rejected)} further peak(s) moved too, and are "
+                    f"not quoted: the coherence audit found they do not "
+                    f"move like a redox feature."
+                    if _rejected
+                    else ""
+                ),
+            )
+        )
     elif _rejected:
-        out.append(("warn", "No drift rate is quotable",
-                    f"All {len(_rejected)} tracked peak(s) with a measurable "
-                    f"drift were rejected by the coherence audit — none of "
-                    f"them moves like a redox feature. The rates are in "
-                    f"the fit-coherence table with their verdicts; they are "
-                    f"not reported here because a rate read from a peak the "
-                    f"fit could not hold on to is a property of the fit."))
+        out.append(
+            (
+                "warn",
+                "No drift rate is quotable",
+                f"All {len(_rejected)} tracked peak(s) with a measurable "
+                f"drift were rejected by the coherence audit — none of "
+                f"them moves like a redox feature. The rates are in "
+                f"the fit-coherence table with their verdicts; they are "
+                f"not reported here because a rate read from a peak the "
+                f"fit could not hold on to is a property of the fit.",
+            )
+        )
     # DETECTED, ROSTERED, AND NEVER GIVEN TO THE MODEL.
     #
     # The tracked-peak roster is built from the DETECTED reference list while
@@ -1600,16 +1890,22 @@ def _peak_sentences(f):
     # about the run, and only one of them is true.
     _never = [t for t in (f.get("tracked") or []) if t.get("never_fitted")]
     if _never:
-        out.append((
-            "warn", "Some detected features were never fitted",
-            ", ".join(f"{t['step'].lower()} {t['reference_voltage']:.3f} V"
-                      for t in _never)
-            + f" — {len(_never)} feature(s) that detection found and the "
-              "model was never asked to fit, because the mechanism this run "
-              "classified fits primary peaks only. They are absent from the "
-              "fit, not from the cell, and they carry no area, no drift and "
-              "no retention here. If they matter, the mechanism verdict is "
-              "the thing to look at."))
+        out.append(
+            (
+                "warn",
+                "Some detected features were never fitted",
+                ", ".join(
+                    f"{t['step'].lower()} {t['reference_voltage']:.3f} V"
+                    for t in _never
+                )
+                + f" — {len(_never)} feature(s) that detection found and the "
+                "model was never asked to fit, because the mechanism this run "
+                "classified fits primary peaks only. They are absent from the "
+                "fit, not from the cell, and they carry no area, no drift and "
+                "no retention here. If they matter, the mechanism verdict is "
+                "the thing to look at.",
+            )
+        )
     # NOT ON AREAS THE RUN HAS ALREADY WITHHELD. `flag_area_growth` compares
     # area retention with capacity retention; `flag_untrustworthy_areas` decides
     # separately whether an area retention is a capacity at all, and writes
@@ -1620,26 +1916,41 @@ def _peak_sentences(f):
     # decomposition was wrong, four paragraphs below the page's own statement
     # that these are not capacities. A comparison between two numbers is only as
     # good as the weaker of them.
-    grown = [t for t in (f.get("tracked") or [])
-             if t.get("area_exceeds_capacity")
-             and t.get("area_retention_trustworthy") is not False]
-    _grown_withheld = [t for t in (f.get("tracked") or [])
-                       if t.get("area_exceeds_capacity")
-                       and t.get("area_retention_trustworthy") is False]
+    grown = [
+        t
+        for t in (f.get("tracked") or [])
+        if t.get("area_exceeds_capacity")
+        and t.get("area_retention_trustworthy") is not False
+    ]
+    _grown_withheld = [
+        t
+        for t in (f.get("tracked") or [])
+        if t.get("area_exceeds_capacity")
+        and t.get("area_retention_trustworthy") is False
+    ]
     if not grown and _grown_withheld:
-        _wr = next((str(t.get("area_withheld_reason") or "")
-                    for t in _grown_withheld
-                    if t.get("area_withheld_reason")), "")
-        out.append((
-            "ok", "Area growth could not be assessed",
-            f"{len(_grown_withheld)} peak(s) have an area retention above what "
-            f"the cell's capacity allows, but every one of them is a peak whose "
-            f"area this run has already withheld as not being a capacity"
-            + (f" — {_wr}" if _wr else "")
-            + ". A ratio of two areas that are not capacities cannot be "
-              "compared with a capacity retention, so no verdict is offered "
-              "here. The excesses are in `*_tracked_peaks_summary.csv` "
-              "(`area_growth_excess_pct`) for anyone who wants to look."))
+        _wr = next(
+            (
+                str(t.get("area_withheld_reason") or "")
+                for t in _grown_withheld
+                if t.get("area_withheld_reason")
+            ),
+            "",
+        )
+        out.append(
+            (
+                "ok",
+                "Area growth could not be assessed",
+                f"{len(_grown_withheld)} peak(s) have an area retention above what "
+                f"the cell's capacity allows, but every one of them is a peak whose "
+                f"area this run has already withheld as not being a capacity"
+                + (f" — {_wr}" if _wr else "")
+                + ". A ratio of two areas that are not capacities cannot be "
+                "compared with a capacity retention, so no verdict is offered "
+                "here. The excesses are in `*_tracked_peaks_summary.csv` "
+                "(`area_growth_excess_pct`) for anyone who wants to look.",
+            )
+        )
     if grown:
         # NOT "GREW". `area_exceeds_capacity` means the peak's area retention
         # is HIGHER THAN THE CELL'S capacity retention plus headroom — not
@@ -1653,23 +1964,35 @@ def _peak_sentences(f):
         # "214% area retention, excess 124 points ... against the cell's 75%"
         # invites the reader to check 214 - 75 = 139 and conclude one of the
         # three numbers is wrong. The bound is 75 + 15.
-        _against = (f" against the cell's {_cap:.0f}% capacity retention plus "
-                    f"{AREA_GROWTH_HEADROOM_PCT:.0f} points of headroom, so "
-                    f"the excesses above are measured from {_cap + AREA_GROWTH_HEADROOM_PCT:.0f}%"
-                    if _cap is not None and np.isfinite(_cap) else "")
-        out.append((
-            "warn", "Peak areas held up better than the cell's capacity",
-            ", ".join(f"{t['step'].lower()} {t['reference_voltage']:.3f} V "
-                      f"({t['area_retention_pct']:.0f}% area retention"
-                      + (f", excess {t['area_growth_excess_pct']:.0f} points"
-                         if t.get("area_growth_excess_pct") is not None
-                         and np.isfinite(t.get("area_growth_excess_pct"))
-                         else "") + ")"
-                      for t in grown)
-            + _against
-            + ". A redox feature cannot keep more charge than the cell "
-              "delivers, so where this appears the decomposition is wrong — "
-              "not the cell. Nothing has been deleted; look at the fit."))
+        _against = (
+            f" against the cell's {_cap:.0f}% capacity retention plus "
+            f"{AREA_GROWTH_HEADROOM_PCT:.0f} points of headroom, so "
+            f"the excesses above are measured from {_cap + AREA_GROWTH_HEADROOM_PCT:.0f}%"
+            if _cap is not None and np.isfinite(_cap)
+            else ""
+        )
+        out.append(
+            (
+                "warn",
+                "Peak areas held up better than the cell's capacity",
+                ", ".join(
+                    f"{t['step'].lower()} {t['reference_voltage']:.3f} V "
+                    f"({t['area_retention_pct']:.0f}% area retention"
+                    + (
+                        f", excess {t['area_growth_excess_pct']:.0f} points"
+                        if t.get("area_growth_excess_pct") is not None
+                        and np.isfinite(t.get("area_growth_excess_pct"))
+                        else ""
+                    )
+                    + ")"
+                    for t in grown
+                )
+                + _against
+                + ". A redox feature cannot keep more charge than the cell "
+                "delivers, so where this appears the decomposition is wrong — "
+                "not the cell. Nothing has been deleted; look at the fit.",
+            )
+        )
     return out
 
 
@@ -1689,15 +2012,20 @@ def _sentences(f):
     # must not have to reach the coulombic-efficiency paragraph to discover
     # that the export is not a measurement. See UNUSABLE_MIN_CYCLES.
     if f.get("unusable"):
-        out.append(("bad", "This dataset is not a usable measurement",
-                    _sentence_case("; ".join(f["unusable"]))
-                    + ". Everything below is still computed from what the "
-                      "file contains, because that is how you find out what "
-                      "went wrong — but none of it is a result, and this cell "
-                      "is left out of the replicate mean rather than "
-                      "averaged into it. Check the export: a file much "
-                      "shorter than its replicates is usually a run that was "
-                      "stopped or a save that did not finish."))
+        out.append(
+            (
+                "bad",
+                "This dataset is not a usable measurement",
+                _sentence_case("; ".join(f["unusable"]))
+                + ". Everything below is still computed from what the "
+                "file contains, because that is how you find out what "
+                "went wrong — but none of it is a result, and this cell "
+                "is left out of the replicate mean rather than "
+                "averaged into it. Check the export: a file much "
+                "shorter than its replicates is usually a run that was "
+                "stopped or a save that did not finish.",
+            )
+        )
 
     if dl and n:
         first, last = dl
@@ -1706,66 +2034,97 @@ def _sentences(f):
         # "Runs to cycle N" is wrong for an export taken mid-run: the file
         # ends at cycle N because that is when it was written, not because
         # the experiment did.
-        s = ((f"The export covers {n} cycles, the last of them still "
-              f"running. " if f.get("partial_final") else
-              f"The record runs to cycle {n}. ")
-             + f"The cell delivered "
-             f"{first:.0f} mAh/g on its first complete discharge and "
-             f"{last:.0f} mAh/g")
-        s += (f" at cycle {lg}, the last one it was still working"
-              if died and lg else
-              (f" at cycle {lg}" if lg else " on the last"))
+        s = (
+            (
+                f"The export covers {n} cycles, the last of them still running. "
+                if f.get("partial_final")
+                else f"The record runs to cycle {n}. "
+            )
+            + f"The cell delivered "
+            f"{first:.0f} mAh/g on its first complete discharge and "
+            f"{last:.0f} mAh/g"
+        )
+        s += (
+            f" at cycle {lg}, the last one it was still working"
+            if died and lg
+            else (f" at cycle {lg}" if lg else " on the last")
+        )
         # NAME THE CYCLE. "99% of the reference cycle" sat three lines under
         # a table column headed "% of first", which is a DIFFERENT base — and
         # the reference is read from a column literally called
         # `Retention_vs_C2_%`, so the number was available all along.
-        s += (f" — {ret:.0f}% of cycle {f.get('retention_reference') or 2}."
-              if ret is not None and not _rate_variable(f) else ".")
+        s += (
+            f" — {ret:.0f}% of cycle {f.get('retention_reference') or 2}."
+            if ret is not None and not _rate_variable(f)
+            else "."
+        )
         if died and n and died < n:
-            s += (f" The {n - died} cycles after that are the cycler still "
-                  f"running against a cell that had stopped.")
+            s += (
+                f" The {n - died} cycles after that are the cycler still "
+                f"running against a cell that had stopped."
+            )
         out.append(("ok", "What it did", s))
     pf = f.get("partial_final")
     if pf:
         cyc, step, prev, val = pf
-        got = (f"It had delivered {val:.0f} mAh/g of cycle {prev}'s "
-               f"{dl[1]:.0f} when the file was written. "
-               if (val is not None and prev and dl) else "")
-        out.append(("ok", "The cell was still cycling when this was exported",
-                    f"Cycle {cyc} {step} never reached the cut-off voltage "
-                    f"that every other half-cycle going the same way "
-                    f"reaches, and it is the last half-cycle in the file — "
-                    f"so the export was taken while it was still running. "
-                    f"{got}A half-cycle in progress is not a measurement "
-                    f"yet, so it is not fitted and is left out of the "
-                    f"capacities and the retention above; it is still drawn "
-                    f"in every figure, and the completed half of the same "
-                    f"cycle is kept. Re-export once it finishes and it "
-                    f"counts like any other. Everything above describes "
-                    f"cycles 1 to {cyc - 1}."))
+        got = (
+            f"It had delivered {val:.0f} mAh/g of cycle {prev}'s "
+            f"{dl[1]:.0f} when the file was written. "
+            if (val is not None and prev and dl)
+            else ""
+        )
+        out.append(
+            (
+                "ok",
+                "The cell was still cycling when this was exported",
+                f"Cycle {cyc} {step} never reached the cut-off voltage "
+                f"that every other half-cycle going the same way "
+                f"reaches, and it is the last half-cycle in the file — "
+                f"so the export was taken while it was still running. "
+                f"{got}A half-cycle in progress is not a measurement "
+                f"yet, so it is not fitted and is left out of the "
+                f"capacities and the retention above; it is still drawn "
+                f"in every figure, and the completed half of the same "
+                f"cycle is kept. Re-export once it finishes and it "
+                f"counts like any other. Everything above describes "
+                f"cycles 1 to {cyc - 1}.",
+            )
+        )
     if ce is not None:
         lvl = "ok" if 95 <= ce <= 101 else "warn"
-        out.append((lvl, "Coulombic efficiency",
-                    f"Median {ce:.1f}%. Below about 95% means charge is going "
-                    f"somewhere other than the intended reaction; well above "
-                    f"100% usually means the counter electrode, not the "
-                    f"material under test."))
+        out.append(
+            (
+                lvl,
+                "Coulombic efficiency",
+                f"Median {ce:.1f}%. Below about 95% means charge is going "
+                f"somewhere other than the intended reaction; well above "
+                f"100% usually means the counter electrode, not the "
+                f"material under test.",
+            )
+        )
 
     bands = f.get("bands", {})
     anom = f.get("anomalous")
     if anom is not None and len(anom):
         worst = anom.iloc[0]
-        cycles = ", ".join(str(c) for c in sorted(
-            int(c) for c in anom["cycle"].head(8)))
-        out.append(("bad", f"{len(anom)} half-cycle(s) lost charge",
-                    f"Charge passed at full current where |dQ/dV| was small "
-                    f"and away from the voltage limit — no redox process "
-                    f"accounts for it. Worst: cycle {int(worst['cycle'])} "
-                    f"{worst['step']}, {worst['parasitic_charge']:.0f} mAh/g "
-                    f"of {worst['capacity']:.0f} "
-                    f"({worst['parasitic_fraction']:.0%}). Cycles: {cycles}."))
-    elif bands and not (f.get("over_theoretical") is not None
-                        and len(f["over_theoretical"])):
+        cycles = ", ".join(
+            str(c) for c in sorted(int(c) for c in anom["cycle"].head(8))
+        )
+        out.append(
+            (
+                "bad",
+                f"{len(anom)} half-cycle(s) lost charge",
+                f"Charge passed at full current where |dQ/dV| was small "
+                f"and away from the voltage limit — no redox process "
+                f"accounts for it. Worst: cycle {int(worst['cycle'])} "
+                f"{worst['step']}, {worst['parasitic_charge']:.0f} mAh/g "
+                f"of {worst['capacity']:.0f} "
+                f"({worst['parasitic_fraction']:.0%}). Cycles: {cycles}.",
+            )
+        )
+    elif bands and not (
+        f.get("over_theoretical") is not None and len(f["over_theoretical"])
+    ):
         # SAID FIRST, AND FOR EITHER BRANCH. The "not every half-cycle is
         # clean" caveat lived inside the `else` only, so a cell whose mechanism
         # was anything but two-phase — NMC111 cell A, integrity table
@@ -1774,70 +2133,100 @@ def _sentences(f):
         # suspect row sitting in the table whose `reason` column says exactly
         # what was seen. The guard is about the table, not about the mechanism,
         # so it cannot be conditioned on the mechanism.
-        _grey = {k: int(v) for k, v in (bands or {}).items()
-                 if str(k) in ("suspect", "unknown") and v}
+        _grey = {
+            k: int(v)
+            for k, v in (bands or {}).items()
+            if str(k) in ("suspect", "unknown") and v
+        }
         if _grey:
-            out.append(("warn", "Not every half-cycle is clean",
-                        "; ".join(f"{v} {k}" for k, v in _grey.items())
-                        + ". None passed more charge than the material "
-                          "can hold, so none is anomalous — but they are "
-                          "not clean either, and the `reason` column of "
-                          "`*_cycle_integrity.csv` says what was seen on "
-                          "each."))
+            out.append(
+                (
+                    "warn",
+                    "Not every half-cycle is clean",
+                    "; ".join(f"{v} {k}" for k, v in _grey.items())
+                    + ". None passed more charge than the material "
+                    "can hold, so none is anomalous — but they are "
+                    "not clean either, and the `reason` column of "
+                    "`*_cycle_integrity.csv` says what was seen on "
+                    "each.",
+                )
+            )
         _m2 = str((f.get("resolvability") or {}).get("mechanism") or "")
         if _m2 and _m2 not in ("two_phase", "multi_transition"):
             # Same fault, one paragraph up: "it sat on a plateau" is only an
             # innocent explanation where a plateau is expected.
-            out.append(("warn", "Reversed charge, on a plateau this "
-                                "mechanism should not have",
-                        f"Every half-cycle's reversed charge sat either on a "
-                        f"flat region or at the voltage limit with the current "
-                        f"tapering. The second is expected. The first is not, "
-                        f"on a dataset classified "
-                        f"**{_m2.replace('_', ' ')}** — see below."))
+            out.append(
+                (
+                    "warn",
+                    "Reversed charge, on a plateau this mechanism should not have",
+                    f"Every half-cycle's reversed charge sat either on a "
+                    f"flat region or at the voltage limit with the current "
+                    f"tapering. The second is expected. The first is not, "
+                    f"on a dataset classified "
+                    f"**{_m2.replace('_', ' ')}** — see below.",
+                )
+            )
         else:
             # The suspect/unknown caveat is now raised once, above, for
             # either mechanism branch. What is left here is the all-clear,
             # and it is only an all-clear when the table is in fact clean.
             if not _grey:
-                out.append(("ok", "No unaccounted charge",
-                            "Every half-cycle's reversed charge sat either on "
-                            "a two-phase plateau or at the voltage limit with "
-                            "the current tapering. Both are expected."))
+                out.append(
+                    (
+                        "ok",
+                        "No unaccounted charge",
+                        "Every half-cycle's reversed charge sat either on "
+                        "a two-phase plateau or at the voltage limit with "
+                        "the current tapering. Both are expected.",
+                    )
+                )
             else:
-                out.append(("ok", "The rest is accounted for",
-                            "Setting aside the half-cycles named above, every "
-                            "half-cycle's reversed charge sat either on a "
-                            "two-phase plateau or at the voltage limit with "
-                            "the current tapering. Both are expected."))
+                out.append(
+                    (
+                        "ok",
+                        "The rest is accounted for",
+                        "Setting aside the half-cycles named above, every "
+                        "half-cycle's reversed charge sat either on a "
+                        "two-phase plateau or at the voltage limit with "
+                        "the current tapering. Both are expected.",
+                    )
+                )
     if bands.get("too few records"):
-        out.append(("warn", f"{bands['too few records']} half-cycle(s) too "
-                    f"short to judge",
-                    "Usually the tail of the record after the cell stopped "
-                    "delivering. Not the same as clean: it means we could not "
-                    "tell."))
+        out.append(
+            (
+                "warn",
+                f"{bands['too few records']} half-cycle(s) too short to judge",
+                "Usually the tail of the record after the cell stopped "
+                "delivering. Not the same as clean: it means we could not "
+                "tell.",
+            )
+        )
     # EVERY VERDICT IS RENDERED, including the good ones. While only the bad
     # ones printed, an unreadable integrity table and a healthy cell produced
     # the same page — nothing — which is a silence that reads as reassurance.
     _civ = f.get("cell_integrity") or {}
     if _civ.get("verdict") == "unknown":
-        out.append(("warn", "Cycle integrity could not be assessed",
-                    _civ.get("sentence", "")))
+        out.append(
+            ("warn", "Cycle integrity could not be assessed", _civ.get("sentence", ""))
+        )
     elif _civ.get("verdict") == "sound":
-        out.append(("ok", "No cycle was flagged",
-                    _civ.get("sentence", "")))
+        out.append(("ok", "No cycle was flagged", _civ.get("sentence", "")))
     elif _civ.get("verdict") == "recurring":
-        out.append(("bad", "This cell has a recurring fault",
-                    _civ.get("sentence", "")))
+        out.append(("bad", "This cell has a recurring fault", _civ.get("sentence", "")))
     elif _civ.get("verdict") == "formation":
-        out.append(("ok", "The flagged cycles are all early",
-                    _civ.get("sentence", "")))
+        out.append(("ok", "The flagged cycles are all early", _civ.get("sentence", "")))
     elif _civ.get("verdict") == "clustered":
-        out.append(("warn", "A run of flagged cycles, which then stopped",
-                    _civ.get("sentence", "")))
+        out.append(
+            (
+                "warn",
+                "A run of flagged cycles, which then stopped",
+                _civ.get("sentence", ""),
+            )
+        )
     elif _civ.get("verdict") == "isolated":
-        out.append(("warn", "Flagged cycles, with no pattern",
-                    _civ.get("sentence", "")))
+        out.append(
+            ("warn", "Flagged cycles, with no pattern", _civ.get("sentence", ""))
+        )
     over = f.get("over_theoretical")
     if over is not None and len(over):
         w = over.iloc[0]
@@ -1852,24 +2241,32 @@ def _sentences(f):
         cy = ", ".join(str(c) for c in _cyc)
         if len(over) > len(_cyc):
             cy += f" (the {len(_cyc)} worst of {len(over)} by ratio)"
-        out.append(("bad", f"{len(over)} half-cycle(s) passed more charge than "
-                    f"the material can hold",
-                    f"Worst: cycle {int(w['cycle'])} {w['step']}, "
-                    f"{w['capacity']:.0f} mAh/g — {w['capacity_ratio']:.1f}× "
-                    f"the theoretical {w['theoretical_mAh_g']:.0f} mAh/g. Over "
-                    f"theoretical is not a phase transition and not a "
-                    f"measurement artefact; it is charge going into something "
-                    f"other than the material, and it usually means something "
-                    f"has broken. Cycles: {cy}."
-                    + (" These half-cycles are still fitted, tracked and "
-                       "drawn — the figure is where you see what happened — "
-                       "but their components carry "
-                       "`half_cycle_anomalous` and are left out of the drift "
-                       "rates, the area retention and the coherence audit. "
-                       "Integral fidelity does NOT catch them: the curve "
-                       "accounts for the charge faithfully, because the "
-                       "charge really was delivered."
-                       if f.get("n_anomalous_components") else "")))
+        out.append(
+            (
+                "bad",
+                f"{len(over)} half-cycle(s) passed more charge than "
+                f"the material can hold",
+                f"Worst: cycle {int(w['cycle'])} {w['step']}, "
+                f"{w['capacity']:.0f} mAh/g — {w['capacity_ratio']:.1f}× "
+                f"the theoretical {w['theoretical_mAh_g']:.0f} mAh/g. Over "
+                f"theoretical is not a phase transition and not a "
+                f"measurement artefact; it is charge going into something "
+                f"other than the material, and it usually means something "
+                f"has broken. Cycles: {cy}."
+                + (
+                    " These half-cycles are still fitted, tracked and "
+                    "drawn — the figure is where you see what happened — "
+                    "but their components carry "
+                    "`half_cycle_anomalous` and are left out of the drift "
+                    "rates, the area retention and the coherence audit. "
+                    "Integral fidelity does NOT catch them: the curve "
+                    "accounts for the charge faithfully, because the "
+                    "charge really was delivered."
+                    if f.get("n_anomalous_components")
+                    else ""
+                ),
+            )
+        )
     # THE SAME THRESHOLD ITS OWN TAIL CLAUSE USES. This gate was `> 0`
     # while the "a further N mAh/g" clause twenty lines below is `> 1`, so
     # NMC111 cell A — 0.79 mAh/g of plateau charge out of a 277 mAh/g
@@ -1892,13 +2289,15 @@ def _sentences(f):
         # NMC111 cells the same run had just classified `mixed`.
         _mech = str((f.get("resolvability") or {}).get("mechanism") or "")
         _pinned = _mech in ("two_phase", "multi_transition")
-        _tail = (f" A further {f['plateau_total'] - f['plateau_sane']:.0f} "
-                 f"mAh/g sat on a plateau in half-cycles that were over "
-                 f"theoretical, and is not counted here — the shape of a "
-                 f"curve cannot vouch for charge the material could not "
-                 f"have held."
-                 if f.get("plateau_total", 0) - f.get("plateau_sane", 0) > 1
-                 else "")
+        _tail = (
+            f" A further {f['plateau_total'] - f['plateau_sane']:.0f} "
+            f"mAh/g sat on a plateau in half-cycles that were over "
+            f"theoretical, and is not counted here — the shape of a "
+            f"curve cannot vouch for charge the material could not "
+            f"have held."
+            if f.get("plateau_total", 0) - f.get("plateau_sane", 0) > 1
+            else ""
+        )
         # A TOTAL, SAID TO BE A TOTAL. `plateau_sane` is
         # `integrity["plateau_charge"].sum()` over every half-cycle in the
         # record, and it was printed bare in mAh/g on a page whose header
@@ -1909,47 +2308,71 @@ def _sentences(f):
         # number that can be compared with a capacity.
         _pn = int(f.get("plateau_n_half_cycles") or 0)
         _pw = f.get("plateau_worst_mAh_g")
-        _lead = (f"{f['plateau_sane']:.1f} mAh/g in total"
-                 + (f" across {_pn} half-cycles" if _pn else "")
-                 + " passed backwards while sitting on a redox plateau, on "
-                   "half-cycles whose total charge is physically possible"
-                 + (f" — at most {_pw:.1f} mAh/g in any one of them"
-                    if _pw is not None and np.isfinite(_pw) else "")
-                 + ".")
+        _lead = (
+            f"{f['plateau_sane']:.1f} mAh/g in total"
+            + (f" across {_pn} half-cycles" if _pn else "")
+            + " passed backwards while sitting on a redox plateau, on "
+            "half-cycles whose total charge is physically possible"
+            + (
+                f" — at most {_pw:.1f} mAh/g in any one of them"
+                if _pw is not None and np.isfinite(_pw)
+                else ""
+            )
+            + "."
+        )
         if not _mech:
-            out.append(("ok", "Plateau detected",
-                        _lead + " On a material whose potential is pinned by "
-                        "two phases coexisting that is expected physics; on a "
-                        "solid solution it is not. This run did not classify "
-                        "the mechanism, so which of the two this is has not "
-                        "been established here." + _tail))
+            out.append(
+                (
+                    "ok",
+                    "Plateau detected",
+                    _lead + " On a material whose potential is pinned by "
+                    "two phases coexisting that is expected physics; on a "
+                    "solid solution it is not. This run did not classify "
+                    "the mechanism, so which of the two this is has not "
+                    "been established here." + _tail,
+                )
+            )
         elif _pinned:
-            out.append(("ok", "Two-phase plateau detected",
-                        _lead + f" This dataset is classified "
-                        f"**{_mech.replace('_', ' ')}**, so a region where the "
-                        f"potential holds still is the transition itself: a "
-                        f"first-order phase change pinning the potential, not "
-                        f"a fault." + _tail))
+            out.append(
+                (
+                    "ok",
+                    "Two-phase plateau detected",
+                    _lead + f" This dataset is classified "
+                    f"**{_mech.replace('_', ' ')}**, so a region where the "
+                    f"potential holds still is the transition itself: a "
+                    f"first-order phase change pinning the potential, not "
+                    f"a fault." + _tail,
+                )
+            )
         else:
-            out.append(("bad", "A plateau here is not expected physics",
-                        _lead + f" This dataset is classified "
-                        f"**{_mech.replace('_', ' ')}**. A solid solution "
-                        f"delivers its charge across a window of composition, "
-                        f"and its potential must move as that composition "
-                        f"changes — there is no two-phase coexistence to pin "
-                        f"it. A flat region in this cell's curve is therefore "
-                        f"evidence OF something, not evidence against it: a "
-                        f"voltage stall, a hold, or charge going somewhere "
-                        f"other than the intended reaction. Earlier builds "
-                        f"reported this as a first-order phase transition; "
-                        f"that reading belongs to the other mechanism."
-                        + _tail))
+            out.append(
+                (
+                    "bad",
+                    "A plateau here is not expected physics",
+                    _lead + f" This dataset is classified "
+                    f"**{_mech.replace('_', ' ')}**. A solid solution "
+                    f"delivers its charge across a window of composition, "
+                    f"and its potential must move as that composition "
+                    f"changes — there is no two-phase coexistence to pin "
+                    f"it. A flat region in this cell's curve is therefore "
+                    f"evidence OF something, not evidence against it: a "
+                    f"voltage stall, a hold, or charge going somewhere "
+                    f"other than the intended reaction. Earlier builds "
+                    f"reported this as a first-order phase transition; "
+                    f"that reading belongs to the other mechanism." + _tail,
+                )
+            )
     if f.get("fit_limit") or f.get("death_cycle"):
-        out.append(("warn", f"Cell stopped delivering at cycle "
-                    f"{f.get('fit_limit') or f.get('death_cycle')}",
-                    f"Peak fitting stopped there. The plots still show all "
-                    f"{n} cycles, because a cell going flat is exactly what "
-                    f"the heatmap is for."))
+        out.append(
+            (
+                "warn",
+                f"Cell stopped delivering at cycle "
+                f"{f.get('fit_limit') or f.get('death_cycle')}",
+                f"Peak fitting stopped there. The plots still show all "
+                f"{n} cycles, because a cell going flat is exactly what "
+                f"the heatmap is for.",
+            )
+        )
 
     w, tot = f.get("withheld", (0, 0))
     cw = f.get("closure_widths")
@@ -1966,9 +2389,11 @@ def _sentences(f):
                 # full argument is one item below under "Peak areas here are
                 # not capacities"; repeating it here made the page read as
                 # two separate problems when it is one.
-                why = ("There is no capacity here to attribute — see *Peak "
-                       "areas here are not capacities* below. The fitted "
-                       "areas are still in the CSV.")
+                why = (
+                    "There is no capacity here to attribute — see *Peak "
+                    "areas here are not capacities* below. The fitted "
+                    "areas are still in the CSV."
+                )
                 # NOT WHEN THERE IS NO FREE BACKGROUND. `no_baseline` means
                 # every measured closure width is zero BY CONSTRUCTION, so
                 # this printed "closure interval only 0.00–0.00 wide: the
@@ -1978,65 +2403,98 @@ def _sentences(f):
                 # "cannot be undetermined" because there is nothing to
                 # determine.
                 if cw and not f.get("no_baseline"):
-                    why += (f" Note that the peak/background split itself is "
-                            f"well determined, closure interval only "
-                            f"{cw[0]:.2f}–{cw[1]:.2f} wide: the fits are "
-                            f"good, and that is a different question from "
-                            f"the one this fails.")
+                    why += (
+                        f" Note that the peak/background split itself is "
+                        f"well determined, closure interval only "
+                        f"{cw[0]:.2f}–{cw[1]:.2f} wide: the fits are "
+                        f"good, and that is a different question from "
+                        f"the one this fails."
+                    )
             elif f.get("unattributed_withheld"):
                 _u = f.get("unattributed")
                 _ur = f.get("unattributed_range")
-                why = ("The named components do not add up to the cell's "
-                       "charge. Every mAh in a dQ/dV passed through the "
-                       "cell, so a share OF a total that is missing part of "
-                       "the capacity is not a measurement — the fitted areas "
-                       "are still in the CSV, and the SHARE is blank."
-                       + (f" Unattributed {_u:+.0%} of the charge"
-                          + (f" (range {_ur[0]:+.0%} to {_ur[1]:+.0%})"
-                             if _ur else "") + "."
-                          if _u is not None else ""))
+                why = (
+                    "The named components do not add up to the cell's "
+                    "charge. Every mAh in a dQ/dV passed through the "
+                    "cell, so a share OF a total that is missing part of "
+                    "the capacity is not a measurement — the fitted areas "
+                    "are still in the CSV, and the SHARE is blank."
+                    + (
+                        f" Unattributed {_u:+.0%} of the charge"
+                        + (f" (range {_ur[0]:+.0%} to {_ur[1]:+.0%})" if _ur else "")
+                        + "."
+                        if _u is not None
+                        else ""
+                    )
+                )
             elif f.get("no_baseline"):
-                why = ("This model has no free background, so the "
-                       "peak/background split cannot be undetermined. These "
-                       "cycles were withheld because the check fit did not "
-                       "converge on them: there is no measured share to "
-                       "report. The fitted areas are still in the CSV.")
+                why = (
+                    "This model has no free background, so the "
+                    "peak/background split cannot be undetermined. These "
+                    "cycles were withheld because the check fit did not "
+                    "converge on them: there is no measured share to "
+                    "report. The fitted areas are still in the CSV."
+                )
             else:
-                why = ("Where a broad peak and the polynomial baseline are "
-                       "nearly the same function, the split between them is "
-                       "not decided by the data: refitting with a different "
-                       "baseline moves the peak's share of the capacity by "
-                       "more than the number would be reporting. The fitted "
-                       "areas are still in the CSV; the SHARE is blank "
-                       "because it is not a measurement."
-                       + (f" Closure interval {cw[0]:.2f}–{cw[1]:.2f} wide."
-                          if cw and not f.get("no_baseline") else ""))
+                why = (
+                    "Where a broad peak and the polynomial baseline are "
+                    "nearly the same function, the split between them is "
+                    "not decided by the data: refitting with a different "
+                    "baseline moves the peak's share of the capacity by "
+                    "more than the number would be reporting. The fitted "
+                    "areas are still in the CSV; the SHARE is blank "
+                    "because it is not a measurement."
+                    + (
+                        f" Closure interval {cw[0]:.2f}–{cw[1]:.2f} wide."
+                        if cw and not f.get("no_baseline")
+                        else ""
+                    )
+                )
             # HALF-CYCLES. `w` and `tot` are summed over both steps, so a
             # 67-cycle cell was told "134 of 134 cycles" — a count of twice
             # what it ran, in the one unit this page otherwise says
             # carefully everywhere else.
-            out.append(("warn", f"Capacity attribution withheld on {w} of "
-                        f"{tot} half-cycles", why))
+            out.append(
+                (
+                    "warn",
+                    f"Capacity attribution withheld on {w} of {tot} half-cycles",
+                    why,
+                )
+            )
         elif f.get("no_baseline"):
             _u = f.get("unattributed")
-            out.append(("ok", "Capacity attribution is reportable",
-                        "There is no free background in this model, so there "
-                        "is no peak/background split to be undetermined — "
-                        "every component is named and its area is a share of "
-                        "the cell rather than of a polynomial."
-                        + _unattributed_clause(_u, f.get("unattributed_range"))
-                        + " A HIGH NAMED FRACTION IS NOT BY ITSELF A BETTER "
-                          "DECOMPOSITION: a wide band can absorb a great "
-                          "deal, and a few resolved transitions with an "
-                          "honest few percent left over is the better "
-                          "answer. Read it beside the mechanism."))
+            out.append(
+                (
+                    "ok",
+                    "Capacity attribution is reportable",
+                    "There is no free background in this model, so there "
+                    "is no peak/background split to be undetermined — "
+                    "every component is named and its area is a share of "
+                    "the cell rather than of a polynomial."
+                    + _unattributed_clause(_u, f.get("unattributed_range"))
+                    + " A HIGH NAMED FRACTION IS NOT BY ITSELF A BETTER "
+                    "DECOMPOSITION: a wide band can absorb a great "
+                    "deal, and a few resolved transitions with an "
+                    "honest few percent left over is the better "
+                    "answer. Read it beside the mechanism.",
+                )
+            )
         else:
-            out.append(("ok", "Capacity attribution is reportable",
-                        "Refitting with a different baseline degree barely "
-                        "moved the peak/background split"
-                        + (f" (closure interval {cw[0]:.2f}–{cw[1]:.2f} wide)"
-                           if cw else "") + ", so the per-peak shares mean "
-                        "what they say."))
+            out.append(
+                (
+                    "ok",
+                    "Capacity attribution is reportable",
+                    "Refitting with a different baseline degree barely "
+                    "moved the peak/background split"
+                    + (
+                        f" (closure interval {cw[0]:.2f}–{cw[1]:.2f} wide)"
+                        if cw
+                        else ""
+                    )
+                    + ", so the per-peak shares mean "
+                    "what they say.",
+                )
+            )
 
     if f.get("reference_cycle"):
         # The severity is now a VALUE carried from `detect.detect_all`, not a
@@ -2047,23 +2505,33 @@ def _sentences(f):
         # rendered green, while the benign "cycle 5 failed the integrity
         # check; 6 is the first that passes" rendered as a warning.
         lvl = f.get("reference_severity") or "ok"
-        out.append((lvl, f"Peaks are tracked against cycle "
-                    f"{f['reference_cycle']}",
-                    _sentence_case(f.get("reference_reason", ""))
-                    + ". That cycle's peak list "
-                    f"is fitted in every other cycle, so it decides what the "
-                    f"whole dataset is measured against."))
-    bad_peaks = [s for s in f.get("tracked", [])
-                 if s.get("discontinuity_is_failure")]
+        out.append(
+            (
+                lvl,
+                f"Peaks are tracked against cycle {f['reference_cycle']}",
+                _sentence_case(f.get("reference_reason", ""))
+                + ". That cycle's peak list "
+                f"is fitted in every other cycle, so it decides what the "
+                f"whole dataset is measured against.",
+            )
+        )
+    bad_peaks = [s for s in f.get("tracked", []) if s.get("discontinuity_is_failure")]
     if bad_peaks:
-        out.append(("warn", f"{len(bad_peaks)} tracked peak(s) failed mid-life",
-                    ", ".join(f"{s['step']} {s['reference_voltage']:.3f} V "
-                              f"from cycle "
-                              f"{int(s['first_discontinuity_cycle'])}"
-                              for s in bad_peaks)
-                    + ". Each was reliably tracked for at least 15 cycles "
-                      "before it went, so this is a feature being lost, not a "
-                      "feature that never established."))
+        out.append(
+            (
+                "warn",
+                f"{len(bad_peaks)} tracked peak(s) failed mid-life",
+                ", ".join(
+                    f"{s['step']} {s['reference_voltage']:.3f} V "
+                    f"from cycle "
+                    f"{int(s['first_discontinuity_cycle'])}"
+                    for s in bad_peaks
+                )
+                + ". Each was reliably tracked for at least 15 cycles "
+                "before it went, so this is a feature being lost, not a "
+                "feature that never established.",
+            )
+        )
     return out
 
 
@@ -2078,61 +2546,97 @@ def _experiment(f):
     src = " (from file)" if p.get("barcode") else ""
     out = []
     if p.get("active_material_mass_mg"):
-        out.append(("Active mass", f"{p['active_material_mass_mg']:.2f} mg",
-                    (p.get("blend") or "") + src))
+        out.append(
+            (
+                "Active mass",
+                f"{p['active_material_mass_mg']:.2f} mg",
+                (p.get("blend") or "") + src,
+            )
+        )
     if p.get("theoretical_capacity_mAh_g"):
-        out.append(("Theoretical", f"{p['theoretical_capacity_mAh_g']:.0f}",
-                    "mAh/g"))
+        out.append(("Theoretical", f"{p['theoretical_capacity_mAh_g']:.0f}", "mAh/g"))
     # THE RATE THE CELL WAS CYCLED AT, not the one in the cycler header. A
     # rate-capability run reports its range and its block count; a
     # single-rate run reads exactly as it did before. `rate_protocol` is
     # attached to the parameters in Cell 6a. See `cycling.describe_rate`.
     _rp = p.get("rate_protocol")
     if _rp and _rp.get("available") and _rp.get("is_variable"):
-        out.append(("Rate", str(_rp.get("label")),
-                    f"{_rp.get('n_blocks')} rate blocks — variable-rate run"))
+        out.append(
+            (
+                "Rate",
+                str(_rp.get("label")),
+                f"{_rp.get('n_blocks')} rate blocks — variable-rate run",
+            )
+        )
     elif p.get("charge_rate_c"):
         # When the current was recorded, say what it MEASURED as well as what
         # was entered — the two disagreeing is worth seeing, and the entered
         # value comes from a header that only describes the first step.
         _m = (_rp or {}).get("label")
-        out.append(("Rate", f"{p['charge_rate_c']} C",
-                    f"measured {_m}" if _m else ""))
+        out.append(("Rate", f"{p['charge_rate_c']} C", f"measured {_m}" if _m else ""))
     if p.get("voltage_lower_V") and p.get("voltage_upper_V"):
-        out.append(("Window", f"{p['voltage_lower_V']}–{p['voltage_upper_V']} V",
-                    "from the cycler file"
-                    if p.get("voltage_window_source") == "file" else
-                    ("at least this wide — short record"
-                     if str(p.get("voltage_window_source", "")).startswith(
-                         "observed range") else "as set")))
+        out.append(
+            (
+                "Window",
+                f"{p['voltage_lower_V']}–{p['voltage_upper_V']} V",
+                "from the cycler file"
+                if p.get("voltage_window_source") == "file"
+                else (
+                    "at least this wide — short record"
+                    if str(p.get("voltage_window_source", "")).startswith(
+                        "observed range"
+                    )
+                    else "as set"
+                ),
+            )
+        )
     if p.get("active_loading_mg_cm2"):
-        out.append(("Loading", f"{p['active_loading_mg_cm2']:.2f}",
-                    f"mg/cm² on {p.get('electrode_diameter_mm', 0):.0f} mm"))
+        out.append(
+            (
+                "Loading",
+                f"{p['active_loading_mg_cm2']:.2f}",
+                f"mg/cm² on {p.get('electrode_diameter_mm', 0):.0f} mm",
+            )
+        )
     if p.get("counter_electrode_metal"):
         # WHERE THE METAL CAME FROM, not just that the mass was estimated. A
         # counter metal that was ASSUMED sets the density used in every areal
         # and gravimetric energy figure (Li 0.534 against Na 0.97 g/cm3), and
         # reading "estimated" gave no clue that the element itself was a guess.
-        _src = {"stated": "as stated",
-                "chemistry": "from the electrolyte / formula",
-                "library": "from the composition library — confirm it",
-                "assumed": "ASSUMED — chemistry could not be inferred"}.get(
-            p.get("counter_electrode_metal_source"), "")
-        _mass = ("measured" if p.get("counter_electrode_measured")
-                 else "mass estimated")
-        out.append(("Counter", p["counter_electrode_metal"],
-                    f"{_mass}{(', ' + _src) if _src else ''}"))
+        _src = {
+            "stated": "as stated",
+            "chemistry": "from the electrolyte / formula",
+            "library": "from the composition library — confirm it",
+            "assumed": "ASSUMED — chemistry could not be inferred",
+        }.get(p.get("counter_electrode_metal_source"), "")
+        _mass = "measured" if p.get("counter_electrode_measured") else "mass estimated"
+        out.append(
+            (
+                "Counter",
+                p["counter_electrode_metal"],
+                f"{_mass}{(', ' + _src) if _src else ''}",
+            )
+        )
     if f.get("n_cycles"):
         _died = f.get("fit_limit") or f.get("death_cycle")
         if f.get("partial_final"):
             # The count of COMPLETE cycles, which is what the numbers above
             # this tile are drawn from. The record length goes in the note.
-            out.append(("Cycles complete",
-                        str(f["partial_final"][0] - 1),
-                        f"cycle {f['partial_final'][0]} still running"))
+            out.append(
+                (
+                    "Cycles complete",
+                    str(f["partial_final"][0] - 1),
+                    f"cycle {f['partial_final'][0]} still running",
+                )
+            )
         else:
-            out.append(("Cycles run", str(f["n_cycles"]),
-                        f"working to {_died}" if _died else ""))
+            out.append(
+                (
+                    "Cycles run",
+                    str(f["n_cycles"]),
+                    f"working to {_died}" if _died else "",
+                )
+            )
     return out
 
 
@@ -2144,22 +2648,23 @@ def _experiment(f):
 # take for degradation. The figure is not wrong arithmetic; it is the wrong
 # question, so it is withheld and the reason is given.
 def _rate_variable(f):
-    return bool(((f.get("params") or {}).get("rate_protocol")
-                 or {}).get("is_variable"))
+    return bool(((f.get("params") or {}).get("rate_protocol") or {}).get("is_variable"))
 
 
 def _rate_caveat(f):
     rp = (f.get("params") or {}).get("rate_protocol") or {}
     if not rp.get("is_variable"):
         return None
-    return (f"This cell was cycled at {rp.get('n_blocks')} different rates "
-            f"({rp.get('label')}). Capacity against cycle number here is "
-            f"mostly the rate schedule, not age: it falls because the "
-            f"current rose and returns when the current falls again. "
-            f"Retention and percent-of-first are therefore withheld — they "
-            f"would read as fading and recovery. The rate-capability summary "
-            f"compares each rate against the reference rate, and the "
-            f"recovery to the starting rate is reported there.")
+    return (
+        f"This cell was cycled at {rp.get('n_blocks')} different rates "
+        f"({rp.get('label')}). Capacity against cycle number here is "
+        f"mostly the rate schedule, not age: it falls because the "
+        f"current rose and returns when the current falls again. "
+        f"Retention and percent-of-first are therefore withheld — they "
+        f"would read as fading and recovery. The rate-capability summary "
+        f"compares each rate against the reference rate, and the "
+        f"recovery to the starting rate is reported there."
+    )
 
 
 def _stats(f):
@@ -2173,26 +2678,49 @@ def _stats(f):
     # said "Retention 34% at cycle 128" with no capacity for cycle 128
     # anywhere on it. The Markdown table always printed them all.
     for cyc, d, pct in f.get("key_capacities", []):
-        out.append((f"Cycle {cyc}", f"{d:.0f}",
-                    "mAh/g" + (f"  ·  {pct:.0f}%"
-                               if pct is not None and not _var else "")))
+        out.append(
+            (
+                f"Cycle {cyc}",
+                f"{d:.0f}",
+                "mAh/g" + (f"  ·  {pct:.0f}%" if pct is not None and not _var else ""),
+            )
+        )
     if _var:
         out.append(("Retention", "—", "withheld: several rates in this run"))
     elif f.get("retention") is not None and f.get("last_good_cycle"):
-        out.append(("Retention", f"{f['retention']:.0f}%",
-                    f"at cycle {f['last_good_cycle']}, "
-                    f"vs cycle {f.get('retention_reference') or 2}"))
+        out.append(
+            (
+                "Retention",
+                f"{f['retention']:.0f}%",
+                f"at cycle {f['last_good_cycle']}, "
+                f"vs cycle {f.get('retention_reference') or 2}",
+            )
+        )
     if f.get("median_ce") is not None:
         out.append(("Median CE", f"{f['median_ce']:.1f}%", ""))
     return out
 
 
-def build_report(name, *, dataset=None, params=None, integrity=None,
-                 detection=None, tracking=None, attribution=None,
-                 cycle_table=None, fit_limit=None, profile=None,
-                 dataset_dir=None, run_id="", file_format="png",
-                 in_progress=None, coherence=None, resolvability=None,
-                 parameters=None):
+def build_report(
+    name,
+    *,
+    dataset=None,
+    params=None,
+    integrity=None,
+    detection=None,
+    tracking=None,
+    attribution=None,
+    cycle_table=None,
+    fit_limit=None,
+    profile=None,
+    dataset_dir=None,
+    run_id="",
+    file_format="png",
+    in_progress=None,
+    coherence=None,
+    resolvability=None,
+    parameters=None,
+):
     """
     The two documents, as strings.
 
@@ -2201,10 +2729,22 @@ def build_report(name, *, dataset=None, params=None, integrity=None,
     None or the figures are missing, both documents are still written and say
     so rather than failing.
     """
-    f = _facts(name, params, integrity, cycle_table, fit_limit, detection,
-               tracking, attribution, None, profile, in_progress=in_progress,
-               coherence=coherence, resolvability=resolvability,
-               parameters=parameters)
+    f = _facts(
+        name,
+        params,
+        integrity,
+        cycle_table,
+        fit_limit,
+        detection,
+        tracking,
+        attribution,
+        None,
+        profile,
+        in_progress=in_progress,
+        coherence=coherence,
+        resolvability=resolvability,
+        parameters=parameters,
+    )
     # SEVERITY FIRST, and stably so. `_peak_sentences` came second by
     # construction, so every `bad` finding about the peaks sat below every
     # routine `ok` one about the cycling — on NNM cell B the paragraph that
@@ -2212,8 +2752,9 @@ def build_report(name, *, dataset=None, params=None, integrity=None,
     # attribution is reportable", and a `warn` twelve lines above it
     # forward-referenced it.
     _SEVERITY = {"bad": 0, "warn": 1, "ok": 2}
-    findings = sorted(_sentences(f) + _peak_sentences(f),
-                      key=lambda t: _SEVERITY.get(t[0], 3))
+    findings = sorted(
+        _sentences(f) + _peak_sentences(f), key=lambda t: _SEVERITY.get(t[0], 3)
+    )
     stats = _stats(f)
     experiment = _experiment(f)
     p = f["params"]
@@ -2224,12 +2765,17 @@ def build_report(name, *, dataset=None, params=None, integrity=None,
     # the model. NNM and NMC111 are both "broad" and one of them is a series
     # of real transitions.
     _mech = (f.get("resolvability") or {}).get("mechanism")
-    subtitle = " · ".join(x for x in [
-        p.get("electrode_type", "") and f"{p['electrode_type'].lower()} electrode",
-        p.get("battery_chemistry", ""),
-        f"profile {f['profile']}" if f.get("profile") else "",
-        f"mechanism {str(_mech).replace('_', ' ')}" if _mech else "",
-        run_id] if x)
+    subtitle = " · ".join(
+        x
+        for x in [
+            p.get("electrode_type", "") and f"{p['electrode_type'].lower()} electrode",
+            p.get("battery_chemistry", ""),
+            f"profile {f['profile']}" if f.get("profile") else "",
+            f"mechanism {str(_mech).replace('_', ' ')}" if _mech else "",
+            run_id,
+        ]
+        if x
+    )
 
     # FIGURE_GUIDE names its files with a .png suffix, but a run exported as
     # tiff writes *_cycle_life.tiff and every figure went missing from the
@@ -2240,29 +2786,33 @@ def build_report(name, *, dataset=None, params=None, integrity=None,
         folder, suffix, title, blurb = _entry[:4]
         run_wide = bool(_entry[4]) if len(_entry) > 4 else False
         suf = suffix[:-4] + _ext if suffix.endswith(".png") else suffix
-        path = (_find(os.path.join(dataset_dir, folder), suf, name, run_wide)
-                if dataset_dir else None)
+        path = (
+            _find(os.path.join(dataset_dir, folder), suf, name, run_wide)
+            if dataset_dir
+            else None
+        )
         if path is None and dataset_dir and suf != suffix:
-            path = _find(os.path.join(dataset_dir, folder), suffix, name,
-                         run_wide)
-        figs.append((title, blurb, path,
-                     _rel(path, dataset_dir) if path else None))
+            path = _find(os.path.join(dataset_dir, folder), suffix, name, run_wide)
+        figs.append((title, blurb, path, _rel(path, dataset_dir) if path else None))
 
     # ---------------------------------------------------------------- HTML
-    h = ["<!doctype html><html lang='en-GB'><head><meta charset='utf-8'>",
-         "<meta name='viewport' content='width=device-width,initial-scale=1'>",
-         f"<title>{_esc(f['title'])} — Ratatosk</title>"
-         f"<style>{_CSS}</style>",
-         "</head><body><div class='wrap'>",
-         f"<h1>{_esc(f['title'])}</h1>",
-         f"<p class='sub'>{_esc(subtitle)}</p>"]
+    h = [
+        "<!doctype html><html lang='en-GB'><head><meta charset='utf-8'>",
+        "<meta name='viewport' content='width=device-width,initial-scale=1'>",
+        f"<title>{_esc(f['title'])} — Ratatosk</title><style>{_CSS}</style>",
+        "</head><body><div class='wrap'>",
+        f"<h1>{_esc(f['title'])}</h1>",
+        f"<p class='sub'>{_esc(subtitle)}</p>",
+    ]
 
     def _tiles(rows):
         out = ["<div class='grid'>"]
         for k, v, n2 in rows:
-            out.append(f"<div class='stat'><div class='k'>{_esc(k)}</div>"
-                       f"<div class='v'>{_esc(v)}</div>"
-                       f"<div class='n'>{_esc(n2)}</div></div>")
+            out.append(
+                f"<div class='stat'><div class='k'>{_esc(k)}</div>"
+                f"<div class='v'>{_esc(v)}</div>"
+                f"<div class='n'>{_esc(n2)}</div></div>"
+            )
         out.append("</div>")
         return out
 
@@ -2276,57 +2826,72 @@ def build_report(name, *, dataset=None, params=None, integrity=None,
         if _cav:
             h.append(f"<p class='n'>{_esc(_cav)}</p>")
         else:
-            h.append("<p class='n'>Percentages are of the first complete "
-                     "discharge.</p>")
+            h.append(
+                "<p class='n'>Percentages are of the first complete discharge.</p>"
+            )
 
     h.append("<h2>What the run found</h2>")
     for lvl, head, text in findings:
         # The Markdown renderer writes "**Head.** text"; the HTML ran the two
         # straight together with no stop and no space.
-        h.append(f"<div class='flag {lvl}'><b>{_esc(head)}.</b> "
-                 f"{_md_inline(_esc(text))}</div>")
+        h.append(
+            f"<div class='flag {lvl}'><b>{_esc(head)}.</b> "
+            f"{_md_inline(_esc(text))}</div>"
+        )
 
     if f["peaks"].get("Charge") or f["peaks"].get("Discharge"):
         h.append("<h2>Redox features being tracked</h2>")
         _kinds = _kind_by_ref(f)
-        h.append("<table><tr><th>Step</th><th>Reference peak / V</th>"
-                 "<th>Fitted as</th></tr>")
+        h.append(
+            "<table><tr><th>Step</th><th>Reference peak / V</th><th>Fitted as</th></tr>"
+        )
         for step in ("Charge", "Discharge"):
-            for x in (f["peaks"].get(step) or []):
-                h.append(f"<tr><td>{step}</td><td>{x:.3f}</td><td>"
-                         f"{_esc(_kinds.get((step, round(float(x), 3)), '—'))}"
-                         f"</td></tr>")
+            for x in f["peaks"].get(step) or []:
+                h.append(
+                    f"<tr><td>{step}</td><td>{x:.3f}</td><td>"
+                    f"{_esc(_kinds.get((step, round(float(x), 3)), '—'))}"
+                    f"</td></tr>"
+                )
         h.append("</table>")
         if not _kinds:
-            h.append("<p class='n'>Nothing here was fitted — these are the "
-                     "detected reference features only.</p>")
+            h.append(
+                "<p class='n'>Nothing here was fitted — these are the "
+                "detected reference features only.</p>"
+            )
 
     h.append("<h2>Four figures, in this order</h2>")
     for i, (title, blurb, path, rel) in enumerate(figs, 1):
-        h.append(f"<div class='fig'><h3>{i}. {_esc(title)}</h3>"
-                 f"<p class='cap'>{_esc(blurb)}</p>")
+        h.append(
+            f"<div class='fig'><h3>{i}. {_esc(title)}</h3>"
+            f"<p class='cap'>{_esc(blurb)}</p>"
+        )
         src = _embed(path) if path else None
         if src:
             h.append(f"<img alt='{_esc(title)}' src='{src}'>")
         elif path:
-            h.append(f"<p class='n'>(figure written as "
-                     f"<code>{_esc(os.path.splitext(path)[1])}</code>, which "
-                     f"a browser cannot show — open it from the folder)</p>")
+            h.append(
+                f"<p class='n'>(figure written as "
+                f"<code>{_esc(os.path.splitext(path)[1])}</code>, which "
+                f"a browser cannot show — open it from the folder)</p>"
+            )
         else:
             h.append("<p class='n'>(figure not found in this run)</p>")
         if path:
-            h.append(f"<p class='n'><code>{_esc(_rel(path, dataset_dir))}"
-                     f"</code></p>")
+            h.append(f"<p class='n'><code>{_esc(_rel(path, dataset_dir))}</code></p>")
         h.append("</div>")
 
-    h.append("<h2>Where everything else is</h2><table>"
-             "<tr><th>Folder</th><th>What is in it</th></tr>")
+    h.append(
+        "<h2>Where everything else is</h2><table>"
+        "<tr><th>Folder</th><th>What is in it</th></tr>"
+    )
     for folder, what in _FOLDERS:
         h.append(f"<tr><td><code>{folder}</code></td><td>{what}</td></tr>")
     h.append("</table>")
-    h.append(f"<footer>Ratatosk {run_id or ''} — images are embedded, so this "
-             f"file can be moved or emailed on its own. Every number here "
-             f"comes from the CSVs in the folders above.</footer>")
+    h.append(
+        f"<footer>Ratatosk {run_id or ''} — images are embedded, so this "
+        f"file can be moved or emailed on its own. Every number here "
+        f"comes from the CSVs in the folders above.</footer>"
+    )
     h.append("</div></body></html>")
 
     # ------------------------------------------------------------ Markdown
@@ -2342,19 +2907,28 @@ def build_report(name, *, dataset=None, params=None, integrity=None,
         # A SEPARATOR. "| Cycles complete | 10 cycle 11 still running |"
         # and "| Rate | 0.1 C measured C/10 |" ran the value straight into
         # its note, so both read as one garbled value.
-        m += [f"| {_md_cell(k)} | {_md_cell(v)} | {_md_cell(n2 or '')} |"
-              for k, v, n2 in experiment]
+        m += [
+            f"| {_md_cell(k)} | {_md_cell(v)} | {_md_cell(n2 or '')} |"
+            for k, v, n2 in experiment
+        ]
         m += [""]
     if f.get("key_capacities"):
         _var = _rate_variable(f)
-        m += ["## Discharge capacity", "",
-              ("| Cycle | mAh/g |" if _var
-               else "| Cycle | mAh/g | % of first |"),
-              ("|---|---|" if _var else "|---|---|---|")]
-        m += [(f"| {c} | {d:.0f} |" if _var else
-               f"| {c} | {d:.0f} | "
-               f"{('%.0f%%' % pct) if pct is not None else '—'} |")
-              for c, d, pct in f["key_capacities"]]
+        m += [
+            "## Discharge capacity",
+            "",
+            ("| Cycle | mAh/g |" if _var else "| Cycle | mAh/g | % of first |"),
+            ("|---|---|" if _var else "|---|---|---|"),
+        ]
+        m += [
+            (
+                f"| {c} | {d:.0f} |"
+                if _var
+                else f"| {c} | {d:.0f} | "
+                f"{('%.0f%%' % pct) if pct is not None else '—'} |"
+            )
+            for c, d, pct in f["key_capacities"]
+        ]
         extra = [(k, v, n2) for k, v, n2 in stats if not k.startswith("Cycle ")]
         if extra:
             m += [""] + [f"**{k}** {v} {n2}".strip() for k, v, n2 in extra]
@@ -2368,15 +2942,24 @@ def build_report(name, *, dataset=None, params=None, integrity=None,
         m += [f"**{MARK.get(lvl, '')}{head}.** {text}", ""]
     if f["peaks"].get("Charge") or f["peaks"].get("Discharge"):
         _kinds = _kind_by_ref(f)
-        m += ["## Redox features being tracked", "",
-              "| Step | Reference peak / V | Fitted as |", "|---|---|---|"]
+        m += [
+            "## Redox features being tracked",
+            "",
+            "| Step | Reference peak / V | Fitted as |",
+            "|---|---|---|",
+        ]
         for step in ("Charge", "Discharge"):
-            for x in (f["peaks"].get(step) or []):
-                m.append(f"| {step} | {x:.3f} | "
-                         f"{_kinds.get((step, round(float(x), 3)), '—')} |")
+            for x in f["peaks"].get(step) or []:
+                m.append(
+                    f"| {step} | {x:.3f} | "
+                    f"{_kinds.get((step, round(float(x), 3)), '—')} |"
+                )
         if not _kinds:
-            m += ["", "Nothing here was fitted — these are the detected "
-                      "reference features only."]
+            m += [
+                "",
+                "Nothing here was fitted — these are the detected "
+                "reference features only.",
+            ]
         m += [""]
     m += ["## Four figures, in this order", ""]
     for i, (title, blurb, path, rel) in enumerate(figs, 1):
@@ -2389,25 +2972,36 @@ def build_report(name, *, dataset=None, params=None, integrity=None,
         # HTML page embeds its images as data URIs and was unaffected, which
         # is why this survived.
         m += [f"![{title}](<{rel}>)" if rel else "*(figure not found)*", ""]
-    m += ["## Where everything else is", "", "| Folder | What is in it |",
-          "|---|---|"]
+    m += ["## Where everything else is", "", "| Folder | What is in it |", "|---|---|"]
     m += [f"| `{folder}` | {what} |" for folder, what in _FOLDERS]
-    m += ["", f"---", "",
-          "Generated by Ratatosk. Every number above comes from the CSVs in "
-          "the folders listed."]
+    m += [
+        "",
+        f"---",
+        "",
+        "Generated by Ratatosk. Every number above comes from the CSVs in "
+        "the folders listed.",
+    ]
     return "\n".join(h), "\n".join(m), f
 
 
 _FOLDERS = [
-    ("1_cycling", "capacity, coulombic efficiency, retention, fade, "
-     "average voltage, energy efficiency — and the cycle integrity table"),
+    (
+        "1_cycling",
+        "capacity, coulombic efficiency, retention, fade, "
+        "average voltage, energy efficiency — and the cycle integrity table",
+    ),
     ("2_voltage_profiles", "voltage against capacity, all cycles and key cycles"),
-    ("3_energy_power", "energy and power density on three bases, and the "
-     "Ragone plot"),
-    ("4_dqdv", "differential capacity: overlays, waterfalls, heatmaps, and "
-     "the processed curves as CSV"),
-    ("5_peak_fitting", "detected peaks, the fits themselves, every fitted "
-     "parameter, and the coherence audit"),
+    ("3_energy_power", "energy and power density on three bases, and the Ragone plot"),
+    (
+        "4_dqdv",
+        "differential capacity: overlays, waterfalls, heatmaps, and "
+        "the processed curves as CSV",
+    ),
+    (
+        "5_peak_fitting",
+        "detected peaks, the fits themselves, every fitted "
+        "parameter, and the coherence audit",
+    ),
     ("6_descriptors", "tracked peaks, polarisation, capacity attribution"),
     ("7_summary", "the per-cycle summary table"),
 ]
@@ -2447,8 +3041,8 @@ def write_report(dataset_dir, name, **kwargs):
 # outlier only when there is one, and declines to nominate a representative
 # cell when the cells do not agree.
 
-REPRESENTATIVE_MAX_SPREAD = 0.15    # relative spread above which "typical"
-                                    # is not a thing this run has
+REPRESENTATIVE_MAX_SPREAD = 0.15  # relative spread above which "typical"
+# is not a thing this run has
 
 # --- what a triplicate REPORTS ------------------------------------------
 # Published reproducibility practice for replicate cells is mean +/- standard
@@ -2479,9 +3073,13 @@ INTEGRAL_FIDELITY_CEILING = 1.20
 def _fidelity_outside_band(fid):
     """The half-cycles whose integral fidelity is outside the band, either
     way, as `{key: value}`."""
-    return {k: v for k, v in (fid or {}).items()
-            if np.isfinite(v) and not (INTEGRAL_FIDELITY_FLOOR <= v
-                                       <= INTEGRAL_FIDELITY_CEILING)}
+    return {
+        k: v
+        for k, v in (fid or {}).items()
+        if np.isfinite(v)
+        and not (INTEGRAL_FIDELITY_FLOOR <= v <= INTEGRAL_FIDELITY_CEILING)
+    }
+
 
 REPLICATE_SD_DDOF = 1
 # READ, not decorative. This was defined and the guard below used a literal
@@ -2506,7 +3104,6 @@ def _spread(values):
     return float((v.max() - v.min()) / abs(med))
 
 
-
 # Two tracked peaks are the same redox feature if their reference voltages sit
 # closer than this. Mirrors `analyse.TRACKING_TOLERANCE_MV`, which is the
 # pipeline's existing answer to the same question, restated rather than
@@ -2529,7 +3126,8 @@ def _group_drift(points):
     groups, cur = [], [pts[0]]
     for pt in pts[1:]:
         if (pt[0] - cur[-1][0]) * 1000.0 > FEATURE_GROUP_TOLERANCE_MV:
-            groups.append(cur); cur = [pt]
+            groups.append(cur)
+            cur = [pt]
         else:
             cur.append(pt)
     groups.append(cur)
@@ -2554,11 +3152,17 @@ def _group_drift(points):
         # trend-worthy features are in the table. Unaudited is a third state
         # and gets its own mark.
         _unaudited = all(len(_pt) < 4 or not _pt[3] for _pt in grp)
-        out.append(dict(voltage=float(np.mean([p[0] for p in grp])),
-                        mean=mean, sd=sd, n=n, n_peaks=len(grp),
-                        unaudited=bool(_unaudited),
-                        questionable_only=bool(_verds)
-                        and _verds <= {"questionable"}))
+        out.append(
+            dict(
+                voltage=float(np.mean([p[0] for p in grp])),
+                mean=mean,
+                sd=sd,
+                n=n,
+                n_peaks=len(grp),
+                unaudited=bool(_unaudited),
+                questionable_only=bool(_verds) and _verds <= {"questionable"},
+            )
+        )
     return out
 
 
@@ -2589,8 +3193,9 @@ def _pm(mean, sd, n, unit="", dp=1, show_n=False):
     if not np.isfinite(mean):
         return "—"
     if not np.isfinite(sd) or n < 2:
-        return (f"{mean:.{dp}f}{unit} (n = {n})" if show_n and n
-                else f"{mean:.{dp}f}{unit}")
+        return (
+            f"{mean:.{dp}f}{unit} (n = {n})" if show_n and n else f"{mean:.{dp}f}{unit}"
+        )
     return f"{mean:.{dp}f} ± {sd:.{dp}f}{unit} (n = {n})"
 
 
@@ -2636,70 +3241,103 @@ def build_run_summary(facts_by_name, *, run_id="", n_files=0):
         dl = f.get("first_last_discharge") or (np.nan, np.nan)
         anom = f.get("anomalous")
         over = f.get("over_theoretical")
-        rows.append(dict(
-            name=n,
-            composition=str(p.get("composition", n)),
-            label=(f"{p.get('composition', n)}"
-                   + (f" {p['cell_id']}" if p.get("cell_id") else "")),
-            mass=p.get("active_material_mass_mg", np.nan),
-            cycles=f.get("n_cycles", np.nan),
-            first=dl[0], last=dl[1],
-            last_cycle=f.get("last_good_cycle", np.nan),
-            retention=f.get("retention", np.nan),
-            unusable="; ".join(f.get("unusable") or []) or None,
-            # The arithmetic that was barred from being called retention on a
-            # variable-rate run. Kept under its own name so it is not LOST —
-            # which it was, because nothing read it.
-            retention_uncorrected=f.get("retention_uncorrected", np.nan),
-            rate_is_variable=bool(f.get("rate_is_variable")),
-            rate_label=(((f.get("params") or {}).get("rate_protocol")
-                         or {}).get("label")),
-            ce=f.get("median_ce", np.nan),
-            died=f.get("fit_limit") or f.get("death_cycle"),
-            n_anom=(len(anom) if anom is not None else 0),
-            n_over=(len(over) if over is not None else 0),
-            withheld=f.get("withheld", (0, 0))[0],
-            unattributed=f.get("unattributed"),
-            unattributed_withheld=f.get("unattributed_withheld", 0),
-            no_baseline=f.get("no_baseline", False),
-            mechanism_own=str((f.get("resolvability") or {}).get(
-                "mechanism_own") or "") or None,
-            # WHICH MODEL EACH CELL WAS FITTED WITH. The run page exists to
-            # say whether the cells agree, and two replicates classified
-            # differently — one `multi_transition`, one `mixed` — are not
-            # being compared like with like. That is a difference this page
-            # must show, not one a reader should have to open three folders
-            # to find.
-            mechanism=str((f.get("resolvability") or {}).get("mechanism")
-                          or ""),
-            # The WORST step fidelity for this cell, so the run summary can
-            # say which ground the withholding rested on and can carry the
-            # caveat itself. A reader who opens only this page must not be
-            # left thinking the areas are capacities.
-            # The WORST is the one FURTHEST FROM 1, not the smallest. The
-            # band is two-sided (0.80-1.20); `min` recorded 0.95 for a cell
-            # whose charge step carried 1.45, so the run page saw a healthy
-            # number and the excess never appeared on it.
-            fidelity=max([v for v in (f.get("integral_fidelity") or {}).values()
-                          if np.isfinite(v)],
-                         key=lambda v: abs(v - 1.0), default=np.nan),
-            partial=bool(f.get("partial_final")),
-        ))
-    _COLS = ["name", "label", "composition", "mass", "cycles", "first",
-             "last", "last_cycle", "retention", "ce", "died", "n_anom",
-             "n_over", "withheld", "fidelity", "partial",
-             # 1.9.0.56: the charge the model could not name, and whether
-             # that alone withheld a share. Added here as well as to `rows`
-             # for the reason the note below gives.
-             "unattributed", "unattributed_withheld", "no_baseline",
-             "mechanism_own", "rate_is_variable", "rate_label", "unusable",
-             "retention_uncorrected",
-             # ADDING A FIELD TO `rows` IS NOT ENOUGH. The list below is
-             # explicit, so a key that is not in it is silently dropped and
-             # every `r.<name>` after it raises AttributeError. That is what
-             # took RUN_SUMMARY off the 1.9.0.47 NMC run: the per-cell pages
-             # were written, the run page was not, and nothing said why.
-             "mechanism"]
+        rows.append(
+            dict(
+                name=n,
+                composition=str(p.get("composition", n)),
+                label=(
+                    f"{p.get('composition', n)}"
+                    + (f" {p['cell_id']}" if p.get("cell_id") else "")
+                ),
+                mass=p.get("active_material_mass_mg", np.nan),
+                cycles=f.get("n_cycles", np.nan),
+                first=dl[0],
+                last=dl[1],
+                last_cycle=f.get("last_good_cycle", np.nan),
+                retention=f.get("retention", np.nan),
+                unusable="; ".join(f.get("unusable") or []) or None,
+                # The arithmetic that was barred from being called retention on a
+                # variable-rate run. Kept under its own name so it is not LOST —
+                # which it was, because nothing read it.
+                retention_uncorrected=f.get("retention_uncorrected", np.nan),
+                rate_is_variable=bool(f.get("rate_is_variable")),
+                rate_label=(
+                    ((f.get("params") or {}).get("rate_protocol") or {}).get("label")
+                ),
+                ce=f.get("median_ce", np.nan),
+                died=f.get("fit_limit") or f.get("death_cycle"),
+                n_anom=(len(anom) if anom is not None else 0),
+                n_over=(len(over) if over is not None else 0),
+                withheld=f.get("withheld", (0, 0))[0],
+                unattributed=f.get("unattributed"),
+                unattributed_withheld=f.get("unattributed_withheld", 0),
+                no_baseline=f.get("no_baseline", False),
+                mechanism_own=str(
+                    (f.get("resolvability") or {}).get("mechanism_own") or ""
+                )
+                or None,
+                # WHICH MODEL EACH CELL WAS FITTED WITH. The run page exists to
+                # say whether the cells agree, and two replicates classified
+                # differently — one `multi_transition`, one `mixed` — are not
+                # being compared like with like. That is a difference this page
+                # must show, not one a reader should have to open three folders
+                # to find.
+                mechanism=str((f.get("resolvability") or {}).get("mechanism") or ""),
+                # The WORST step fidelity for this cell, so the run summary can
+                # say which ground the withholding rested on and can carry the
+                # caveat itself. A reader who opens only this page must not be
+                # left thinking the areas are capacities.
+                # The WORST is the one FURTHEST FROM 1, not the smallest. The
+                # band is two-sided (0.80-1.20); `min` recorded 0.95 for a cell
+                # whose charge step carried 1.45, so the run page saw a healthy
+                # number and the excess never appeared on it.
+                fidelity=max(
+                    [
+                        v
+                        for v in (f.get("integral_fidelity") or {}).values()
+                        if np.isfinite(v)
+                    ],
+                    key=lambda v: abs(v - 1.0),
+                    default=np.nan,
+                ),
+                partial=bool(f.get("partial_final")),
+            )
+        )
+    _COLS = [
+        "name",
+        "label",
+        "composition",
+        "mass",
+        "cycles",
+        "first",
+        "last",
+        "last_cycle",
+        "retention",
+        "ce",
+        "died",
+        "n_anom",
+        "n_over",
+        "withheld",
+        "fidelity",
+        "partial",
+        # 1.9.0.56: the charge the model could not name, and whether
+        # that alone withheld a share. Added here as well as to `rows`
+        # for the reason the note below gives.
+        "unattributed",
+        "unattributed_withheld",
+        "no_baseline",
+        "mechanism_own",
+        "rate_is_variable",
+        "rate_label",
+        "unusable",
+        "retention_uncorrected",
+        # ADDING A FIELD TO `rows` IS NOT ENOUGH. The list below is
+        # explicit, so a key that is not in it is silently dropped and
+        # every `r.<name>` after it raises AttributeError. That is what
+        # took RUN_SUMMARY off the 1.9.0.47 NMC run: the per-cell pages
+        # were written, the run page was not, and nothing said why.
+        "mechanism",
+    ]
     # An explicit column list so a run where every dataset failed produces a
     # summary saying so, rather than a KeyError on the first coercion.
     T = pd.DataFrame(rows, columns=_COLS)
@@ -2708,16 +3346,26 @@ def build_run_summary(facts_by_name, *, run_id="", n_files=0):
     # can arrive as None or a string from a report that had nothing to put
     # there. Coerce once, at the boundary, rather than guarding each use:
     # the LTO run died on `int(r.cycles)` because one dataset carried None.
-    for _c in ("mass", "cycles", "first", "last", "last_cycle",
-               "retention", "ce", "died", "n_anom", "n_over", "withheld",
-               "fidelity"):
+    for _c in (
+        "mass",
+        "cycles",
+        "first",
+        "last",
+        "last_cycle",
+        "retention",
+        "ce",
+        "died",
+        "n_anom",
+        "n_over",
+        "withheld",
+        "fidelity",
+    ):
         T[_c] = pd.to_numeric(T[_c], errors="coerce")
     for _c in ("n_anom", "n_over", "withheld", "unattributed_withheld"):
         T[_c] = pd.to_numeric(T[_c], errors="coerce").fillna(0)
     T["unattributed"] = pd.to_numeric(T["unattributed"], errors="coerce")
     T["no_baseline"] = T["no_baseline"].fillna(False).astype(bool)
-    T["rate_is_variable"] = (T["rate_is_variable"].fillna(False)
-                             .astype(bool))
+    T["rate_is_variable"] = T["rate_is_variable"].fillna(False).astype(bool)
 
     # THE TEXT COLUMNS NEED COERCING AT THE BOUNDARY TOO, and for a reason
     # the numeric ones do not have. pandas 3 infers a StringDtype whose
@@ -2741,12 +3389,17 @@ def build_run_summary(facts_by_name, *, run_id="", n_files=0):
     # `dtype=object` is not decoration: assigning a plain list back into a
     # StringDtype column keeps the dtype and turns the Nones straight back
     # into nan, which is the bug this loop exists to remove.
-    for _c in ("mechanism_own", "mechanism", "composition",
-               "rate_label", "unusable"):
+    for _c in ("mechanism_own", "mechanism", "composition", "rate_label", "unusable"):
         T[_c] = pd.Series(
-            [None if (v is None
-                      or (isinstance(v, float) and not np.isfinite(v)))
-             else str(v) for v in T[_c]], index=T.index, dtype=object)
+            [
+                None
+                if (v is None or (isinstance(v, float) and not np.isfinite(v)))
+                else str(v)
+                for v in T[_c]
+            ],
+            index=T.index,
+            dtype=object,
+        )
 
     # --- do they agree? ---------------------------------------------------
     verdicts = []
@@ -2759,8 +3412,7 @@ def build_run_summary(facts_by_name, *, run_id="", n_files=0):
     # not make the mean more robust; it makes it wrong, and hides the failure
     # inside a standard deviation. Excluded cells keep their own page and are
     # named on this one.
-    _unusable_cells = [r.label for r in T.itertuples() if getattr(r, "unusable",
-                                                                 None)]
+    _unusable_cells = [r.label for r in T.itertuples() if getattr(r, "unusable", None)]
     T_ok = T[[not bool(getattr(r, "unusable", None)) for r in T.itertuples()]]
     grouped = T_ok.groupby("composition")
     for comp, g in grouped:
@@ -2768,16 +3420,19 @@ def build_run_summary(facts_by_name, *, run_id="", n_files=0):
             continue
         s_ret = _spread(g["retention"])
         s_first = _spread(g["first"])
-        entry = dict(composition=comp, n=len(g),
-                     spread_retention=s_ret, spread_first=s_first)
+        entry = dict(
+            composition=comp, n=len(g), spread_retention=s_ret, spread_first=s_first
+        )
         # THE HEADLINE. Computed for every group whatever the spread, because
         # a wide spread is a reason to report the SD loudly, not a reason to
         # stop reporting it.
-        for _k, _col, _dp in (("retention", "retention", 1),
-                              ("first", "first", 1),
-                              ("last", "last", 1), ("ce", "ce", 2)):
-            entry[f"{_k}_mean"], entry[f"{_k}_sd"], entry[f"{_k}_n"] = \
-                _mean_sd(g[_col])
+        for _k, _col, _dp in (
+            ("retention", "retention", 1),
+            ("first", "first", 1),
+            ("last", "last", 1),
+            ("ce", "ce", 2),
+        ):
+            entry[f"{_k}_mean"], entry[f"{_k}_sd"], entry[f"{_k}_n"] = _mean_sd(g[_col])
         # PEAK DRIFT, per step, across the replicates. On a dataset where the
         # areas are withheld this is the only quantity the run actually
         # measured, and it had appeared nowhere on this page.
@@ -2810,29 +3465,27 @@ def build_run_summary(facts_by_name, *, run_id="", n_files=0):
         for _step in ("Charge", "Discharge"):
             _pts = []
             for _n in g["name"]:
-                _verd = {(c["step"], round(c["reference_voltage"], 3)):
-                         c["verdict"]
-                         for c in (facts_by_name[_n].get("coherence") or [])}
-                for _t in (facts_by_name[_n].get("tracked") or []):
-                    if not (_t.get("step") == _step
-                            and not _t.get("is_shoulder")
-                            and np.isfinite(_t.get(
-                                "voltage_drift_mV_per_cycle", np.nan))
-                            and np.isfinite(_t.get("reference_voltage",
-                                                   np.nan))):
+                _verd = {
+                    (c["step"], round(c["reference_voltage"], 3)): c["verdict"]
+                    for c in (facts_by_name[_n].get("coherence") or [])
+                }
+                for _t in facts_by_name[_n].get("tracked") or []:
+                    if not (
+                        _t.get("step") == _step
+                        and not _t.get("is_shoulder")
+                        and np.isfinite(_t.get("voltage_drift_mV_per_cycle", np.nan))
+                        and np.isfinite(_t.get("reference_voltage", np.nan))
+                    ):
                         continue
                     _rv = float(_t["reference_voltage"])
                     # No audit at all (peak fitting off, or an older facts
                     # dict) leaves the old behaviour: publish it. A verdict
                     # that exists and is not trend-worthy excludes the point.
                     _v = _verd.get((_step, round(_rv, 3)))
-                    if _v is not None and _v not in ("coherent",
-                                                     "questionable"):
+                    if _v is not None and _v not in ("coherent", "questionable"):
                         _n_excluded += 1
                         continue
-                    _pts.append((_rv, _n,
-                                 float(_t["voltage_drift_mV_per_cycle"]),
-                                 _v))
+                    _pts.append((_rv, _n, float(_t["voltage_drift_mV_per_cycle"]), _v))
             entry[f"drift_{_step.lower()}_features"] = _group_drift(_pts)
         entry["drift_excluded_incoherent"] = _n_excluded
         # The odd one out, if there is one: the cell furthest from the median
@@ -2854,8 +3507,7 @@ def build_run_summary(facts_by_name, *, run_id="", n_files=0):
         _lc = pd.to_numeric(g["last_cycle"], errors="coerce").dropna()
         entry["last_cycle_min"] = float(_lc.min()) if len(_lc) else np.nan
         entry["last_cycle_max"] = float(_lc.max()) if len(_lc) else np.nan
-        entry["last_cycle_mixed"] = bool(len(_lc) > 1
-                                         and _lc.nunique() > 1)
+        entry["last_cycle_mixed"] = bool(len(_lc) > 1 and _lc.nunique() > 1)
         gf = g[g["retention"].notna()]
         entry["n_compared"] = len(gf)
         if np.isfinite(s_ret) and len(gf) >= 3:
@@ -2870,8 +3522,11 @@ def build_run_summary(facts_by_name, *, run_id="", n_files=0):
 
     # --- markdown ---------------------------------------------------------
     m = ["# Run summary", ""]
-    m += [f"*{run_id}* — {len(names)} dataset(s)"
-          + (f" of {n_files} in the folder" if n_files else ""), ""]
+    m += [
+        f"*{run_id}* — {len(names)} dataset(s)"
+        + (f" of {n_files} in the folder" if n_files else ""),
+        "",
+    ]
 
     # THE MECHANISM ROW, above the table rather than in it: it is one word
     # per cell and it decides how everything below was measured, so it reads
@@ -2884,9 +3539,15 @@ def build_run_summary(facts_by_name, *, run_id="", n_files=0):
     _label_of = {r.name: r.label for r in T.itertuples()}
     _mechs = {r.name: r.mechanism for r in T.itertuples() if r.mechanism}
     # What each cell's OWN reference cycle said, before reconciliation.
-    _own = ({r.name: getattr(r, "mechanism_own", None)
-             for r in T.itertuples() if r.mechanism}
-            if "mechanism_own" in T else {})
+    _own = (
+        {
+            r.name: getattr(r, "mechanism_own", None)
+            for r in T.itertuples()
+            if r.mechanism
+        }
+        if "mechanism_own" in T
+        else {}
+    )
 
     # WHICH CELLS COULD BE RECONCILED AT ALL, and if not, why not.
     # `quality.reconcile_mechanisms` groups by composition with the dataset's
@@ -2911,8 +3572,9 @@ def build_run_summary(facts_by_name, *, run_id="", n_files=0):
     _sizes = {}
     for _g, _ in _group_of.values():
         _sizes[_g] = _sizes.get(_g, 0) + 1
-    _alone = {lab: named for lab, (g, named) in _group_of.items()
-              if _sizes.get(g, 0) < 2}
+    _alone = {
+        lab: named for lab, (g, named) in _group_of.items() if _sizes.get(g, 0) < 2
+    }
 
     def _display(label, name):
         """A cell with no composition has a label of just its cell id."""
@@ -2921,37 +3583,45 @@ def build_run_summary(facts_by_name, *, run_id="", n_files=0):
     _CONSEQUENCE = (
         "The same cell analysed alongside its replicates can be reconciled "
         "to a more permissive model and fitted differently, so a result from "
-        "a group of one is not interchangeable with one from a group run.")
+        "a group of one is not interchangeable with one from a group run."
+    )
 
     def _alone_sentence(*, why=True):
         """Why a cell kept its own call, named cell by cell."""
         if not _alone:
             return []
-        _lead = ("A mechanism is chosen from ONE reference cycle of ONE cell, "
-                 "and it is reconciled across a material's replicates because "
-                 "a material either delivers charge across a composition "
-                 "window or it does not. ")
+        _lead = (
+            "A mechanism is chosen from ONE reference cycle of ONE cell, "
+            "and it is reconciled across a material's replicates because "
+            "a material either delivers charge across a composition "
+            "window or it does not. "
+        )
         if not why:
-            return [_lead + "There was no group to do that with here, so "
-                            "this cell kept whatever its own reference cycle "
-                            "said and was fitted with that model. "
-                    + _CONSEQUENCE, ""]
+            return [
+                _lead + "There was no group to do that with here, so "
+                "this cell kept whatever its own reference cycle "
+                "said and was fitted with that model. " + _CONSEQUENCE,
+                "",
+            ]
         _bits = []
         for _nm0, named in _alone.items():
             _row = next((r for r in T.itertuples() if r.name == _nm0), None)
             _shown = _display(_label_of.get(_nm0, _nm0), _nm0)
             if not named:
-                _bits.append(f"**{_shown}** has no composition recorded, so "
-                             f"it could not be grouped with anything")
+                _bits.append(
+                    f"**{_shown}** has no composition recorded, so "
+                    f"it could not be grouped with anything"
+                )
             else:
                 _comp = str(getattr(_row, "composition", "") or "its material")
-                _bits.append(f"**{_shown}** is the only {_comp} cell in this "
-                             f"run")
-        _tail = (" — so each kept whatever its own reference cycle said, and "
-                 "was fitted with that model. "
-                 if len(_bits) > 1 else
-                 " — so it kept whatever its own reference cycle said, and "
-                 "was fitted with that model. ")
+                _bits.append(f"**{_shown}** is the only {_comp} cell in this run")
+        _tail = (
+            " — so each kept whatever its own reference cycle said, and "
+            "was fitted with that model. "
+            if len(_bits) > 1
+            else " — so it kept whatever its own reference cycle said, and "
+            "was fitted with that model. "
+        )
         return [_lead + "; ".join(_bits) + _tail + _CONSEQUENCE, ""]
 
     if _mechs:
@@ -2963,75 +3633,108 @@ def build_run_summary(facts_by_name, *, run_id="", n_files=0):
             # comparable" reads as reassurance about a comparison that does
             # not exist, and hides that this cell was never reconciled.
             _nm, _mv = next(iter(_mechs.items()))
-            m += [f"**{_display(_label_of.get(_nm, _nm), _nm)}** was classified "
-                  f"**{_mv.replace('_', ' ')}** and fitted with that model. "
-                  f"There is one dataset in this run, so there was nothing "
-                  f"to reconcile it against.", ""]
+            m += [
+                f"**{_display(_label_of.get(_nm, _nm), _nm)}** was classified "
+                f"**{_mv.replace('_', ' ')}** and fitted with that model. "
+                f"There is one dataset in this run, so there was nothing "
+                f"to reconcile it against.",
+                "",
+            ]
             m += _alone_sentence(why=False)
         elif len(_uniq) == 1:
-            m += [f"All {len(_mechs)} cells classified "
-                  f"**{_uniq[0].replace('_', ' ')}**, so the same model was "
-                  f"fitted to each and the numbers below are comparable.", ""]
+            m += [
+                f"All {len(_mechs)} cells classified "
+                f"**{_uniq[0].replace('_', ' ')}**, so the same model was "
+                f"fitted to each and the numbers below are comparable.",
+                "",
+            ]
             # ...but say if that agreement was ARRIVED AT rather than found.
-            _rec = {k: v for k, v in (_own or {}).items()
-                    if v and v != _mechs.get(k)}
+            _rec = {k: v for k, v in (_own or {}).items() if v and v != _mechs.get(k)}
             if _rec:
-                m += ["Not every cell's own reference cycle said so. "
-                      + "; ".join(
-                          f"**{_display(_label_of.get(k, k), k)}** read "
-                          f"{v.replace('_', ' ')}" for k, v in _rec.items())
-                      + (" and were reconciled to " if len(_rec) > 1
-                         else " and was reconciled to ")
-                      + f"**{_uniq[0].replace('_', ' ')}**, the most "
-                        f"permissive call in the group. A material either "
-                        f"delivers charge across a composition window or it "
-                        f"does not, so a replicate that did not resolve one "
-                        f"is a detection miss rather than evidence of "
-                        f"absence — and replicates fitted with different "
-                        f"models cannot be pooled, which is what replicates "
-                        f"are for.", ""]
+                m += [
+                    "Not every cell's own reference cycle said so. "
+                    + "; ".join(
+                        f"**{_display(_label_of.get(k, k), k)}** read "
+                        f"{v.replace('_', ' ')}"
+                        for k, v in _rec.items()
+                    )
+                    + (
+                        " and were reconciled to "
+                        if len(_rec) > 1
+                        else " and was reconciled to "
+                    )
+                    + f"**{_uniq[0].replace('_', ' ')}**, the most "
+                    f"permissive call in the group. A material either "
+                    f"delivers charge across a composition window or it "
+                    f"does not, so a replicate that did not resolve one "
+                    f"is a detection miss rather than evidence of "
+                    f"absence — and replicates fitted with different "
+                    f"models cannot be pooled, which is what replicates "
+                    f"are for.",
+                    "",
+                ]
             # ...and say which cells had no group to be reconciled with,
             # AFTER the reconciliation note, because it is the exception
             # to it.
             m += _alone_sentence()
         else:
-            m += ["**The cells were not all fitted with the same model.**", "",
-                  "| Cell | Mechanism |", "|---|---|"]
-            m += [f"| {_display(_label_of.get(k, k), k)} | "
-                  f"{v.replace('_', ' ')} |" for k, v in _mechs.items()]
-            m += ["", "A mechanism is chosen per dataset from its own "
-                      "reference cycle, so replicates can differ — but two "
-                      "cells fitted with different models are not being "
-                      "compared like with like, and areas in particular "
-                      "should not be pooled across them.", ""]
+            m += [
+                "**The cells were not all fitted with the same model.**",
+                "",
+                "| Cell | Mechanism |",
+                "|---|---|",
+            ]
+            m += [
+                f"| {_display(_label_of.get(k, k), k)} | {v.replace('_', ' ')} |"
+                for k, v in _mechs.items()
+            ]
+            m += [
+                "",
+                "A mechanism is chosen per dataset from its own "
+                "reference cycle, so replicates can differ — but two "
+                "cells fitted with different models are not being "
+                "compared like with like, and areas in particular "
+                "should not be pooled across them.",
+                "",
+            ]
             m += _alone_sentence()
     if _unusable_cells:
         m += ["## Not every dataset here is a measurement", ""]
         for r in T.itertuples():
             if getattr(r, "unusable", None):
                 m += [f"- **{r.label}** — {r.unusable}"]
-        m += ["", "These are excluded from the replicate mean and standard "
-                  "deviation below, and from the comparison across cells. "
-                  "They keep their own page, which is where to look for what "
-                  "went wrong.", ""]
-    _var = [r.label for r in T.itertuples() if getattr(r, "rate_is_variable",
-                                                      False)]
+        m += [
+            "",
+            "These are excluded from the replicate mean and standard "
+            "deviation below, and from the comparison across cells. "
+            "They keep their own page, which is where to look for what "
+            "went wrong.",
+            "",
+        ]
+    _var = [r.label for r in T.itertuples() if getattr(r, "rate_is_variable", False)]
     if _var:
-        m += ["## These cells were cycled at more than one rate", "",
-              "**Retention is withheld for "
-              + ("every cell" if len(_var) == len(T) else ", ".join(_var))
-              + ".** Capacity against cycle number in a rate-capability run "
-                "is mostly the rate schedule: it falls because the current "
-                "rose and returns when the current falls again, so a "
-                "retention percentage across it reads as fading and "
-                "recovery. Each cell's rate-capability summary compares "
-                "every rate against the reference rate and reports the "
-                "recovery to the starting rate, the fade measured during "
-                "the ramp, and what that leaves for the ramp itself.", ""]
-    m += ["## The cells side by side", "",
-          "| Cell | Mass / mg | Cycles | 1st discharge | Last working | "
-          "Retention | Median CE | Flags |",
-          "|---|---|---|---|---|---|---|---|"]
+        m += [
+            "## These cells were cycled at more than one rate",
+            "",
+            "**Retention is withheld for "
+            + ("every cell" if len(_var) == len(T) else ", ".join(_var))
+            + ".** Capacity against cycle number in a rate-capability run "
+            "is mostly the rate schedule: it falls because the current "
+            "rose and returns when the current falls again, so a "
+            "retention percentage across it reads as fading and "
+            "recovery. Each cell's rate-capability summary compares "
+            "every rate against the reference rate and reports the "
+            "recovery to the starting rate, the fade measured during "
+            "the ramp, and what that leaves for the ramp itself.",
+            "",
+        ]
+    m += [
+        "## The cells side by side",
+        "",
+        "| Cell | Mass / mg | Cycles | 1st discharge | Last working | "
+        "Retention | Median CE | Flags |",
+        "|---|---|---|---|---|---|---|---|",
+    ]
     for r in T.itertuples():
         flags = []
         # `died` goes through the same DataFrame as everything else, so a
@@ -3046,131 +3749,191 @@ def build_run_summary(facts_by_name, *, run_id="", n_files=0):
             flags.append(f"{r.withheld} withheld")
         if r.partial:
             flags.append("still cycling")
-        fmt = lambda v, d=0: ("—" if not np.isfinite(v) else f"{v:.{d}f}")
-        m.append(f"| {r.label} | {fmt(r.mass,2)} | "
-                 f"{'—' if not np.isfinite(r.cycles) else int(r.cycles)} | "
-                 f"{fmt(r.first)} | "
-                 f"{_last_cell(r.last, r.last_cycle)} | "
-                 f"{fmt(r.retention) + '%' if np.isfinite(r.retention) else '—'} | "
-                 f"{fmt(r.ce,1) + '%' if np.isfinite(r.ce) else '—'} | "
-                 f"{', '.join(flags) if flags else 'none'} |")
+        fmt = lambda v, d=0: "—" if not np.isfinite(v) else f"{v:.{d}f}"
+        m.append(
+            f"| {r.label} | {fmt(r.mass, 2)} | "
+            f"{'—' if not np.isfinite(r.cycles) else int(r.cycles)} | "
+            f"{fmt(r.first)} | "
+            f"{_last_cell(r.last, r.last_cycle)} | "
+            f"{fmt(r.retention) + '%' if np.isfinite(r.retention) else '—'} | "
+            f"{fmt(r.ce, 1) + '%' if np.isfinite(r.ce) else '—'} | "
+            f"{', '.join(flags) if flags else 'none'} |"
+        )
     m += [""]
 
     # The replicate result as a table anyone can read back — the headline
     # number for the group, machine-readable, beside the per-cell CSV.
-    R = pd.DataFrame(verdicts) if verdicts else pd.DataFrame(
-        columns=["composition", "n", "retention_mean", "retention_sd",
-                 "retention_n"])
+    R = (
+        pd.DataFrame(verdicts)
+        if verdicts
+        else pd.DataFrame(
+            columns=[
+                "composition",
+                "n",
+                "retention_mean",
+                "retention_sd",
+                "retention_n",
+            ]
+        )
+    )
 
     if verdicts:
         # --- THE HEADLINE: mean +/- SD across replicates ------------------
-        m += ["## The replicate result", "",
-              "The number to quote for a group of cells is the mean and "
-              "standard deviation across them, with n stated. A single cell "
-              "nominated as representative is a selection step, and the "
-              "figures below say which cell is *shown*, never which number "
-              "is *reported*.", "",
-              "| Material | n | 1st discharge / mAh g⁻¹ | Last working / "
-              "mAh g⁻¹ | Retention / % | Median CE / % |",
-              "|---|---|---|---|---|---|"]
+        m += [
+            "## The replicate result",
+            "",
+            "The number to quote for a group of cells is the mean and "
+            "standard deviation across them, with n stated. A single cell "
+            "nominated as representative is a selection step, and the "
+            "figures below say which cell is *shown*, never which number "
+            "is *reported*.",
+            "",
+            "| Material | n | 1st discharge / mAh g⁻¹ | Last working / "
+            "mAh g⁻¹ | Retention / % | Median CE / % |",
+            "|---|---|---|---|---|---|",
+        ]
         for v in verdicts:
             m.append(
                 f"| {v['composition']} | {v['retention_n']} | "
-                + _pm(v["first_mean"], v["first_sd"], v["first_n"]) + " | "
-                + _pm(v["last_mean"], v["last_sd"], v["last_n"]) + " | "
-                + _pm(v["retention_mean"], v["retention_sd"],
-                      v["retention_n"]) + " | "
-                + _pm(v["ce_mean"], v["ce_sd"], v["ce_n"], dp=2) + " |")
-        m += ["", "*Standard deviation across cells, ddof = 1. A single cell "
-              "shows its value with no ± : one measurement has no spread, and "
-              "quoting 0 would claim a precision nothing established.*", ""]
+                + _pm(v["first_mean"], v["first_sd"], v["first_n"])
+                + " | "
+                + _pm(v["last_mean"], v["last_sd"], v["last_n"])
+                + " | "
+                + _pm(v["retention_mean"], v["retention_sd"], v["retention_n"])
+                + " | "
+                + _pm(v["ce_mean"], v["ce_sd"], v["ce_n"], dp=2)
+                + " |"
+            )
+        m += [
+            "",
+            "*Standard deviation across cells, ddof = 1. A single cell "
+            "shows its value with no ± : one measurement has no spread, and "
+            "quoting 0 would claim a precision nothing established.*",
+            "",
+        ]
         # Said plainly, next to the number it qualifies.
         for v in verdicts:
             if v.get("last_cycle_mixed"):
-                m += [f"> **These cells did not all reach the same cycle.** "
-                      f"For {v['composition']} the last working capacity and "
-                      f"the retention beside it are read between cycle "
-                      f"{v['last_cycle_min']:.0f} and cycle "
-                      f"{v['last_cycle_max']:.0f} depending on the cell, so "
-                      f"the mean above is **not** retention at a common "
-                      f"cycle and its spread carries that mismatch as well "
-                      f"as any real difference between the cells. The "
-                      f"per-cell table shows each cell's own cycle. Quote "
-                      f"these cells separately, or re-run capped at cycle "
-                      f"{v['last_cycle_min']:.0f} so every cell is compared "
-                      f"over the same life.", ""]
+                m += [
+                    f"> **These cells did not all reach the same cycle.** "
+                    f"For {v['composition']} the last working capacity and "
+                    f"the retention beside it are read between cycle "
+                    f"{v['last_cycle_min']:.0f} and cycle "
+                    f"{v['last_cycle_max']:.0f} depending on the cell, so "
+                    f"the mean above is **not** retention at a common "
+                    f"cycle and its spread carries that mismatch as well "
+                    f"as any real difference between the cells. The "
+                    f"per-cell table shows each cell's own cycle. Quote "
+                    f"these cells separately, or re-run capped at cycle "
+                    f"{v['last_cycle_min']:.0f} so every cell is compared "
+                    f"over the same life.",
+                    "",
+                ]
 
         # Peak drift, where there is any. This is the quantity that survives
         # a low integral fidelity, so on a two-phase material it is the
         # replicate result and belongs beside the capacities, not buried in a
         # per-cell page.
-        _has_drift = [v for v in verdicts
-                      if v.get("drift_charge_features")
-                      or v.get("drift_discharge_features")]
-        _no_drift = [v for v in verdicts
-                     if v not in _has_drift
-                     and v.get("drift_excluded_incoherent")]
+        _has_drift = [
+            v
+            for v in verdicts
+            if v.get("drift_charge_features") or v.get("drift_discharge_features")
+        ]
+        _no_drift = [
+            v
+            for v in verdicts
+            if v not in _has_drift and v.get("drift_excluded_incoherent")
+        ]
         for v in _no_drift:
-            m += ["### How fast the redox features move", "",
-                  f"**Not reported for {v['composition']}.** Every primary "
-                  f"peak that could have gone in this table "
-                  f"({int(v['drift_excluded_incoherent'])} across "
-                  f"{int(v['n'])} cell(s)) was excluded by the coherence "
-                  f"audit: none of them moved like a redox feature. A drift "
-                  f"rate read from a peak the fit could not hold on to is a "
-                  f"property of the fit. The per-cell coherence tables say "
-                  f"which peaks and why.", ""]
+            m += [
+                "### How fast the redox features move",
+                "",
+                f"**Not reported for {v['composition']}.** Every primary "
+                f"peak that could have gone in this table "
+                f"({int(v['drift_excluded_incoherent'])} across "
+                f"{int(v['n'])} cell(s)) was excluded by the coherence "
+                f"audit: none of them moved like a redox feature. A drift "
+                f"rate read from a peak the fit could not hold on to is a "
+                f"property of the fit. The per-cell coherence tables say "
+                f"which peaks and why.",
+                "",
+            ]
         if _has_drift:
-            m += ["### How fast the redox features move", "",
-                  "| Material | Step | Feature / V | Drift / mV cycle⁻¹ |",
-                  "|---|---|---|---|"]
+            m += [
+                "### How fast the redox features move",
+                "",
+                "| Material | Step | Feature / V | Drift / mV cycle⁻¹ |",
+                "|---|---|---|---|",
+            ]
             for v in _has_drift:
                 for _step in ("Charge", "Discharge"):
                     for _f in v.get(f"drift_{_step.lower()}_features", []):
                         if not np.isfinite(_f["mean"]):
                             continue
-                        _mark = (" ‡" if _f.get("unaudited") else
-                                 " †" if _f.get("questionable_only") else "")
+                        _mark = (
+                            " ‡"
+                            if _f.get("unaudited")
+                            else " †"
+                            if _f.get("questionable_only")
+                            else ""
+                        )
                         m.append(
                             f"| {v['composition']} | {_step} | "
                             f"{_f['voltage']:.3f} | "
-                            + _pm(_f["mean"], _f["sd"], _f["n"], dp=2,
-                                  show_n=True)
-                            + _mark + " |")
-            m += ["", "*One row per redox feature, primary peaks only, "
-                  "measured between medians of three cycles at each end from "
-                  "the reference cycle onward. **n is the number of CELLS** "
-                  "in which that feature was tracked — averaging different "
-                  "features together would give a spread that measures the "
-                  "difference between the processes rather than between the "
-                  "cells. Peak positions do not depend on the dQ/dV integral, "
-                  "so this is the quantity that survives where the areas do "
-                  "not — but only for a peak the coherence audit found "
-                  "trend-worthy; peaks it called NOT trend-worthy or not "
-                  "assessable are left out.*", ""]
-            if any(_f.get("questionable_only")
-                   for v in _has_drift
-                   for _step in ("charge", "discharge")
-                   for _f in v.get(f"drift_{_step}_features", [])):
-                m += ["*† every peak behind this row was graded "
-                      "*questionable* by the coherence audit, not *coherent*: "
-                      "its median drift cleared the implausible threshold but "
-                      "not the clean one. The rate is reported; the evidence "
-                      "for it is weaker than for an unmarked row.*", ""]
-            if any(_f.get("unaudited")
-                   for v in _has_drift
-                   for _step in ("charge", "discharge")
-                   for _f in v.get(f"drift_{_step}_features", [])):
-                m += ["*‡ no peak behind this row has a coherence verdict at "
-                      "all — the audit did not reach it, or peak fitting ran "
-                      "without it. The rate is what the tracking measured; "
-                      "nothing has tested whether the feature moves like a "
-                      "redox process or like a fitting artefact.*", ""]
-            _exc = sum(int(v.get("drift_excluded_incoherent") or 0)
-                       for v in _has_drift)
+                            + _pm(_f["mean"], _f["sd"], _f["n"], dp=2, show_n=True)
+                            + _mark
+                            + " |"
+                        )
+            m += [
+                "",
+                "*One row per redox feature, primary peaks only, "
+                "measured between medians of three cycles at each end from "
+                "the reference cycle onward. **n is the number of CELLS** "
+                "in which that feature was tracked — averaging different "
+                "features together would give a spread that measures the "
+                "difference between the processes rather than between the "
+                "cells. Peak positions do not depend on the dQ/dV integral, "
+                "so this is the quantity that survives where the areas do "
+                "not — but only for a peak the coherence audit found "
+                "trend-worthy; peaks it called NOT trend-worthy or not "
+                "assessable are left out.*",
+                "",
+            ]
+            if any(
+                _f.get("questionable_only")
+                for v in _has_drift
+                for _step in ("charge", "discharge")
+                for _f in v.get(f"drift_{_step}_features", [])
+            ):
+                m += [
+                    "*† every peak behind this row was graded "
+                    "*questionable* by the coherence audit, not *coherent*: "
+                    "its median drift cleared the implausible threshold but "
+                    "not the clean one. The rate is reported; the evidence "
+                    "for it is weaker than for an unmarked row.*",
+                    "",
+                ]
+            if any(
+                _f.get("unaudited")
+                for v in _has_drift
+                for _step in ("charge", "discharge")
+                for _f in v.get(f"drift_{_step}_features", [])
+            ):
+                m += [
+                    "*‡ no peak behind this row has a coherence verdict at "
+                    "all — the audit did not reach it, or peak fitting ran "
+                    "without it. The rate is what the tracking measured; "
+                    "nothing has tested whether the feature moves like a "
+                    "redox process or like a fitting artefact.*",
+                    "",
+                ]
+            _exc = sum(int(v.get("drift_excluded_incoherent") or 0) for v in _has_drift)
             if _exc:
-                m += [f"*{_exc} further primary peak(s) were excluded by the "
-                      f"coherence audit and are not in the table above.*", ""]
+                m += [
+                    f"*{_exc} further primary peak(s) were excluded by the "
+                    f"coherence audit and are not in the table above.*",
+                    "",
+                ]
 
         m += ["## Do the cells agree?", ""]
         for v in verdicts:
@@ -3203,41 +3966,58 @@ def build_run_summary(facts_by_name, *, run_id="", n_files=0):
                     f"{v['last_cycle_max']:.0f} — so this verdict is partly "
                     f"about where each cell stopped, not only about how they "
                     f"differ. Cap the run at cycle "
-                    f"{v['last_cycle_min']:.0f} to settle it.")
+                    f"{v['last_cycle_min']:.0f} to settle it."
+                )
             if not np.isfinite(s):
-                m += [f"**{v['composition']}** — {v['n']} cell(s), of which "
-                      f"{v.get('n_compared', 0)} have a retention figure; "
-                      f"nothing to compare.", ""]
+                m += [
+                    f"**{v['composition']}** — {v['n']} cell(s), of which "
+                    f"{v.get('n_compared', 0)} have a retention figure; "
+                    f"nothing to compare.",
+                    "",
+                ]
                 continue
             if s <= REPRESENTATIVE_MAX_SPREAD:
                 _sf = v["spread_first"]
-                line = (f"**{v['composition']}** — {v['n']} cells agree. "
-                        f"Retention spreads {_pct(s)} of the median"
-                        + (f", and first discharge {_pct(_sf)}."
-                           if np.isfinite(_sf) else "."))
+                line = (
+                    f"**{v['composition']}** — {v['n']} cells agree. "
+                    f"Retention spreads {_pct(s)} of the median"
+                    + (
+                        f", and first discharge {_pct(_sf)}."
+                        if np.isfinite(_sf)
+                        else "."
+                    )
+                )
                 if v.get("representative"):
-                    line += (f" For a FIGURE, show **{v['representative']}** "
-                             f"— it sits closest to the group — and caption "
-                             f"it as such: \"{v['representative']} shown; "
-                             f"n = {v['retention_n']}, retention "
-                             + _pm(v["retention_mean"], v["retention_sd"],
-                                   v["retention_n"]).replace(
-                                       f" (n = {v['retention_n']})", "")
-                             + "%\". The reported number stays the mean "
-                             "above; the representative cell is a choice of "
-                             "illustration, not of result.")
+                    line += (
+                        f" For a FIGURE, show **{v['representative']}** "
+                        f"— it sits closest to the group — and caption "
+                        f'it as such: "{v["representative"]} shown; '
+                        f"n = {v['retention_n']}, retention "
+                        + _pm(
+                            v["retention_mean"], v["retention_sd"], v["retention_n"]
+                        ).replace(f" (n = {v['retention_n']})", "")
+                        + '%". The reported number stays the mean '
+                        "above; the representative cell is a choice of "
+                        "illustration, not of result."
+                    )
                 m += [line + _mixed_note, ""]
             else:
-                line = (f"**{v['composition']}** — the {v['n']} cells do NOT "
-                        f"agree. Retention spreads {_pct(s)} of the median")
+                line = (
+                    f"**{v['composition']}** — the {v['n']} cells do NOT "
+                    f"agree. Retention spreads {_pct(s)} of the median"
+                )
                 if v.get("outlier"):
                     line += f", with **{v['outlier']}** furthest out"
                 elif v.get("n_compared", 0) < 3:
-                    line += (f" across the {v['n_compared']} cell(s) that have "
-                             f"one; too few to say which is the odd one")
-                line += (". No representative cell is nominated: picking the "
-                         "one nearest the median would be choosing a number, "
-                         "not measuring one. Find out why they differ first.")
+                    line += (
+                        f" across the {v['n_compared']} cell(s) that have "
+                        f"one; too few to say which is the odd one"
+                    )
+                line += (
+                    ". No representative cell is nominated: picking the "
+                    "one nearest the median would be choosing a number, "
+                    "not measuring one. Find out why they differ first."
+                )
                 m += [line + _mixed_note, ""]
 
     # --- what the run withheld or flagged ---------------------------------
@@ -3250,33 +4030,53 @@ def build_run_summary(facts_by_name, *, run_id="", n_files=0):
     # `tot_with == 0` and this page printed "Nothing was withheld. Every
     # half-cycle's charge is accounted for" directly opposite a per-cell page
     # saying the areas are not capacities.
-    _n_outband = int(((T["fidelity"] < INTEGRAL_FIDELITY_FLOOR)
-                      | (T["fidelity"] > INTEGRAL_FIDELITY_CEILING)).sum())
+    _n_outband = int(
+        (
+            (T["fidelity"] < INTEGRAL_FIDELITY_FLOOR)
+            | (T["fidelity"] > INTEGRAL_FIDELITY_CEILING)
+        ).sum()
+    )
     _un_col = T["unattributed"] if "unattributed" in T else None
-    _un_vals = ([x for x in _un_col.tolist() if x is not None
-                 and np.isfinite(x)] if _un_col is not None else [])
+    _un_vals = (
+        [x for x in _un_col.tolist() if x is not None and np.isfinite(x)]
+        if _un_col is not None
+        else []
+    )
     _un_med = float(np.median(_un_vals)) if _un_vals else None
-    _un_any = bool(int(T["unattributed_withheld"].sum())
-                   if "unattributed_withheld" in T else 0)
-    _no_baseline = bool(T["no_baseline"].all()
-                        if "no_baseline" in T and len(T) else False)
+    _un_any = bool(
+        int(T["unattributed_withheld"].sum()) if "unattributed_withheld" in T else 0
+    )
+    _no_baseline = bool(
+        T["no_baseline"].all() if "no_baseline" in T and len(T) else False
+    )
     m += ["## What the run would not tell you", ""]
     if not (tot_over or tot_anom or tot_with or _n_outband):
-        m += ["Nothing was withheld. Every half-cycle's charge is accounted "
-              "for" + (", and every capacity share is a share of named "
-                       "components rather than of a free background."
-                       if _no_baseline else
-                       ", and every capacity share survived a change of "
-                       "baseline degree."), ""]
+        m += [
+            "Nothing was withheld. Every half-cycle's charge is accounted "
+            "for"
+            + (
+                ", and every capacity share is a share of named "
+                "components rather than of a free background."
+                if _no_baseline
+                else ", and every capacity share survived a change of baseline degree."
+            ),
+            "",
+        ]
     else:
         if tot_over:
-            m += [f"- **{tot_over} half-cycle(s) passed more charge than the "
-                  f"material can hold.** Over theoretical is not a phase "
-                  f"transition; it is charge going into something else.", ""]
+            m += [
+                f"- **{tot_over} half-cycle(s) passed more charge than the "
+                f"material can hold.** Over theoretical is not a phase "
+                f"transition; it is charge going into something else.",
+                "",
+            ]
         if tot_anom:
-            m += [f"- **{tot_anom} half-cycle(s) carry charge no redox process "
-                  f"accounts for** — at full current, away from the voltage "
-                  f"limit, where |dQ/dV| is small.", ""]
+            m += [
+                f"- **{tot_anom} half-cycle(s) carry charge no redox process "
+                f"accounts for** — at full current, away from the voltage "
+                f"limit, where |dQ/dV| is small.",
+                "",
+            ]
         if tot_with:
             # WHICH GROUND. Closure (the peak/background split is undetermined)
             # and integral fidelity (the curve does not account for the cell's
@@ -3287,86 +4087,112 @@ def build_run_summary(facts_by_name, *, run_id="", n_files=0):
             # Two-sided, like `_fidelity_outside_band` above and like every
             # other reading of this number. Testing only the floor meant an
             # over-ceiling cell was never named here.
-            _lowfid = T[(T["fidelity"] < INTEGRAL_FIDELITY_FLOOR)
-                        | (T["fidelity"] > INTEGRAL_FIDELITY_CEILING)]
+            _lowfid = T[
+                (T["fidelity"] < INTEGRAL_FIDELITY_FLOOR)
+                | (T["fidelity"] > INTEGRAL_FIDELITY_CEILING)
+            ]
             if len(_lowfid):
                 _lo = 100 * float(_lowfid["fidelity"].min())
                 _hi = 100 * float(_lowfid["fidelity"].max())
-                _rng = (f"{_lo:.0f}%" if abs(_hi - _lo) < 0.5
-                        else f"{_lo:.0f}-{_hi:.0f}%")
-                m += [f"- **{tot_with} half-cycle(s) had their capacity "
-                      f"attribution withheld — and on "
-                      f"{len(_lowfid)} of {len(T)} cell(s) the reason is not "
-                      f"the fit.** The dQ/dV curve "
-                      + ("accounts for only " if _hi <= 100.0 else
-                         "carries " if _lo >= 100.0 else "accounts for ")
-                      + f"{_rng} "
-                      f"of the capacity those cells delivered — per cell and "
-                      f"per step; where a cell's two steps differ, its own "
-                      f"page gives both. On a flat "
-                      f"two-phase plateau the voltage change between records "
-                      f"falls below the instrument's resolution, so charge "
-                      f"delivered there cannot appear in a dV integral and no "
-                      f"model recovers it. **A fitted peak area is not a "
-                      f"capacity on these cells**, and neither is its "
-                      f"retention. Peak POSITIONS and their drift do not "
-                      f"depend on the integral and are unaffected — they are "
-                      f"the result to quote here. The fitted areas are still "
-                      f"in the CSVs.", ""]
+                _rng = (
+                    f"{_lo:.0f}%" if abs(_hi - _lo) < 0.5 else f"{_lo:.0f}-{_hi:.0f}%"
+                )
+                m += [
+                    f"- **{tot_with} half-cycle(s) had their capacity "
+                    f"attribution withheld — and on "
+                    f"{len(_lowfid)} of {len(T)} cell(s) the reason is not "
+                    f"the fit.** The dQ/dV curve "
+                    + (
+                        "accounts for only "
+                        if _hi <= 100.0
+                        else "carries "
+                        if _lo >= 100.0
+                        else "accounts for "
+                    )
+                    + f"{_rng} "
+                    f"of the capacity those cells delivered — per cell and "
+                    f"per step; where a cell's two steps differ, its own "
+                    f"page gives both. On a flat "
+                    f"two-phase plateau the voltage change between records "
+                    f"falls below the instrument's resolution, so charge "
+                    f"delivered there cannot appear in a dV integral and no "
+                    f"model recovers it. **A fitted peak area is not a "
+                    f"capacity on these cells**, and neither is its "
+                    f"retention. Peak POSITIONS and their drift do not "
+                    f"depend on the integral and are unaffected — they are "
+                    f"the result to quote here. The fitted areas are still "
+                    f"in the CSVs.",
+                    "",
+                ]
             elif _un_any:
                 # THE THIRD GROUND. From 1.9.0.56 there is no free background,
                 # so the peak/background split cannot be undetermined and this
                 # page must not say it was. What can still fail is the model
                 # not adding up to the cell.
-                m += [f"- **{tot_with} cycle(s) had their capacity "
-                      f"attribution withheld.** The named components do not "
-                      f"add up to the charge the cell delivered"
-                      # THE MEDIAN IS THE WRONG NUMBER TO PUT HERE. Quoting
-                      # the run's typical unattributed fraction beside a
-                      # withholding reads as though 3% had caused it, when the
-                      # cycles that were withheld are the ones above the
-                      # limit. Say what the limit is and let the CSV carry the
-                      # per-cycle values.
-                      + (f" on those cycles — more than the "
-                         f"{UNATTRIBUTED_WITHHOLD_ABOVE:.0%} of the cell's "
-                         f"charge above which a share stops being a "
-                         f"measurement (the run's median is {_un_med:+.0%})"
-                         if _un_med is not None else "")
-                      + ". Every mAh in a dQ/dV passed through the cell, so a "
-                        "share OF a total that is missing part of the "
-                        "capacity is not a measurement. The fitted areas are "
-                        "still in the CSVs.", ""]
+                m += [
+                    f"- **{tot_with} cycle(s) had their capacity "
+                    f"attribution withheld.** The named components do not "
+                    f"add up to the charge the cell delivered"
+                    # THE MEDIAN IS THE WRONG NUMBER TO PUT HERE. Quoting
+                    # the run's typical unattributed fraction beside a
+                    # withholding reads as though 3% had caused it, when the
+                    # cycles that were withheld are the ones above the
+                    # limit. Say what the limit is and let the CSV carry the
+                    # per-cycle values.
+                    + (
+                        f" on those cycles — more than the "
+                        f"{UNATTRIBUTED_WITHHOLD_ABOVE:.0%} of the cell's "
+                        f"charge above which a share stops being a "
+                        f"measurement (the run's median is {_un_med:+.0%})"
+                        if _un_med is not None
+                        else ""
+                    )
+                    + ". Every mAh in a dQ/dV passed through the cell, so a "
+                    "share OF a total that is missing part of the "
+                    "capacity is not a measurement. The fitted areas are "
+                    "still in the CSVs.",
+                    "",
+                ]
             elif _no_baseline:
                 # No free background: the split CANNOT be undetermined, so the
                 # only remaining reason a share was withheld is that the
                 # check fit did not converge on those half-cycles. Saying
                 # "the baseline degree changed" here would send a reader to
                 # look for a background this model does not have.
-                m += [f"- **{tot_with} cycle(s) had their capacity "
-                      f"attribution withheld.** This model has no free "
-                      f"background, so the peak/background split cannot be "
-                      f"undetermined; these cycles were withheld because the "
-                      f"check fit did not converge on them and there is "
-                      f"therefore no measured share to report. The fitted "
-                      f"areas are still in the CSVs.", ""]
+                m += [
+                    f"- **{tot_with} cycle(s) had their capacity "
+                    f"attribution withheld.** This model has no free "
+                    f"background, so the peak/background split cannot be "
+                    f"undetermined; these cycles were withheld because the "
+                    f"check fit did not converge on them and there is "
+                    f"therefore no measured share to report. The fitted "
+                    f"areas are still in the CSVs.",
+                    "",
+                ]
             else:
-                m += [f"- **{tot_with} cycle(s) had their capacity "
-                      f"attribution withheld.** The peak/background split "
-                      f"moved more than the number would have reported when "
-                      f"the baseline degree changed. The fitted areas are "
-                      f"still in the CSVs.", ""]
+                m += [
+                    f"- **{tot_with} cycle(s) had their capacity "
+                    f"attribution withheld.** The peak/background split "
+                    f"moved more than the number would have reported when "
+                    f"the baseline degree changed. The fitted areas are "
+                    f"still in the CSVs.",
+                    "",
+                ]
 
-    m += ["## Where to look", "",
-          "Each cell has a `START_HERE.html` and `START_HERE.md` in its own "
-          "folder, with four figures and what to look for in each. Start "
-          "there; come back here to compare.", ""]
+    m += [
+        "## Where to look",
+        "",
+        "Each cell has a `START_HERE.html` and `START_HERE.md` in its own "
+        "folder, with four figures and what to look for in each. Start "
+        "there; come back here to compare.",
+        "",
+    ]
     return "\n".join(m), T, R
 
 
 def write_run_summary(run_dir, facts_by_name, *, run_id="", n_files=0):
     """Write `RUN_SUMMARY.md` at the top of the run folder. Returns its path."""
-    md, T, R = build_run_summary(facts_by_name, run_id=run_id,
-                                 n_files=n_files)
+    md, T, R = build_run_summary(facts_by_name, run_id=run_id, n_files=n_files)
     path = os.path.join(run_dir, "RUN_SUMMARY.md")
     with open(path, "w", encoding="utf-8") as fh:
         fh.write(md)
