@@ -551,17 +551,17 @@ def voltage_profiles(electrochemical_data, user_parameters, *, save_location=Non
     def _check_overlap(endpoints, cap_tol_frac=0.03, volt_tol=0.05):
         """
         Check what fraction of endpoints would overlap.
-    
-        Returns fraction (0–1) of endpoints that are within tolerance 
+
+        Returns fraction (0–1) of endpoints that are within tolerance
         of at least one other endpoint.
         """
         if len(endpoints) < 2:
             return 0.0
-    
+
         caps = [e['capacity'] for e in endpoints]
         cap_range = max(caps) - min(caps) if len(caps) > 1 else max(caps)
         cap_tol = max(cap_range * cap_tol_frac, 2.0)
-    
+
         n_overlapping = 0
         for i, ep in enumerate(endpoints):
             for j, other in enumerate(endpoints):
@@ -571,34 +571,34 @@ def voltage_profiles(electrochemical_data, user_parameters, *, save_location=Non
                     abs(ep['voltage'] - other['voltage']) < volt_tol):
                     n_overlapping += 1
                     break  # only count each endpoint once
-    
+
         return n_overlapping / len(endpoints)
 
     def _add_annotations(ax, endpoints, unique_cycles, palette):
         """Add cycle number annotations at endpoints (no vertical offset)."""
         if not endpoints:
             return
-    
+
         # Group endpoints by proximity to determine horizontal stagger
         caps = [e['capacity'] for e in endpoints]
         cap_range = max(caps) - min(caps) if len(caps) > 1 else max(caps)
         cap_tol = max(cap_range * 0.03, 2.0)
         volt_tol = 0.05
-    
+
         placed = []
-    
+
         # Process in reverse cycle order (later cycles get priority placement)
         sorted_endpoints = sorted(endpoints, key=lambda e: e['cycle'],
                                    reverse=True)
-    
+
         for ep in sorted_endpoints:
             cycle_idx = list(unique_cycles).index(ep['cycle'])
             colour = palette[cycle_idx]
-        
+
             # Determine offset
             x_offset = 10
             y_offset = 0
-        
+
             # Stagger if this endpoint is close to an already-placed one
             for px, py in placed:
                 if (abs(ep['capacity'] - px) < cap_tol and
@@ -606,15 +606,15 @@ def voltage_profiles(electrochemical_data, user_parameters, *, save_location=Non
                     # Shift further right
                     x_offset += 12
                     break
-        
+
             # Discharge endpoints: label to the right
             # Charge endpoints: label to the left
             if ep['step'] == 'Charge':
                 x_offset = -x_offset
-        
+
             # Adjust vertical alignment based on position
             va = 'center'
-        
+
             ax.annotate(
                 str(int(ep['cycle'])),
                 xy=(ep['capacity'], ep['voltage']),
@@ -633,7 +633,7 @@ def voltage_profiles(electrochemical_data, user_parameters, *, save_location=Non
                                   vmax=max(unique_cycles))
         sm = plt.cm.ScalarMappable(cmap=cmap, norm=norm)
         sm.set_array([])
-    
+
         cbar = fig.colorbar(sm, ax=ax, pad=0.02, aspect=30)
         cbar.set_label('Cycle number', fontsize=13)
         cbar.ax.tick_params(labelsize=11)
@@ -655,7 +655,7 @@ def voltage_profiles(electrochemical_data, user_parameters, *, save_location=Non
                     col_max = pd.to_numeric(df[col], errors='coerce').max()
                     if pd.notna(col_max):
                         global_max_capacity = max(global_max_capacity, col_max)
-    
+
         # ROUND NUMBER, not the data's own maximum. The measured maximum
         # plus 8% padding landed the shared axis on 143 mAh/g, and a reader
         # comparing three cells across a frame that ends at 143 has to work
@@ -663,7 +663,7 @@ def voltage_profiles(electrochemical_data, user_parameters, *, save_location=Non
         # 150 now, with a gridline every 25.
         global_max_capacity, global_xaxis_step = nice_axis_limit(
             global_max_capacity)
-    
+
         if global_max_capacity > 0:
             print(entry("common x-axis", f"{global_max_capacity:.0f} mAh/g",
                         f"ticks every {global_xaxis_step:g}"
@@ -679,7 +679,7 @@ def voltage_profiles(electrochemical_data, user_parameters, *, save_location=Non
         is_anode = params.get('anode_labels_swapped', False)
         dch_label = _discharge_label(params)
         chg_label = _charge_label(params)
-    
+
         df_work = df.copy()
         # Robust dropna (v1.8): require Voltage, Cycle, Step, and at
         # least one capacity column. Some cycler firmware versions fill
@@ -689,14 +689,14 @@ def voltage_profiles(electrochemical_data, user_parameters, *, save_location=Non
             df_cleaned['Charge_Capacity'].notna() |
             df_cleaned['Discharge_Capacity'].notna()
         ].copy()
-    
+
         if df_cleaned.empty:
             print(verdict("caution", f"no valid data for {name}"))
             continue
-    
+
         df_discharge = df_cleaned[df_cleaned['Step'] == 'Discharge']
         df_charge = df_cleaned[df_cleaned['Step'] == 'Charge']
-    
+
         unique_cycles = sorted(df_cleaned['Cycle'].unique())
         # `voltage_profiles` accepts `all_cycle_tables` and, until 1.9.0.4,
         # never read it — so the half-cycle the export was taken during was
@@ -713,35 +713,35 @@ def voltage_profiles(electrochemical_data, user_parameters, *, save_location=Non
                 print(f"  Cycle(s) {', '.join(str(c) for c in sorted(_skip))} "
                       f"omitted: not a finished measurement")
         num_cycles = len(unique_cycles)
-    
+
         palette = sns.color_palette(colour_palette, n_colors=num_cycles)
-    
+
         fig, ax = plt.subplots()
-    
+
         # --- Plot traces ---
         # After Cell 4b normalisation, Discharge = useful half-cycle for
         # all electrode types. Solid = discharge, dashed = charge.
         for i, cycle in enumerate(unique_cycles):
             colour = palette[i]
-        
+
             dc = df_discharge[df_discharge['Cycle'] == cycle]
             if not dc.empty:
                 dc_sorted = dc.sort_values('Discharge_Capacity')
                 ax.plot(dc_sorted['Discharge_Capacity'],
                        dc_sorted['Voltage'],
                        color=colour, linestyle='-', linewidth=1.0)
-        
+
             cc = df_charge[df_charge['Cycle'] == cycle]
             if not cc.empty:
                 cc_sorted = cc.sort_values('Charge_Capacity')
                 ax.plot(cc_sorted['Charge_Capacity'],
                        cc_sorted['Voltage'],
                        color=colour, linestyle='--', linewidth=1.0)
-    
+
         # --- Labelling mode selection ---
         endpoints = _get_endpoints(df_charge, df_discharge,
                                     unique_cycles, key_cycles)
-    
+
         if LABEL_MODE == 'auto':
             overlap_frac = _check_overlap(endpoints)
             use_colourbar = overlap_frac > AUTO_OVERLAP_THRESHOLD
@@ -755,18 +755,18 @@ def voltage_profiles(electrochemical_data, user_parameters, *, save_location=Non
         else:
             use_colourbar = False
             mode_used = 'annotations'
-    
+
         if use_colourbar:
             _add_colourbar(fig, ax, unique_cycles, colour_palette)
         else:
             _add_annotations(ax, endpoints, unique_cycles, palette)
-    
+
         # --- Formatting ---
         ax.set_xlabel('Specific Capacity / mAh g$^{-1}$', fontsize=16)
         ax.set_ylabel('Voltage / V', fontsize=16)
         ax.tick_params(axis='both', labelcolor='black', labelsize=14,
                        width=1, direction='in', top=True, right=True)
-    
+
         if COMMON_XAXIS_SCALE and global_max_capacity > 0:
             ax.set_xlim(left=0, right=global_max_capacity)
             # The limit is a round number, so the ticks should be the round
@@ -779,9 +779,9 @@ def voltage_profiles(electrochemical_data, user_parameters, *, save_location=Non
         else:
             ax.set_xlim(left=0)
             ax.set_xlim(right=ax.get_xlim()[1] * (1 + XAXIS_PADDING_FRACTION))
-    
+
         plt.tight_layout()
-    
+
         # --- Save ---
         if save_location:
             file_format = params.get('file_format', 'png')
@@ -804,7 +804,7 @@ def voltage_profiles(electrochemical_data, user_parameters, *, save_location=Non
         )
         print(section("  Suggested caption"))
         print(bullet(caption, indent=2, label_width=2))
-    
+
         plt.show()
         plt.close(fig)
 
@@ -869,18 +869,18 @@ def cycling_summary(electrochemical_data, user_parameters, *, save_location=None
         """
         Flag a cycle as incomplete if and only if the cycler did not
         complete its prescribed protocol for that cycle.
- 
+
         Operational definition (v1.7.1):
           - discharge missing or zero AND charge missing or zero
                 -> cycler aborted before either half-cycle -> incomplete
           - discharge missing or zero AND charge present
                 -> charge completed, discharge did not -> incomplete
           - otherwise -> complete (even if degraded, low-CE, or parasitic)
- 
+
         Health-based filtering (low retention, abnormal CE, parasitic
         current holds) lives in the Triplicate Analysis health pre-filter,
         NOT here. Cell 5b only reports protocol-level status.
- 
+
         Parameters
         ----------
         discharge_capacities : list-like of float
@@ -891,7 +891,7 @@ def cycling_summary(electrochemical_data, user_parameters, *, save_location=None
             Charge capacity per cycle. If omitted, the function falls
             back to flagging only missing/zero discharges (safe default
             for Cell 5b, which always has charge data in current use).
- 
+
         Returns
         -------
         list of bool
@@ -902,7 +902,7 @@ def cycling_summary(electrochemical_data, user_parameters, *, save_location=None
             charge_capacities = [np.nan] * n
         else:
             charge_capacities = list(charge_capacities)
- 
+
         flags = []
         for d, c in zip(discharge_capacities, charge_capacities):
             d_empty = pd.isna(d) or (pd.notna(d) and d <= 0.0)
@@ -931,26 +931,26 @@ def cycling_summary(electrochemical_data, user_parameters, *, save_location=None
         is_anode = params.get('anode_labels_swapped', False)
         dch_label = _discharge_label(params)
         chg_label = _charge_label(params)
-    
+
         print()
         print(heading(composition))
         if is_anode:
             print(entry("half-cell", "anode",
                         f"{dch_label.lower()} is the useful capacity"))
-    
+
         if not all(col in df.columns for col in ['Cycle', 'Step',
                     'Discharge_Capacity', 'Charge_Capacity']):
             print(verdict("caution", "missing required columns, skipping."))
             continue
-    
+
         # The one definition — see `delivered_capacity`.
         cycle_df = delivered_capacity(df)
-    
+
         # CE = discharge / charge (correct for both electrode types
         # after Cell 4b normalisation)
         cycle_df['CE_%'] = coulombic_efficiency(
             cycle_df['Discharge_mAh_g'], cycle_df['Charge_mAh_g']).values
-    
+
         # --- Detect incomplete cycles (v1.7.1: protocol-level only) ---
         incomplete_flags = _detect_incomplete_cycles(
             cycle_df['Discharge_mAh_g'].tolist(),
@@ -1042,7 +1042,7 @@ def cycling_summary(electrochemical_data, user_parameters, *, save_location=None
                       f"{int(complete['Cycle'].iloc[0])}")
             else:
                 ref_cap = np.nan
-    
+
         if pd.notna(ref_cap) and ref_cap > 0:
             cycle_df['Retention_%'] = (
                 cycle_df['Discharge_mAh_g'] / ref_cap * 100
@@ -1054,11 +1054,11 @@ def cycling_summary(electrochemical_data, user_parameters, *, save_location=None
         # Detect progressive parasitic current, voltage anomalies, and
         # definite failure signatures. Flags are stored in cycle_df so
         # every downstream cell can access them.
-    
+
         # 1. Charge excess per cycle (Q_chg - Q_dchg)
         cycle_df['Charge_Excess_mAh_g'] = (
             cycle_df['Charge_mAh_g'] - cycle_df['Discharge_mAh_g'])
-    
+
         # 2. Progressive parasitic current detection
         # Start from cycle 4 to avoid formation-period false positives.
         # Cycles 1-3 typically show CE evolution from SEI/CEI formation
@@ -1068,16 +1068,16 @@ def cycling_summary(electrochemical_data, user_parameters, *, save_location=None
             (~cycle_df['Incomplete']) & (~cycle_df['Partial_Final'])
             & (cycle_df['Cycle'] >= _DIAG_START_CYCLE)
         ].copy()
-    
+
         _cell_flags = []      # list of (severity, message) tuples
-    
+
         if len(_diag_df) >= 4:
             # CE trend: linear fit to CE vs cycle
             _ce_vals = _diag_df['CE_%'].dropna()
             if len(_ce_vals) >= 4:
                 _ce_slope, _ce_intercept = np.polyfit(
                     _diag_df.loc[_ce_vals.index, 'Cycle'], _ce_vals, 1)
-            
+
                 # Check for monotonic decline over last N cycles
                 _last_n = min(5, len(_ce_vals))
                 _recent_ce = _ce_vals.tail(_last_n)
@@ -1085,7 +1085,7 @@ def cycling_summary(electrochemical_data, user_parameters, *, save_location=None
                     _recent_ce.iloc[i] < _recent_ce.iloc[i-1]
                     for i in range(1, len(_recent_ce)))
                 _monotonic = _n_declining >= _last_n - 1  # allow 1 exception
-            
+
                 if _ce_slope < -0.5 and _monotonic:
                     _cell_flags.append(('CRITICAL',
                         f'CE declining monotonically at '
@@ -1095,7 +1095,7 @@ def cycling_summary(electrochemical_data, user_parameters, *, save_location=None
                     _cell_flags.append(('WARNING',
                         f'CE trend negative ({_ce_slope:.2f}%/cycle) — '
                         f'possible parasitic current developing'))
-        
+
             # Charge excess trend: is delta_Q growing?
             _excess = _diag_df['Charge_Excess_mAh_g'].dropna()
             if len(_excess) >= 4:
@@ -1111,7 +1111,7 @@ def cycling_summary(electrochemical_data, user_parameters, *, save_location=None
                         f'Charge excess trend positive '
                         f'({_ex_slope:.2f} mAh/g/cycle) — monitor for '
                         f'parasitic activity'))
-    
+
         # 3. Voltage anomaly on final data points
         # 4. Final cycle with zero or near-zero discharge
         # Skip both if the last cycle is already flagged incomplete —
@@ -1130,7 +1130,7 @@ def cycling_summary(electrochemical_data, user_parameters, *, save_location=None
         _last_incomplete = bool(_last_row['Incomplete'].iloc[0]) or bool(
             _last_row['Partial_Final'].iloc[0]
             if 'Partial_Final' in _last_row else False)
-    
+
         if not _last_incomplete:
             # 3. Check if the last recorded step has voltage going the wrong way
             _last_cycle_data = df[df['Cycle'] == _last_cycle]
@@ -1147,7 +1147,7 @@ def cycling_summary(electrochemical_data, user_parameters, *, save_location=None
                     if not _last_chg.empty:
                         _v_prev_step = pd.to_numeric(
                             _last_chg['Voltage'].iloc[-1], errors='coerce')
-                
+
                     if (_v_prev_step is not None and pd.notna(_v_start)
                             and pd.notna(_v_prev_step)
                             and _v_start > _v_prev_step + 0.1):
@@ -1156,7 +1156,7 @@ def cycling_summary(electrochemical_data, user_parameters, *, save_location=None
                             f'{_v_start:.3f} V on discharge start '
                             f'(> {_v_prev_step:.3f} V end-of-charge) — '
                             f'open circuit / contact failure'))
-        
+
             # 4. Final cycle with zero or near-zero discharge
             _last_row = cycle_df[cycle_df['Cycle'] == _last_cycle]
             if not _last_row.empty:
@@ -1169,12 +1169,12 @@ def cycling_summary(electrochemical_data, user_parameters, *, save_location=None
                         f'{_last_chg_cap:.1f} mAh/g but delivered '
                         f'{"0" if pd.isna(_last_dchg_cap) else f"{_last_dchg_cap:.1f}"} '
                         f'mAh/g on discharge — cell died'))
-    
+
         # Store flags in cycle_df metadata (accessible downstream)
         cycle_df.attrs['cell_health_flags'] = _cell_flags
-    
+
         all_cycle_tables[name] = cycle_df
-    
+
         # --- Print table (v1.8: anode-aware headers) ---
         # Status is 10 wide because the words are now words. The rule under
         # the header is measured from the header rather than hard-coded at
@@ -1185,11 +1185,11 @@ def cycling_summary(electrochemical_data, user_parameters, *, save_location=None
         print(f"  {'':>5}  {'mAh/g':>10}  {'mAh/g':>10}  "
               f"{'%':>7}  {'%':>9}  {'':>10}")
         print(f"  {'-' * (len(_hdr) - 2)}")
-    
+
         for _, row in cycle_df.iterrows():
             def _f(val, fmt='.1f'):
                 return f'{val:{fmt}}' if pd.notna(val) else '--'
-        
+
             # Until 1.9.0.23 this read `Incomplete` alone. Cells A and C,
             # whose CHARGE half was the unfinished one, printed INCOMPL;
             # cell B, where the export was written during cycle 11's
@@ -1203,26 +1203,26 @@ def cycling_summary(electrochemical_data, user_parameters, *, save_location=None
                 status = 'Running'
             else:
                 status = ''
-        
+
             print(f"  {int(row['Cycle']):>5}  "
                   f"{_f(row['Charge_mAh_g']):>10}  "
                   f"{_f(row['Discharge_mAh_g']):>10}  "
                   f"{_f(row['CE_%']):>7}  "
                   f"{_f(row['Retention_%']):>9}  "
                   f"{status:>8}")
-    
+
         # --- Headline metrics (complete cycles only) ---
         # Headline metrics only. The full `cycle_df` — partial cycle and
         # all — is what goes into every figure and the exported CSV.
         complete_df = cycle_df[~cycle_df['Incomplete']
                                & ~cycle_df['Partial_Final']]
-    
+
         print("\n" + section(
             f"  Headline metrics (excluding cycle"
             f"{'s' if n_excluded != 1 else ''} "
             f"{', '.join(str(int(c)) for c in excluded_cycles)})"
             if n_excluded > 0 else "  Headline metrics"))
-    
+
         # First-cycle irreversible loss (v1.8: anode-aware text)
         # After Cell 4b swap:
         #   Cathode: Charge = delithiation/desodiation, Discharge = lithiation/sodiation
@@ -1254,13 +1254,13 @@ def cycling_summary(electrochemical_data, user_parameters, *, save_location=None
                           f"{chg_label.lower()})")
                 print(f"    1st cycle CE: "
                       f"{q_dchg_1/q_chg_1*100:.1f}%")
-    
+
         # Retention: last complete cycle vs reference
         if pd.notna(ref_cap) and not complete_df.empty:
             last_complete = complete_df.iloc[-1]
             last_cap = last_complete['Discharge_mAh_g']
             last_cycle = int(last_complete['Cycle'])
-        
+
             if pd.notna(last_cap):
                 # RETENTION AGAINST BOTH CYCLE 1 AND THE REFERENCE.
                 # Cycle 1 includes the first-cycle irreversible loss and is
@@ -1291,7 +1291,7 @@ def cycling_summary(electrochemical_data, user_parameters, *, save_location=None
                              if _ref == 1 else "")
                     print(f"    Retention (cycle {last_cycle} vs {_ref}): "
                           f"{100 * last_cap / _cap:.1f}%{_note}")
-    
+
         # WHERE DOES FORMATION END? Measured from this table's own CE, not
         # assumed. See FADE_RATE_FROM_MEASURED_FORMATION.
         _fade_start = int(FADE_RATE_START_CYCLE)
@@ -1312,20 +1312,20 @@ def cycling_summary(electrochemical_data, user_parameters, *, save_location=None
         stable_ce = complete_df[
             complete_df['Cycle'] >= _fade_start
         ]['CE_%'].dropna()
-    
+
         if not stable_ce.empty:
             last_complete_cycle = int(complete_df['Cycle'].max())
             print(f"    Average CE (cycles {_fade_start}"
                   f"--{last_complete_cycle}): "
                   f"{stable_ce.mean():.2f}% "
                   f"(+/-{stable_ce.std():.2f}%)")
-    
+
         # Fade rate (complete, excluding formation)
         stable = complete_df[
             (complete_df['Cycle'] >= _fade_start) &
             (complete_df['Discharge_mAh_g'].notna())
         ]
-    
+
         if len(stable) >= 3:
             slope, _ = np.polyfit(stable['Cycle'],
                                   stable['Discharge_mAh_g'], 1)
@@ -1349,7 +1349,7 @@ def cycling_summary(electrochemical_data, user_parameters, *, save_location=None
                 print(f"    Fade rate (cycles {_fade_start}"
                       f"--{int(stable['Cycle'].max())}): "
                       f"{slope:.3f} mAh/g/cycle")
-    
+
         # --- Suggested caption (v1.8: anode-aware) ---
         caption = (
             f"Table X. Specific {chg_label.lower()} and "
@@ -1381,7 +1381,7 @@ def cycling_summary(electrochemical_data, user_parameters, *, save_location=None
                         + ", and excluded from headline metrics.")
         print(section("  Suggested caption"))
         print(bullet(caption, indent=2, label_width=2))
-    
+
         # --- v1.8: Print cell health diagnostics ---
         if _cell_flags:
             print(f"\n  {'!'*60}")
@@ -1404,7 +1404,7 @@ def cycling_summary(electrochemical_data, user_parameters, *, save_location=None
                       f"degradation beyond normal fading.")
                 print(f"  If this pattern continues, expect cell "
                       f"failure within the next 5-10 cycles.")
-    
+
             if not any(s == 'FAILURE' for s, _ in _cell_flags):
                 print(f"\n  If cycling is still in progress, the final "
                       f"partial cycle may skew")
@@ -1419,7 +1419,7 @@ def cycling_summary(electrochemical_data, user_parameters, *, save_location=None
             comp = _get_display_name(name, params, user_parameters)
             dch = _discharge_label(params)
             chg = _charge_label(params)
-        
+
             export_df = cdf[['Cycle']].copy()
             export_df[f'{comp}_{chg}_mAh_g'] = cdf['Charge_mAh_g']
             export_df[f'{comp}_{dch}_mAh_g'] = cdf['Discharge_mAh_g']
@@ -1434,16 +1434,16 @@ def cycling_summary(electrochemical_data, user_parameters, *, save_location=None
                 # apart so a reader of the CSV can tell "the cycler aborted"
                 # from "the export was taken during it".
                 export_df[f'{comp}_Still_Running'] = cdf['Partial_Final']
-        
+
             if combined is None:
                 combined = export_df
             else:
                 combined = pd.merge(combined, export_df, on='Cycle',
                                    how='outer')
-    
+
         if combined is not None:
             combined = combined.sort_values('Cycle').reset_index(drop=True)
-        
+
             if save_location:
                 fpath = os.path.join(save_location,
                                     'cycling_performance_summary.csv')
@@ -1476,11 +1476,11 @@ def voltage_profiles_key(electrochemical_data, user_parameters, *, save_location
         """Check what fraction of endpoints would overlap."""
         if len(endpoints) < 2:
             return 0.0
-    
+
         caps = [e['capacity'] for e in endpoints]
         cap_range = max(caps) - min(caps) if len(caps) > 1 else max(caps)
         cap_tol = max(cap_range * cap_tol_frac, 2.0)
-    
+
         n_overlapping = 0
         for i, ep in enumerate(endpoints):
             for j, other in enumerate(endpoints):
@@ -1490,43 +1490,43 @@ def voltage_profiles_key(electrochemical_data, user_parameters, *, save_location
                     abs(ep['voltage'] - other['voltage']) < volt_tol):
                     n_overlapping += 1
                     break
-    
+
         return n_overlapping / len(endpoints)
 
     def _add_annotations(ax, endpoints, unique_cycles, palette):
         """Add cycle number annotations at endpoints with staggering."""
         if not endpoints:
             return
-    
+
         caps = [e['capacity'] for e in endpoints]
         cap_range = max(caps) - min(caps) if len(caps) > 1 else max(caps)
         cap_tol = max(cap_range * 0.03, 2.0)
         volt_tol = 0.05
-    
+
         placed = []
         sorted_endpoints = sorted(endpoints, key=lambda e: e['cycle'],
                                    reverse=True)
-    
+
         for ep in sorted_endpoints:
             cycle_idx = list(unique_cycles).index(ep['cycle'])
             colour = palette[cycle_idx]
             is_discharge = ep['step'] == 'Discharge'
-        
+
             n_nearby = sum(
                 1 for pc, pv in placed
                 if (abs(ep['capacity'] - pc) < cap_tol and
                     abs(ep['voltage'] - pv) < volt_tol)
             )
-        
+
             x_offset = 0
             if n_nearby > 0:
                 direction = 1 if n_nearby % 2 == 0 else -1
                 stagger = (n_nearby + 1) // 2
                 x_offset = direction * stagger * 14
-        
+
             y_offset = -10 if is_discharge else 10
             va = 'top' if is_discharge else 'bottom'
-        
+
             ax.annotate(
                 str(int(ep['cycle'])),
                 xy=(ep['capacity'], ep['voltage']),
@@ -1545,7 +1545,7 @@ def voltage_profiles_key(electrochemical_data, user_parameters, *, save_location
                                   vmax=max(unique_cycles))
         sm = plt.cm.ScalarMappable(cmap=cmap, norm=norm)
         sm.set_array([])
-    
+
         cbar = fig.colorbar(sm, ax=ax, pad=0.02, aspect=30)
         cbar.set_label('Cycle number', fontsize=13)
         cbar.ax.tick_params(labelsize=11)
@@ -1557,26 +1557,26 @@ def voltage_profiles_key(electrochemical_data, user_parameters, *, save_location
             params = user_parameters.get(name, {})
             key_cycles = (OVERRIDE_KEY_CYCLES if OVERRIDE_KEY_CYCLES
                          else params.get('key_cycles', []))
-        
+
             df_work = df.copy()
             for col in ['Charge_Capacity', 'Discharge_Capacity']:
                 if col in df_work.columns:
                     df_work[col] = pd.to_numeric(df_work[col], errors='coerce')
-        
+
             if key_cycles:
                 df_filtered = df_work[df_work['Cycle'].isin(key_cycles)]
             else:
                 df_filtered = df_work
-        
+
             for col in ['Charge_Capacity', 'Discharge_Capacity']:
                 if col in df_filtered.columns:
                     col_max = df_filtered[col].max()
                     if pd.notna(col_max):
                         global_max_capacity = max(global_max_capacity, col_max)
-    
+
         global_max_capacity, global_xaxis_step = nice_axis_limit(
             global_max_capacity)
-    
+
         if global_max_capacity > 0:
             print(entry("common x-axis", f"{global_max_capacity:.0f} mAh/g",
                         f"key cycles; ticks every {global_xaxis_step:g}"
@@ -1595,10 +1595,10 @@ def voltage_profiles_key(electrochemical_data, user_parameters, *, save_location
         is_anode = params.get('anode_labels_swapped', False)
         dch_label = _discharge_label(params)
         chg_label = _charge_label(params)
-    
+
         # Work on a copy
         df_work = df.copy()
-    
+
         # Robust dropna (v1.8): require Voltage, Cycle, Step, and at
         # least one capacity column.
         df_cleaned = df_work.dropna(subset=['Voltage', 'Cycle', 'Step'])
@@ -1606,14 +1606,14 @@ def voltage_profiles_key(electrochemical_data, user_parameters, *, save_location
             df_cleaned['Charge_Capacity'].notna() |
             df_cleaned['Discharge_Capacity'].notna()
         ].copy()
-    
+
         if df_cleaned.empty:
             print(verdict("caution", f"no valid data for {name}"))
             continue
-    
+
         # --- Detect and exclude incomplete cycles ---
         all_cycles_sorted = sorted(df_cleaned['Cycle'].unique())
-    
+
         if _have_cycle_tables and name in all_cycle_tables:
             # Prefer the table's protocol-level flags (Cell 6a)
             ct = all_cycle_tables[name]
@@ -1635,19 +1635,19 @@ def voltage_profiles_key(electrochemical_data, user_parameters, *, save_location
                            dc['Discharge_Capacity'].min())
                     if pd.isna(cap) or cap <= 0:
                         incomplete_cycles.add(cyc)
-    
+
         # Filter key cycles: must exist in data AND not be incomplete
         available_key_cycles = [
             c for c in key_cycles
             if c in all_cycles_sorted and c not in incomplete_cycles
         ]
-    
+
         if incomplete_cycles & set(key_cycles):
             removed = incomplete_cycles & set(key_cycles)
             print(entry("key cycles excluded",
                         ", ".join(str(int(c)) for c in sorted(removed)),
                         "incomplete"))
-    
+
         if not available_key_cycles:
             print(verdict("caution", f"no valid key cycles found for {name}"))
             # Fall back to all available non-incomplete cycles
@@ -1659,43 +1659,43 @@ def voltage_profiles_key(electrochemical_data, user_parameters, *, save_location
                 continue
             print(f"  Falling back to all complete cycles: "
                   f"{', '.join(str(int(c)) for c in available_key_cycles)}")
-    
+
         # Filter data
         df_key = df_cleaned[df_cleaned['Cycle'].isin(available_key_cycles)]
         df_discharge = df_key[df_key['Step'] == 'Discharge']
         df_charge = df_key[df_key['Step'] == 'Charge']
-    
+
         unique_cycles = sorted(df_key['Cycle'].unique())
         num_cycles = len(unique_cycles)
-    
+
         palette = sns.color_palette(colour_palette, n_colors=num_cycles)
-    
+
         fig, ax = plt.subplots()
-    
+
         # --- Plot traces ---
         # After Cell 4b normalisation, solid = discharge = useful
         # half-cycle for both electrode types.
         for i, cycle in enumerate(unique_cycles):
             colour = palette[i]
-        
+
             dc = df_discharge[df_discharge['Cycle'] == cycle]
             if not dc.empty:
                 dc_sorted = dc.sort_values('Discharge_Capacity')
                 ax.plot(dc_sorted['Discharge_Capacity'],
                        dc_sorted['Voltage'],
                        color=colour, linestyle='-', linewidth=1.2)
-        
+
             cc = df_charge[df_charge['Cycle'] == cycle]
             if not cc.empty:
                 cc_sorted = cc.sort_values('Charge_Capacity')
                 ax.plot(cc_sorted['Charge_Capacity'],
                        cc_sorted['Voltage'],
                        color=colour, linestyle='--', linewidth=1.2)
-    
+
         # --- Labelling ---
         endpoints = _get_endpoints(df_charge, df_discharge,
                                     unique_cycles, available_key_cycles)
-    
+
         if LABEL_MODE == 'auto':
             overlap_frac = _check_overlap(endpoints)
             use_colourbar = overlap_frac > AUTO_OVERLAP_THRESHOLD
@@ -1706,18 +1706,18 @@ def voltage_profiles_key(electrochemical_data, user_parameters, *, save_location
             use_colourbar = True
         else:
             use_colourbar = False
-    
+
         if use_colourbar:
             _add_colourbar(fig, ax, unique_cycles, colour_palette)
         else:
             _add_annotations(ax, endpoints, unique_cycles, palette)
-    
+
         # --- Formatting ---
         ax.set_xlabel('Specific Capacity / mAh g$^{-1}$', fontsize=14)
         ax.set_ylabel('Voltage / V', fontsize=14)
         ax.tick_params(axis='both', labelcolor='black', labelsize=12,
                        width=1, direction='in', top=True, right=True)
-    
+
         if COMMON_XAXIS_SCALE and global_max_capacity > 0:
             ax.set_xlim(left=0, right=global_max_capacity)
             # The limit is a round number, so the ticks should be the round
@@ -1730,9 +1730,9 @@ def voltage_profiles_key(electrochemical_data, user_parameters, *, save_location
         else:
             ax.set_xlim(left=0)
             ax.set_xlim(right=ax.get_xlim()[1] * (1 + XAXIS_PADDING_FRACTION))
-    
+
         plt.tight_layout()
-    
+
         # --- Save ---
         if save_location:
             file_format = params.get('file_format', 'png')
@@ -1758,7 +1758,7 @@ def voltage_profiles_key(electrochemical_data, user_parameters, *, save_location
 
         plt.show()
         plt.close(fig)
-    
+
         # --- Print which cycles were plotted ---
         print(f"  Plotted cycles: "
               f"{', '.join(str(int(c)) for c in unique_cycles)}")
@@ -1808,10 +1808,10 @@ def cycle_life(electrochemical_data, user_parameters, *, save_location=None,
                     col_max = cap_df[col].max()
                     if pd.notna(col_max):
                         global_max_capacity = max(global_max_capacity, col_max)
-    
+
         global_max_capacity, global_yaxis_step = nice_axis_limit(
             global_max_capacity)
-    
+
         if global_max_capacity > 0:
             print(entry("common y-axis", f"{global_max_capacity:.0f} mAh/g",
                         f"capacity; ticks every {global_yaxis_step:g}"
@@ -1825,14 +1825,14 @@ def cycle_life(electrochemical_data, user_parameters, *, save_location=None,
         is_anode = params.get('anode_labels_swapped', False)
         dch_label = _discharge_label(params)
         chg_label = _charge_label(params)
-    
+
         # Calculate capacities
         cap_df = _calculate_cycle_capacities(df)
-    
+
         if cap_df.empty:
             print(verdict("caution", f"no valid capacity data for {name}"))
             continue
-    
+
         # --- Detect incomplete cycles ---
         if EXCLUDE_INCOMPLETE:
             if _have_cycle_tables and name in all_cycle_tables:
@@ -1849,59 +1849,59 @@ def cycle_life(electrochemical_data, user_parameters, *, save_location=None,
                     d = row['Discharge_Capacity']
                     flags.append(pd.isna(d) or d <= 0)
                 cap_df['Incomplete'] = flags
-        
+
             n_incomplete = cap_df['Incomplete'].sum()
             if n_incomplete > 0:
                 removed = cap_df[cap_df['Incomplete']]['Cycle'].tolist()
                 print(entry("cycles excluded",
                             ", ".join(str(int(c)) for c in removed),
                             "incomplete"))
-        
+
             plot_df = cap_df[~cap_df['Incomplete']].copy()
         else:
             plot_df = cap_df.copy()
-    
+
         if plot_df.empty:
             print(verdict("caution", f"no complete cycles for {name}"))
             continue
-    
+
         # Calculate CE (v1.8: no electrode_type needed, swap handles it)
         plot_df['CE'] = plot_df.apply(_calculate_efficiency, axis=1)
-    
+
         # CE: skip formation cycle
         ce_df = plot_df[
-            (plot_df['Cycle'] >= CE_START_CYCLE) & 
+            (plot_df['Cycle'] >= CE_START_CYCLE) &
             (plot_df['CE'].notna())
         ]
-    
+
         # --- Plot ---
         fig, ax1 = plt.subplots()
         ax2 = ax1.twinx()
-    
+
         # Capacity (left axis) — legend labels adapt for anodes
         ax1.plot(plot_df['Cycle'], plot_df['Charge_Capacity'],
                 color=COLOUR_CHARGE, marker=MARKER_CHARGE,
                 markersize=MARKER_SIZE, linestyle='',
                 label=chg_label, zorder=3)
-    
+
         ax1.plot(plot_df['Cycle'], plot_df['Discharge_Capacity'],
                 color=COLOUR_DISCHARGE, marker=MARKER_DISCHARGE,
                 markersize=MARKER_SIZE, linestyle='',
                 label=dch_label, zorder=3)
-    
+
         # CE (right axis)
         if not ce_df.empty:
             ax2.plot(ce_df['Cycle'], ce_df['CE'],
                     color=COLOUR_EFFICIENCY, marker=MARKER_EFFICIENCY,
                     markersize=MARKER_SIZE - 1, linestyle='',
                     label='CE', zorder=2, alpha=0.7)
-    
+
         # --- Axis formatting ---
         ax1.set_xlabel('Cycle number', fontsize=14)
         _force_integer_cycles(ax1)
         ax1.set_ylabel('Specific capacity / mAh g$^{-1}$', fontsize=14)
         ax2.set_ylabel('Coulombic efficiency / %', fontsize=14)
-    
+
         # Y-axis limits: capacity
         if COMMON_YAXIS_CAPACITY and global_max_capacity > 0:
             ax1.set_ylim(bottom=0, top=global_max_capacity)
@@ -1911,10 +1911,10 @@ def cycle_life(electrochemical_data, user_parameters, *, save_location=None,
         else:
             ax1.set_ylim(bottom=0)
             ax1.set_ylim(top=ax1.get_ylim()[1] * (1 + CAPACITY_YAXIS_PADDING))
-    
+
         # Y-axis limits: efficiency
         ax2.set_ylim(bottom=0, top=EFFICIENCY_YMAX)
-    
+
         # Tick formatting
         ax1.tick_params(axis='both', labelsize=12, width=1, direction='in',
                         top=True)
@@ -1925,18 +1925,18 @@ def cycle_life(electrochemical_data, user_parameters, *, save_location=None,
         lines2, labels2 = ax2.get_legend_handles_labels()
         ax1.legend(lines1 + lines2, labels1 + labels2,
                    fontsize=10, framealpha=0.7, loc='best')
-    
+
         # Remove grids (clean look for dual-axis)
         ax1.grid(False)
         ax2.grid(False)
-    
+
         # Spines
         for ax in [ax1, ax2]:
             for sp in ax.spines.values():
                 sp.set_linewidth(0.8)
-    
+
         plt.tight_layout()
-    
+
         # --- Save ---
         if save_location:
             file_format = params.get('file_format', 'png')
@@ -1949,7 +1949,7 @@ def cycle_life(electrochemical_data, user_parameters, *, save_location=None,
         # Protocol window; see `_caption_window`.
         v_min, v_max = _caption_window(params, df)
         n_complete = len(plot_df)
-    
+
         caption = (
             f"Figure X. Specific {chg_label.lower()} and "
             f"{dch_label.lower()} capacities (left axis) and "
@@ -1962,10 +1962,10 @@ def cycle_life(electrochemical_data, user_parameters, *, save_location=None,
         )
         print(section("  Suggested caption"))
         print(bullet(caption, indent=2, label_width=2))
-    
+
         plt.show()
         plt.close(fig)
-    
+
         # --- Print summary ---
         if not ce_df.empty:
             mean_ce = ce_df['CE'].mean()

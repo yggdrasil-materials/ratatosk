@@ -79,46 +79,46 @@ _MODERATE_IQR_FRACTION = 0.20   # IQR < 20% of range -> moderate
 
 def classify_dqdv_profile(df, verbose=True):
     """
-    Classify the electrochemical profile of a dataset to guide dQ/dV 
+    Classify the electrochemical profile of a dataset to guide dQ/dV
     preprocessing.
-    
-    Examines the voltage profile shape across representative half-cycles 
+
+    Examines the voltage profile shape across representative half-cycles
     to determine whether the material exhibits sharp two-phase behaviour
-    (e.g. LTO, LFP), moderate peaks, or broad solid-solution behaviour 
+    (e.g. LTO, LFP), moderate peaks, or broad solid-solution behaviour
     (e.g. NMC, NNM layered oxides).
-    
-    The classification uses the voltage interquartile range (IQR) as a 
-    fraction of the total voltage window, averaged across the first few 
+
+    The classification uses the voltage interquartile range (IQR) as a
+    fraction of the total voltage window, averaged across the first few
     stable half-cycles. This approach is robust because:
-    
-    1. Two-phase materials spend most of their capacity at a nearly 
-       constant voltage (the plateau), so the IQR of voltage values 
+
+    1. Two-phase materials spend most of their capacity at a nearly
+       constant voltage (the plateau), so the IQR of voltage values
        within a half-cycle is small — typically <5% of the window.
-    
-    2. Solid-solution materials have continuously varying voltage, so 
-       the IQR spans a substantial fraction of the window — typically 
+
+    2. Solid-solution materials have continuously varying voltage, so
+       the IQR spans a substantial fraction of the window — typically
        30-50%.
-    
-    3. Unlike dQ/dV statistics, this method doesn't suffer from the 
+
+    3. Unlike dQ/dV statistics, this method doesn't suffer from the
        problem of the "peak" being the bulk of the data distribution.
-       The voltage profile is the ground truth that dQ/dV is derived 
+       The voltage profile is the ground truth that dQ/dV is derived
        from.
-    
+
     Parameters
     ----------
     df : pd.DataFrame
-        Raw electrochemical data with 'Voltage', 'Cycle', and 'Step' 
+        Raw electrochemical data with 'Voltage', 'Cycle', and 'Step'
         columns.
     verbose : bool
         Print classification diagnostics.
-    
+
     Returns
     -------
     profile : dict
         {
             'class': str ('sharp', 'moderate', or 'broad'),
             'iqr_fraction': float (mean IQR/range across half-cycles),
-            'plateau_fraction': float (fraction of points within 
+            'plateau_fraction': float (fraction of points within
                                        +/-20mV of median voltage),
             'description': str (human-readable summary)
         }
@@ -133,7 +133,7 @@ def classify_dqdv_profile(df, verbose=True):
             'plateau_fraction': np.nan,
             'description': 'Missing required columns; using default (broad) profile'
         }
-    
+
     # --- Analyse representative half-cycles ---
     # Use cycles 2-5 (or whatever is available after cycle 1) to avoid
     # first-cycle formation effects. Examine both charge and discharge.
@@ -144,39 +144,39 @@ def classify_dqdv_profile(df, verbose=True):
         analysis_cycles = [c for c in cycles if c >= 2][:4]
         if not analysis_cycles:
             analysis_cycles = cycles[1:5]  # fallback
-    
+
     iqr_fractions = []
     plateau_fractions = []
-    
+
     for cycle in analysis_cycles:
         df_cycle = df[df['Cycle'] == cycle]
         for step in ['Charge', 'Discharge']:
             df_step = df_cycle[df_cycle['Step'] == step]
             voltages = df_step['Voltage'].dropna()
-            
+
             if len(voltages) < 20:
                 continue
-            
+
             v_min, v_max = voltages.min(), voltages.max()
             v_range = v_max - v_min
-            
+
             if v_range < 0.01:  # less than 10 mV range — skip
                 continue
-            
+
             # IQR as fraction of range
             q25, q75 = voltages.quantile(0.25), voltages.quantile(0.75)
             iqr = q75 - q25
             iqr_frac = iqr / v_range
             iqr_fractions.append(iqr_frac)
-            
-            # Plateau fraction: what proportion of data points sit 
+
+            # Plateau fraction: what proportion of data points sit
             # within +/-20 mV of the median voltage?
             v_median = voltages.median()
-            near_median = ((voltages >= v_median - 0.020) & 
+            near_median = ((voltages >= v_median - 0.020) &
                           (voltages <= v_median + 0.020))
             plat_frac = near_median.sum() / len(voltages)
             plateau_fractions.append(plat_frac)
-    
+
     if not iqr_fractions:
         if verbose:
             print(entry("profile", "broad", "assumed — no half-cycle had 20+ records spanning 10 mV"))
@@ -186,10 +186,10 @@ def classify_dqdv_profile(df, verbose=True):
             'plateau_fraction': np.nan,
             'description': 'No analysable half-cycles; using default (broad) profile'
         }
-    
+
     mean_iqr_frac = np.mean(iqr_fractions)
     mean_plat_frac = np.mean(plateau_fractions)
-    
+
     # --- Classify ---
     # Primary criterion: IQR fraction
     # Secondary criterion: plateau fraction (catches edge cases)
@@ -214,7 +214,7 @@ def classify_dqdv_profile(df, verbose=True):
             f'Typical of layered oxides (NMC, NNM, etc.). '
             f'Standard preprocessing applied.'
         )
-    
+
     out = {
         'class': profile_class,
         'iqr_fraction': mean_iqr_frac,
@@ -238,35 +238,35 @@ def classify_dqdv_profile(df, verbose=True):
 def auto_preprocess_params(profile, user_params=None):
     """
     Select preprocessing parameters based on voltage profile classification.
-    
-    Returns a complete set of preprocessing parameters appropriate for the 
-    detected profile type. User-supplied non-'auto' values override the 
-    auto-selected defaults, allowing fine-tuning without losing the 
+
+    Returns a complete set of preprocessing parameters appropriate for the
+    detected profile type. User-supplied non-'auto' values override the
+    auto-selected defaults, allowing fine-tuning without losing the
     benefit of auto-detection.
-    
+
     Parameter logic by profile class:
-    
+
     sharp (LTO, LFP):
-        - Spike removal OFF: the genuine dQ/dV peaks are so extreme 
-          relative to the background that any MAD-based despiking will 
-          treat them as outliers. With dQ/dV values of thousands at the 
-          plateau and near-zero elsewhere, there is no local context 
+        - Spike removal OFF: the genuine dQ/dV peaks are so extreme
+          relative to the background that any MAD-based despiking will
+          treat them as outliers. With dQ/dV values of thousands at the
+          plateau and near-zero elsewhere, there is no local context
           for the rolling window to use.
-        - Smoothing window 5: the peaks are very narrow in voltage 
-          space, so a wide window attenuates the peak height and 
-          distorts the shape. Window 5 with polyorder 3 preserves 
+        - Smoothing window 5: the peaks are very narrow in voltage
+          space, so a wide window attenuates the peak height and
+          distorts the shape. Window 5 with polyorder 3 preserves
           the peak while removing point-to-point noise.
-    
+
     moderate:
-        - Spike threshold raised to 6.0 (from default 3.0): protects 
+        - Spike threshold raised to 6.0 (from default 3.0): protects
           sharper peaks while still catching genuine noise spikes.
-        - Smoothing window 9: compromise between peak preservation and 
+        - Smoothing window 9: compromise between peak preservation and
           noise reduction.
-    
+
     broad (NMC, NNM):
         - Original defaults: window 15, spike threshold 3.0.
         - These were tuned for layered oxide cathodes and work well.
-    
+
     Parameters
     ----------
     profile : dict
@@ -274,7 +274,7 @@ def auto_preprocess_params(profile, user_params=None):
     user_params : dict or None
         User-supplied parameters from Cell 3. Any value that is not 'auto'
         overrides the auto-selected value.
-    
+
     Returns
     -------
     params : dict
@@ -284,9 +284,9 @@ def auto_preprocess_params(profile, user_params=None):
     """
     if user_params is None:
         user_params = {}
-    
+
     profile_class = profile.get('class', 'broad')
-    
+
     # --- Auto-selected defaults by profile class ---
     if profile_class == 'sharp':
         auto = {
@@ -318,7 +318,7 @@ def auto_preprocess_params(profile, user_params=None):
             'second_smooth_window': None,
             'rebin_width_mV': None,
         }
-    
+
     # --- Apply user overrides (non-'auto' values take priority) ---
     final = {}
     for key in auto:
@@ -327,7 +327,7 @@ def auto_preprocess_params(profile, user_params=None):
             final[key] = auto[key]
         else:
             final[key] = user_val
-    
+
     # The histogram path's one parameter, chosen the same way everything else
     # here is: from the measured profile class. Only set if the caller has
     # not already fixed it.
@@ -342,7 +342,7 @@ def auto_preprocess_params(profile, user_params=None):
     final['profile_description'] = profile.get('description', '')
     final['iqr_fraction'] = profile.get('iqr_fraction', np.nan)
     final['plateau_fraction'] = profile.get('plateau_fraction', np.nan)
-    
+
     return final
 
 
@@ -352,15 +352,15 @@ def auto_preprocess_params(profile, user_params=None):
 def remove_spikes(series, window_size=5, threshold_multiplier=3.0):
     """
     Detect and replace spikes using rolling median and MAD.
-    
-    Uses median-based statistics rather than mean/std to prevent the spike 
-    from contaminating its own detection window — a known failure mode of 
+
+    Uses median-based statistics rather than mean/std to prevent the spike
+    from contaminating its own detection window — a known failure mode of
     mean-based rolling outlier detection.
-    
-    The MAD (median absolute deviation) is scaled by 1.4826 to give a 
-    consistent estimator of the standard deviation for normally-distributed 
+
+    The MAD (median absolute deviation) is scaled by 1.4826 to give a
+    consistent estimator of the standard deviation for normally-distributed
     data (Rousseeuw & Croux, 1993).
-    
+
     Parameters
     ----------
     series : pd.Series
@@ -369,7 +369,7 @@ def remove_spikes(series, window_size=5, threshold_multiplier=3.0):
         Rolling window size (should be odd for centred window).
     threshold_multiplier : float
         Number of scaled MADs for spike detection threshold.
-    
+
     Returns
     -------
     despiked : pd.Series
@@ -380,33 +380,33 @@ def remove_spikes(series, window_size=5, threshold_multiplier=3.0):
     rolling_median = series.rolling(
         window=window_size, center=True, min_periods=1
     ).median()
-    
+
     # MAD scaled to approximate std for normal distributions
     abs_dev = (series - rolling_median).abs()
     rolling_mad = abs_dev.rolling(
         window=window_size, center=True, min_periods=1
     ).median() * 1.4826
-    
+
     # Floor to prevent division issues in constant regions
     mad_floor = series.abs().max() * 1e-6
     rolling_mad = rolling_mad.clip(lower=mad_floor)
-    
+
     is_spike = abs_dev > (threshold_multiplier * rolling_mad)
     n_spikes = int(is_spike.sum())
-    
+
     despiked = series.copy()
     despiked[is_spike] = rolling_median[is_spike]
-    
+
     return despiked, n_spikes
 
 
 def smooth_dqdv(values, window_size, polyorder=3):
     """
     Apply Savitzky-Golay smoothing to dQ/dV data.
-    
-    Handles edge cases: None/small window sizes, even windows (auto-corrected 
+
+    Handles edge cases: None/small window sizes, even windows (auto-corrected
     to odd), insufficient data points, and polyorder >= window_size.
-    
+
     Parameters
     ----------
     values : np.ndarray
@@ -415,7 +415,7 @@ def smooth_dqdv(values, window_size, polyorder=3):
         Savitzky-Golay window length. If None or <= 1, no smoothing applied.
     polyorder : int
         Polynomial order for the filter.
-    
+
     Returns
     -------
     smoothed : np.ndarray
@@ -425,17 +425,17 @@ def smooth_dqdv(values, window_size, polyorder=3):
     """
     if window_size is None or window_size <= 1:
         return values.copy(), False
-    
+
     # Ensure window_size is odd (Savitzky-Golay requirement)
     if window_size % 2 == 0:
         window_size += 1
-    
+
     if len(values) <= window_size:
         return values.copy(), False
-    
+
     if polyorder >= window_size:
         polyorder = window_size - 1
-    
+
     try:
         return savgol_filter(values, window_size, polyorder), True
     except Exception as e:

@@ -293,17 +293,17 @@ def _protocol_window(params, fallback=None):
 
 def _get_display_name(name, params, all_params):
     """
-    Build a display name that distinguishes datasets with the same 
+    Build a display name that distinguishes datasets with the same
     composition. Uses composition alone if unique across loaded datasets.
-    If multiple datasets share a composition (triplicates), appends a 
-    cell identifier extracted from the filename (e.g., 'Cell A') or 
+    If multiple datasets share a composition (triplicates), appends a
+    cell identifier extracted from the filename (e.g., 'Cell A') or
     a numeric index.
 
-    v1.8.1 fix: when filenames contain multiple numbers (e.g. 
-    Sample_2_1, Sample_2_2 ... Sample_2_9), the function now finds 
-    the numeric token that *varies* across the triplicate set rather 
-    than always capturing the first or last number. This prevents all 
-    cells receiving the same label (e.g. all labelled "Cell 2") when 
+    v1.8.1 fix: when filenames contain multiple numbers (e.g.
+    Sample_2_1, Sample_2_2 ... Sample_2_9), the function now finds
+    the numeric token that *varies* across the triplicate set rather
+    than always capturing the first or last number. This prevents all
+    cells receiving the same label (e.g. all labelled "Cell 2") when
     the batch number precedes the cell number.
 
     Usage in all plotting cells:
@@ -339,7 +339,7 @@ def _get_display_name(name, params, all_params):
                     # This position varies — it's the cell identifier
                     return f"{composition} (Cell {my_tokens[pos]})"
 
-            # All token positions are identical (shouldn't happen with 
+            # All token positions are identical (shouldn't happen with
             # genuinely different filenames) — fall back to last number
             return f"{composition} (Cell {my_tokens[-1]})"
 
@@ -352,8 +352,8 @@ def _get_display_name(name, params, all_params):
 def _force_integer_cycles(ax):
     """
     Force x-axis to show only integer tick values starting from 0.
-    Prevents matplotlib from displaying decimal cycle numbers (e.g., 
-    2.5, 7.5) when the data range is small. Cycle number is always 
+    Prevents matplotlib from displaying decimal cycle numbers (e.g.,
+    2.5, 7.5) when the data range is small. Cycle number is always
     an integer — 2.5 cycles has no physical meaning.
 
     v1.8: also enforces steps of 5 or 10 for datasets with >20 cycles,

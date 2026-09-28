@@ -1285,7 +1285,7 @@ def collect_parameters(electrochemical_data, cycler_metadata=None,
                     break
                 except ValueError:
                     print(f"  {_S.WARN}Enter comma-separated integers.{_S.RESET}")
-                
+
             # ----- OPTIONAL CYCLE CUT-OFF (v1.8.5) -----
             # Cap analysis at a chosen cycle for this dataset. Applied to the
             # loaded data table at the end of Cell 3, so every downstream cell
