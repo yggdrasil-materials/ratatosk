@@ -2,3 +2,12 @@
 # When adding entries please include metdata in the following format as a comment preceeding the commit(s)
 #
 # YYYY-MM-DD @<github_username> <REASON>
+
+# 2026-09-28 @ns-rse Linting of initial import
+3f195899059461427ddb7bcfab165b3c22866c3c
+e69ddc51c287ae8149ee1caaf0cf21470d0fee5f
+5add9888ec123782a18332315ddef669a406c27a
+b35709a1d5488bc8dc0643593e75a8b573b76ce6
+
+# 2026-09-28 @ns-rse Initial import of claude code
+f03eca87d30e248ab85cd905de84cea6b879aead
