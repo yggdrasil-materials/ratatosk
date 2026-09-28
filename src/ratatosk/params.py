@@ -48,9 +48,9 @@ import builtins as _builtins
 import os
 import re
 
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-import matplotlib.pyplot as plt
 
 # The final summary block prints display names. `_get_display_name` lives in
 # `plots` because every figure needs it; importing it here rather than keeping
@@ -58,30 +58,29 @@ import matplotlib.pyplot as plt
 # `params`, so there is no cycle.
 from .cycling import rate_protocol, snap_crate
 from .plots import _get_display_name
-
 from .style import _S, entry, half_cycle_labels
 
 __all__ = [
-    "extract_neware_metadata",
-    "collect_parameters",
-    "describe_defaults",
-    "recommended_palettes",
-    "default_key_cycles",
-    "choose_files",
-    "select_files",
-    "pick_files_dialog",
-    "detection_overrides",
-    "analysis_overrides",
-    "infer_chemistry",
-    "USE_FILE_DIALOG",
-    "validate_run_settings",
-    "find_data_dir",
     "DATA_DIR_ENV",
-    "parameters_from_dict",
-    "preprocess_overrides",
     "SPECIFIC_CAPACITY_LIBRARY",
-    "lookup_specific_capacity",
+    "USE_FILE_DIALOG",
     "FARADAY_mAh_PER_MOL",
+    "analysis_overrides",
+    "choose_files",
+    "collect_parameters",
+    "default_key_cycles",
+    "describe_defaults",
+    "detection_overrides",
+    "extract_neware_metadata",
+    "find_data_dir",
+    "infer_chemistry",
+    "lookup_specific_capacity",
+    "parameters_from_dict",
+    "pick_files_dialog",
+    "preprocess_overrides",
+    "recommended_palettes",
+    "select_files",
+    "validate_run_settings",
 ]
 
 
@@ -534,11 +533,10 @@ def _input_with_default(
         if not raw:
             if default_value is not None:
                 return cast_type(default_value) if cast_type != str else default_value
-            else:
-                print(
-                    f"  {_S.WARN}No default available — please enter a value.{_S.RESET}"
-                )
-                continue
+            print(
+                f"  {_S.WARN}No default available — please enter a value.{_S.RESET}"
+            )
+            continue
         try:
             value = cast_type(raw)
             if min_val is not None and value < min_val:
@@ -566,10 +564,10 @@ def _skip_module(module_name, reason="RUN_PEAK_FITTING=False (set in Cell 3)"):
     """
     print(f"{_S.WARN}--- {module_name} skipped ({reason}). ---{_S.RESET}")
     print(
-        f"    To run this analysis now, set "
-        f"RUN_PEAK_FITTING = True in Cell 3, re-run Cell 3,"
+        "    To run this analysis now, set "
+        "RUN_PEAK_FITTING = True in Cell 3, re-run Cell 3,"
     )
-    print(f"    then run this module's cell manually. No other cells need to re-run.")
+    print("    then run this module's cell manually. No other cells need to re-run.")
 
 
 # ---------------------------------------------------------------------------
@@ -871,7 +869,7 @@ def collect_parameters(
     # makes the name local to this whole function anyway, so on the interactive
     # path every raw `input()` call would raise UnboundLocalError before
     # reaching a person.
-    def input(prompt=""):  # noqa: A001
+    def input(prompt=""):
         text = str(prompt).lower().strip()
         pre = _ANSWERS.get(_CURRENT["name"], {})
         for k, v in pre.items():
@@ -967,7 +965,7 @@ def collect_parameters(
         print(f"\n{_S.HEADER}{'=' * 60}")
         print(f"  Setting parameters for: {name}")
         if any(v is not None for v in meta.values()):
-            print(f"  (Values marked [from file] were read from the cycler)")
+            print("  (Values marked [from file] were read from the cycler)")
         print(f"{'=' * 60}{_S.RESET}")
         confirmed = False
         while not confirmed:
@@ -1049,7 +1047,7 @@ def collect_parameters(
                 blend_input = input(
                     "Electrode blend ratio (e.g., 80/10/10, leave blank for 80/10/10): "
                 )
-                blend = blend_input if blend_input else "80/10/10"
+                blend = blend_input or "80/10/10"
                 try:
                     blend_values = [float(p) for p in blend.split("/")]
                     if (
@@ -1058,10 +1056,9 @@ def collect_parameters(
                         and sum(blend_values) > 0
                     ):
                         break
-                    else:
-                        print(
-                            f"  {_S.WARN}Need at least 2 components, all non-negative.{_S.RESET}"
-                        )
+                    print(
+                        f"  {_S.WARN}Need at least 2 components, all non-negative.{_S.RESET}"
+                    )
                 except ValueError:
                     print(
                         f"  {_S.WARN}Invalid format. Use numbers separated by '/'.{_S.RESET}"
@@ -1178,16 +1175,15 @@ def collect_parameters(
                 if not electrode_type_input:
                     electrode_type = _suggested_electrode
                     break
-                elif electrode_type_input in ["positive", "pos", "p"]:
+                if electrode_type_input in ["positive", "pos", "p"]:
                     electrode_type = "Positive"
                     break
-                elif electrode_type_input in ["negative", "neg", "n"]:
+                if electrode_type_input in ["negative", "neg", "n"]:
                     electrode_type = "Negative"
                     break
-                else:
-                    print(
-                        f"  {_S.WARN}Enter 'positive'/'p' or 'negative'/'n'.{_S.RESET}"
-                    )
+                print(
+                    f"  {_S.WARN}Enter 'positive'/'p' or 'negative'/'n'.{_S.RESET}"
+                )
 
             _last_electrode_type = electrode_type
             # ----- PIPELINE-LEVEL: POWER/ENERGY (asked once) -----
@@ -1300,7 +1296,7 @@ def collect_parameters(
                     )
                 if _proto.get("transition_cycles"):
                     print(
-                        f"      rate-transition cycle(s) in no block: "
+                        "      rate-transition cycle(s) in no block: "
                         + ", ".join(str(c) for c in _proto["transition_cycles"])
                     )
                 if _proto.get("returns_to_start"):
@@ -1547,32 +1543,31 @@ def collect_parameters(
                         electrolyte_composition = _ELECTROLYTE_COMP_GLOBAL
                     _ELECTROLYTE_COMP_GLOBAL = electrolyte_composition
             else:
-                print(f"  1. 1M LiPF6 in EC:DMC 1:1 v/v")
-                print(f"  2. 1M NaPF6 in EC:DMC 1:1 v/v")
-                print(f"  3. 1M NaPF6 in EC:PC 1:1 v/v")
-                print(f"  4. Other")
+                print("  1. 1M LiPF6 in EC:DMC 1:1 v/v")
+                print("  2. 1M NaPF6 in EC:DMC 1:1 v/v")
+                print("  3. 1M NaPF6 in EC:PC 1:1 v/v")
+                print("  4. Other")
                 print(f"  {_S.FILE}(leave blank to skip){_S.RESET}")
                 while True:
                     elyte_choice = input("Enter 1, 2, 3, 4, or blank: ").strip()
                     if not elyte_choice:
                         electrolyte_composition = "Not specified"
                         break
-                    elif elyte_choice == "1":
+                    if elyte_choice == "1":
                         electrolyte_composition = "1M LiPF6 in EC:DMC 1:1 v/v"
                         break
-                    elif elyte_choice == "2":
+                    if elyte_choice == "2":
                         electrolyte_composition = "1M NaPF6 in EC:DMC 1:1 v/v"
                         break
-                    elif elyte_choice == "3":
+                    if elyte_choice == "3":
                         electrolyte_composition = "1M NaPF6 in EC:PC 1:1 v/v"
                         break
-                    elif elyte_choice == "4":
+                    if elyte_choice == "4":
                         electrolyte_composition = (
                             input("Enter electrolyte composition: ") or "Not specified"
                         )
                         break
-                    else:
-                        print(f"  {_S.WARN}Enter 1, 2, 3, 4, or leave blank.{_S.RESET}")
+                    print(f"  {_S.WARN}Enter 1, 2, 3, 4, or leave blank.{_S.RESET}")
                 _ELECTROLYTE_COMP_GLOBAL = electrolyte_composition
             # ----- COUNTER ELECTRODE -----
             # ASK RATHER THAN ASSUME. `infer_chemistry` returns Unknown for an
@@ -1675,28 +1670,27 @@ def collect_parameters(
                     colour_palette = palette_choice
                     print(f"  {_S.CONFIRM}Colour palette: {colour_palette} ✓{_S.RESET}")
                     break
-                else:
-                    _suggestions = sorted(
-                        [
-                            c
-                            for c in _VALID_CMAPS
-                            if palette_choice.lower()
-                            .replace("_d", "")
-                            .replace("_r", "")
-                            in c.lower()
-                        ]
-                    )[:6]
+                _suggestions = sorted(
+                    [
+                        c
+                        for c in _VALID_CMAPS
+                        if palette_choice.lower()
+                        .replace("_d", "")
+                        .replace("_r", "")
+                        in c.lower()
+                    ]
+                )[:6]
+                print(
+                    f"  {_S.WARN}✗ '{palette_choice}' is not a valid matplotlib colormap.{_S.RESET}"
+                )
+                if _suggestions:
                     print(
-                        f"  {_S.WARN}✗ '{palette_choice}' is not a valid matplotlib colormap.{_S.RESET}"
+                        f"    Did you mean: {_S.VALUE}{', '.join(_suggestions)}{_S.RESET}?"
                     )
-                    if _suggestions:
-                        print(
-                            f"    Did you mean: {_S.VALUE}{', '.join(_suggestions)}{_S.RESET}?"
-                        )
-                    else:
-                        print(
-                            f"    Check spelling, or choose a number from the list above."
-                        )
+                else:
+                    print(
+                        "    Check spelling, or choose a number from the list above."
+                    )
             if _FILE_FORMAT_GLOBAL is None:
                 while True:
                     file_format = input(
@@ -2033,11 +2027,10 @@ def collect_parameters(
                     _last_theoretical_capacity = theoretical_capacity_mAh_g
                     print(f"{_S.CONFIRM}  ✓ Parameters confirmed.{_S.RESET}")
                     break
-                elif confirmation in ["no", "n"]:
+                if confirmation in ["no", "n"]:
                     print(f"\n{_S.WARN}  Re-entering parameters...{_S.RESET}\n")
                     break
-                else:
-                    print(f"  {_S.WARN}Enter 'yes' or 'no'.{_S.RESET}")
+                print(f"  {_S.WARN}Enter 'yes' or 'no'.{_S.RESET}")
         user_parameters[name] = sample_parameters
 
     # =============================================================================
@@ -2077,8 +2070,8 @@ def collect_parameters(
     print(
         f"\n{_S.SECTION}  Helper functions available for all downstream cells:{_S.RESET}"
     )
-    print(f"    _get_display_name(name, params, user_parameters)")
-    print(f"    _force_integer_cycles(ax)")
+    print("    _get_display_name(name, params, user_parameters)")
+    print("    _force_integer_cycles(ax)")
     print(
         f"    _skip_module(module_name)  {_S.FILE}— used by Modules 3-8 guards{_S.RESET}"
     )
@@ -2103,7 +2096,7 @@ def collect_parameters(
     _cuts = {n: c for n, c in _all_cuts.items() if c}
     if _cuts:
         print(f"\n{_S.HEADER}{'=' * 60}")
-        print(f"  Cycle cut-offs recorded")
+        print("  Cycle cut-offs recorded")
         print(f"{'=' * 60}{_S.RESET}")
         for n, c in _cuts.items():
             print(
@@ -2130,9 +2123,9 @@ def collect_parameters(
                     f"{_S.RESET}"
                 )
             print(
-                f"  Cells 6b and 6c draw these on shared axes, so those "
-                f"figures will compare different cycle ranges. Deliberate "
-                f"for a cell that died early; otherwise re-run this cell."
+                "  Cells 6b and 6c draw these on shared axes, so those "
+                "figures will compare different cycle ranges. Deliberate "
+                "for a cell that died early; otherwise re-run this cell."
             )
         print(f"{_S.HEADER}{'=' * 60}{_S.RESET}")
     return user_parameters, RUN_PEAK_FITTING

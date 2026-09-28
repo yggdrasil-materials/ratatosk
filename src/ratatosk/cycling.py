@@ -51,44 +51,20 @@ import contextlib
 import functools
 import io as _io
 import os
-import re
 
+import matplotlib.colors as mcolors
+import matplotlib.pyplot as plt
+import matplotlib.ticker as mticker
 import numpy as np
+import pandas as pd
 
 from .compat import trapezoid
-import pandas as pd
-import matplotlib.pyplot as plt
-import matplotlib.colors as mcolors  # noqa: F401  (used by ported code)
-import matplotlib.ticker as mticker  # noqa: F401  (used by ported code)
 
 try:  # Cell 6 only
     import seaborn as sns
 except ImportError:  # pragma: no cover
     sns = None
 
-from .plots import (
-    _get_display_name,
-    _force_integer_cycles,
-    _charge_label,
-    _discharge_label,
-)
-
-# Imported as a MODULE, not as values. `from .plots import
-# figure_width_inches` binds the number at import time, so
-# `plots.set_figure_size()` moved the dQ/dV figures and left every cycling
-# figure at the old size — and the flattened notebook, having one namespace,
-# did the opposite. Two builds, two different sets of figures.
-from .style import (
-    rule,
-    heading,
-    section,
-    entry,
-    verdict,
-    bullet,
-    image_format,
-    saved,
-    nice_axis_limit,
-)
 from . import plots as _plots
 
 # NOT ALIASED. `flatten.strip()` deletes every relative import, so in the flat
@@ -97,26 +73,49 @@ from . import plots as _plots
 # does not catch it because the use is inside a function body. Same family as
 # the late-relative-import bug the build now refuses outright.
 from .detect import formation_end
+from .plots import (
+    _charge_label,
+    _discharge_label,
+    _force_integer_cycles,
+    _get_display_name,
+)
+
+# Imported as a MODULE, not as values. `from .plots import
+# figure_width_inches` binds the number at import time, so
+# `plots.set_figure_size()` moved the dQ/dV figures and left every cycling
+# figure at the old size — and the flattened notebook, having one namespace,
+# did the opposite. Two builds, two different sets of figures.
+from .style import (
+    bullet,
+    entry,
+    heading,
+    image_format,
+    nice_axis_limit,
+    rule,
+    saved,
+    section,
+    verdict,
+)
 
 __all__ = [
-    "voltage_profiles",
-    "cycling_summary",
-    "voltage_profiles_key",
-    "cycle_life",
-    "comparative_capacity",
-    "capacity_retention",
-    "fade_rate",
-    "power_and_energy",
-    "average_discharge_voltage",
-    "energy_efficiency",
-    "rate_capability",
-    "rate_protocol",
     "annotate_rate_protocol",
-    "rate_recovery",
+    "average_discharge_voltage",
+    "capacity_retention",
+    "comparative_capacity",
+    "cycle_life",
+    "cycling_summary",
     "describe_rate",
+    "energy_efficiency",
+    "fade_rate",
     "format_crate",
-    "snap_crate",
+    "power_and_energy",
+    "rate_capability",
     "rate_phrase",
+    "rate_protocol",
+    "rate_recovery",
+    "snap_crate",
+    "voltage_profiles",
+    "voltage_profiles_key",
 ]
 
 # Okabe-Ito, colourblind-safe. IMPORTED, not restated — `plots` is the one
@@ -313,7 +312,7 @@ def _caption_window_all(user_parameters, fallback=None):
             his.append(hi)
     if los:
         return min(los), max(his)
-    return fallback if fallback else (float("nan"), float("nan"))
+    return fallback or (float("nan"), float("nan"))
 
 
 def _has_tables(all_cycle_tables):
@@ -1571,7 +1570,7 @@ def cycling_summary(
         # --- v1.8: Print cell health diagnostics ---
         if _cell_flags:
             print(f"\n  {'!' * 60}")
-            print(f"  CELL HEALTH DIAGNOSTICS")
+            print("  CELL HEALTH DIAGNOSTICS")
             print(f"  {'!' * 60}")
             for severity, msg in _cell_flags:
                 if severity == "FAILURE":
@@ -1582,26 +1581,26 @@ def cycling_summary(
                     print(f"  ● WARNING: {msg}")
             if any(s == "FAILURE" for s, _ in _cell_flags):
                 print(
-                    f"\n  This cell has failed. Data after the failure "
-                    f"point is not meaningful."
+                    "\n  This cell has failed. Data after the failure "
+                    "point is not meaningful."
                 )
-                print(f"  Check the voltage profile to confirm the failure mode.")
+                print("  Check the voltage profile to confirm the failure mode.")
             elif any(s == "CRITICAL" for s, _ in _cell_flags):
                 print(
-                    f"\n  This cell shows signs of progressive "
-                    f"degradation beyond normal fading."
+                    "\n  This cell shows signs of progressive "
+                    "degradation beyond normal fading."
                 )
                 print(
-                    f"  If this pattern continues, expect cell "
-                    f"failure within the next 5-10 cycles."
+                    "  If this pattern continues, expect cell "
+                    "failure within the next 5-10 cycles."
                 )
 
             if not any(s == "FAILURE" for s, _ in _cell_flags):
                 print(
-                    f"\n  If cycling is still in progress, the final "
-                    f"partial cycle may skew"
+                    "\n  If cycling is still in progress, the final "
+                    "partial cycle may skew"
                 )
-                print(f"  these trends. Re-run on the completed dataset to confirm.")
+                print("  these trends. Re-run on the completed dataset to confirm.")
             print(f"  {'!' * 60}")
 
     if all_cycle_tables:
@@ -1760,9 +1759,7 @@ def voltage_profiles_key(
         for name, df in electrochemical_data.items():
             params = user_parameters.get(name, {})
             key_cycles = (
-                OVERRIDE_KEY_CYCLES
-                if OVERRIDE_KEY_CYCLES
-                else params.get("key_cycles", [])
+                OVERRIDE_KEY_CYCLES or params.get("key_cycles", [])
             )
 
             df_work = df.copy()
@@ -1803,7 +1800,7 @@ def voltage_profiles_key(
         charge_rate_c = params.get("charge_rate_c", "Unknown")
         colour_palette = params.get("colour_palette", "viridis_r")
         key_cycles = (
-            OVERRIDE_KEY_CYCLES if OVERRIDE_KEY_CYCLES else params.get("key_cycles", [])
+            OVERRIDE_KEY_CYCLES or params.get("key_cycles", [])
         )
         is_anode = params.get("anode_labels_swapped", False)
         dch_label = _discharge_label(params)
@@ -2506,7 +2503,7 @@ def comparative_capacity(
                 if spread_pct > 30:
                     # Adaptive label for the warning too
                     cap_word = _comparative_capacity_word()
-                    print(f"\n  ⚠ LOADING MISMATCH WARNING")
+                    print("\n  ⚠ LOADING MISMATCH WARNING")
                     print(
                         f"  Active material loadings vary by "
                         f"{spread_pct:.0f}% across datasets:"
@@ -2514,17 +2511,17 @@ def comparative_capacity(
                     for comp, val in loadings.items():
                         print(f"    {comp:<30} {val:.2f} mg/cm²")
                     print(
-                        f"  Specific capacity comparisons may "
-                        f"be misleading at different"
+                        "  Specific capacity comparisons may "
+                        "be misleading at different"
                     )
                     print(
-                        f"  loadings — electrochemical properties often "
-                        f"do not scale with mass loading"
+                        "  loadings — electrochemical properties often "
+                        "do not scale with mass loading"
                     )
-                    print(f"  (Cao et al., Nat. Nanotechnol. 14, 200-207, 2019).")
+                    print("  (Cao et al., Nat. Nanotechnol. 14, 200-207, 2019).")
                     print(
-                        f"  Consider comparing areal capacity "
-                        f"(mAh/cm², Cell 10) instead."
+                        "  Consider comparing areal capacity "
+                        "(mAh/cm², Cell 10) instead."
                     )
 
     print(rule())
@@ -3929,7 +3926,7 @@ def power_and_energy(
                     plt.close(fig)
 
                     # Print areal capacity summary
-                    print(f"\n  Areal capacity summary (cycle 2):")
+                    print("\n  Areal capacity summary (cycle 2):")
                     print(f"  {'Composition':<30} {'Loading':>10} {'Q_areal':>10}")
                     print(f"  {'':30} {'mg/cm²':>10} {'mAh/cm²':>10}")
                     print(f"  {'-' * 52}")
@@ -3954,7 +3951,7 @@ def power_and_energy(
 
             # --- Summary table ---
             print()
-            print(f"  Power, Energy & Areal Capacity Summary (final cycle)")
+            print("  Power, Energy & Areal Capacity Summary (final cycle)")
             print(
                 f"  {'Composition':<28} {'E/Wh kg':>10} "
                 f"{'E/Wh kg':>10} {'E/mWh cm2':>11} "
@@ -3999,7 +3996,7 @@ def power_and_energy(
                     f"{q_areal:>10} {last_cyc:>5}"
                 )
             print(f"  {'-' * 95}")
-            print(f"  Note: Half-cell data (vs metal counter electrode).")
+            print("  Note: Half-cell data (vs metal counter electrode).")
             print(f"  Energy and power reflect {_mat_word} material only.")
 
             # --- Export ---
@@ -4535,13 +4532,13 @@ def energy_efficiency(
             )
             if is_anode and mean_ee > 100:
                 print(
-                    f"    Note: EE >100% is expected for anode half-cells — "
-                    f"delithiation (discharge) voltage is higher than "
-                    f"lithiation (charge) voltage, so E_out > E_in."
+                    "    Note: EE >100% is expected for anode half-cells — "
+                    "delithiation (discharge) voltage is higher than "
+                    "lithiation (charge) voltage, so E_out > E_in."
                 )
                 print(
-                    f"    This is not an error; the energy balance is closed "
-                    f"by the Li/Na metal counter electrode."
+                    "    This is not an error; the energy balance is closed "
+                    "by the Li/Na metal counter electrode."
                 )
             print(
                 f"    Coulombic efficiency (cycles {EE_START_CYCLE}+): {mean_ce:.2f}%"
@@ -4559,12 +4556,12 @@ def energy_efficiency(
                         f"|1 - V_ratio| = {abs_hysteresis:.2f}%"
                     )
                     print(
-                        f"    Note: For anodes, V_ratio > 100% is expected "
-                        f"(the useful half-cycle occurs at higher voltage)."
+                        "    Note: For anodes, V_ratio > 100% is expected "
+                        "(the useful half-cycle occurs at higher voltage)."
                     )
                     print(
-                        f"    The deviation from 100% reflects the same "
-                        f"polarisation loss as in cathodes."
+                        "    The deviation from 100% reflects the same "
+                        "polarisation loss as in cathodes."
                     )
                 else:
                     print(
@@ -5133,7 +5130,7 @@ def annotate_rate_protocol(electrochemical_data, user_parameters, *, verbose=Tru
             )
             if proto.get("transition_cycles"):
                 print(
-                    f"      rate-transition cycle(s) not in any block: "
+                    "      rate-transition cycle(s) not in any block: "
                     + ", ".join(str(c) for c in proto["transition_cycles"])
                 )
         elif proto.get("label"):
@@ -5330,7 +5327,7 @@ def rate_recovery(
         fade_pct_per_cycle=100.0 * (np.exp(b_share) - 1.0),
         fade_se_pct=100.0 * se_b,
         residual_sd_pct=100.0 * s,
-        n_fit=int(len(fit)),
+        n_fit=len(fit),
         blocks_fitted=keys,
         q_recovery_pct=float(100.0 * obs / pre["Discharge_mAh_g"].mean()),
         observed=obs,

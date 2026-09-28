@@ -28,12 +28,12 @@ import numpy as np
 import pandas as pd
 
 __all__ = [
-    "Dataset",
-    "truncate_cycles",
-    "read_neware",
-    "apply_electrode_convention",
     "COLUMNS",
+    "Dataset",
+    "apply_electrode_convention",
     "file_sha256",
+    "read_neware",
+    "truncate_cycles",
 ]
 
 # Neware long names -> the short names used throughout. Anything not listed is

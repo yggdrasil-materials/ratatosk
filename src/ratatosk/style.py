@@ -29,21 +29,21 @@ import os
 import sys
 
 __all__ = [
-    "Style",
-    "S",
-    "supports_colour",
-    "set_colour",
-    "rule",
-    "heading",
-    "section",
-    "entry",
-    "verdict",
-    "bullet",
-    "RULE_WIDTH",
     "ENTRY_LINE_WIDTH",
+    "RULE_WIDTH",
+    "S",
+    "Style",
+    "bullet",
+    "entry",
+    "heading",
     "image_format",
-    "saved",
     "nice_axis_limit",
+    "rule",
+    "saved",
+    "section",
+    "set_colour",
+    "supports_colour",
+    "verdict",
 ]
 
 RULE_WIDTH = 76

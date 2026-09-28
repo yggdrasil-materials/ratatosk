@@ -29,29 +29,28 @@ in a spreadsheet three weeks later it is a bug report.
 from __future__ import annotations
 
 import base64
-import os
 import html
+import os
 import re
 
 import numpy as np
 import pandas as pd
 
 from .analyse import (
-    cycle_column,
-    cell_integrity_verdict,
-    UNATTRIBUTED_WITHHOLD_ABOVE,
     AREA_GROWTH_HEADROOM_PCT,
     AREA_LOWER_BOUND_REPORTABLE,
+    UNATTRIBUTED_WITHHOLD_ABOVE,
+    cell_integrity_verdict,
+    cycle_column,
 )
 from .style import CAPACITY_COLUMN_ALIASES
 
-
 __all__ = [
-    "build_report",
-    "write_report",
-    "build_run_summary",
-    "write_run_summary",
     "FIGURE_GUIDE",
+    "build_report",
+    "build_run_summary",
+    "write_report",
+    "write_run_summary",
 ]
 
 
@@ -157,7 +156,7 @@ footer{margin-top:56px;padding-top:16px;border-top:1px solid var(--rule);
 # AFTER `_esc`, so the input is already HTML-safe and this only re-introduces
 # the two tags the findings actually use.
 def _md_inline(t):
-    t = re.sub(r"\*\*(.+?)\*\*", r"<strong>\1</strong>", str(t), flags=re.S)
+    t = re.sub(r"\*\*(.+?)\*\*", r"<strong>\1</strong>", str(t), flags=re.DOTALL)
     return re.sub(r"`([^`]+?)`", r"<code>\1</code>", t)
 
 
@@ -312,7 +311,7 @@ def _facts(
             _hc = _pp.groupby(["step", "cycle"])[_cols].first().reset_index()
             for _st, _g in _hc.groupby("step"):
                 f["fit_quality"][str(_st)] = {c: float(_g[c].median()) for c in _cols}
-                f["fit_quality"][str(_st)]["n"] = int(len(_g))
+                f["fit_quality"][str(_st)]["n"] = len(_g)
                 f["fit_quality"][str(_st)]["height_worst"] = float(
                     _g["height_ratio"].min()
                 )
@@ -369,12 +368,12 @@ def _facts(
                 # does not hold. Count how many agree with the median's sign.
                 _same = int(((_k > 1.0) == (_k.median() > 1.0)).sum())
                 f["lineshape"][str(_st)] = dict(
-                    n=int(len(_g)),
+                    n=len(_g),
                     k=float(_k.median()),
                     k_lo=float(_k.min()),
                     k_hi=float(_k.max()),
                     same_sign=_same,
-                    n_k=int(len(_k)),
+                    n_k=len(_k),
                     at_bound=int(_g["asymmetry_at_bound"].sum()),
                     clipped=int(_g["asymmetry_k_clipped"].sum())
                     if "asymmetry_k_clipped" in _g
@@ -404,7 +403,7 @@ def _facts(
                     continue
                 f["lineshape"][str(_st)].update(
                     fwhm_bins=float(_v.median()),
-                    n_comp=int(len(_gb)),
+                    n_comp=len(_gb),
                     undersampled=int(_gb["width_undersampled"].fillna(False).sum())
                     if "width_undersampled" in _gb
                     else 0,
@@ -447,7 +446,7 @@ def _facts(
                 _med = float(_g["n"].median())
                 _refrow = _g[_g["cycle"] == _ref] if _ref is not None else _g.iloc[0:0]
                 f["component_census"][str(_st)] = dict(
-                    n_half_cycles=int(len(_g)),
+                    n_half_cycles=len(_g),
                     lo=int(_g["n"].min()),
                     hi=int(_g["n"].max()),
                     median=_med,
@@ -475,8 +474,8 @@ def _facts(
                 _bad = _g[_g["all_shoulder"]]
                 if len(_bad):
                     f["shoulder_only"][str(_st)] = dict(
-                        n=int(len(_bad)),
-                        total=int(len(_g)),
+                        n=len(_bad),
+                        total=len(_g),
                         first=int(_bad["cycle"].min()),
                         last=int(_bad["cycle"].max()),
                     )
@@ -498,7 +497,7 @@ def _facts(
                     _H.get("n_shoulders_coupled"), errors="coerce"
                 ).dropna()
                 f["identifiability"] = dict(
-                    n_half_cycles=int(len(_H)),
+                    n_half_cycles=len(_H),
                     median=float(_ppp.median()),
                     worst=float(_ppp.min()),
                     n_thin=int((_ppp < IDENTIFIABILITY_POINTS_PER_PARAM).sum()),
@@ -527,7 +526,7 @@ def _facts(
         _pp = parameters
         if "reliable" in getattr(_pp, "columns", []):
             _rel = _pp["reliable"].fillna(False).astype(bool)
-            _r = dict(n=int(len(_pp)), ok=int(_rel.sum()))
+            _r = dict(n=len(_pp), ok=int(_rel.sum()))
             if "reliability_reason" in _pp.columns:
                 _r["reasons"] = {
                     str(k): int(v)
@@ -614,7 +613,7 @@ def _facts(
         icol = cycle_column(t, ("Incomplete",))
         _cmax = t["Cycle"].max()
         f["n_cycles"] = int(_cmax) if pd.notna(_cmax) else None
-        good = t[t[icol] != True] if icol else t  # noqa: E712
+        good = t[t[icol] != True] if icol else t
         # A half-cycle the export caught mid-flight is not a measurement.
         f["in_progress"] = sorted(in_progress or ())
         f["partial_final"] = _trailing_partial(good, dcol, f["in_progress"])
@@ -745,12 +744,12 @@ def _facts(
         # that heading instead; listing it twice reads as two faults.
         _an = integrity[integrity["band"] == "ANOMALOUS"]
         if "over_theoretical" in _an:
-            _an = _an[_an["over_theoretical"] != True]  # noqa: E712
+            _an = _an[_an["over_theoretical"] != True]
         f["anomalous"] = _an.sort_values("parasitic_fraction", ascending=False)
         f["parasitic_total"] = float(integrity["parasitic_charge"].sum())
         f["plateau_total"] = float(integrity["plateau_charge"].sum())
         if "over_theoretical" in integrity:
-            ot = integrity["over_theoretical"] == True  # noqa: E712
+            ot = integrity["over_theoretical"] == True
             f["over_theoretical"] = integrity[ot].sort_values(
                 "capacity_ratio", ascending=False
             )
@@ -764,7 +763,7 @@ def _facts(
         # capacity without being mistaken for one. See the plateau finding.
         _sane_pl = pd.to_numeric(_sane_pl, errors="coerce")
         _nz = _sane_pl[_sane_pl.notna() & (_sane_pl > 0)]
-        f["plateau_n_half_cycles"] = int(len(_nz))
+        f["plateau_n_half_cycles"] = len(_nz)
         f["plateau_worst_mAh_g"] = float(_nz.max()) if len(_nz) else float("nan")
 
     # --- what was withheld ------------------------------------------------
@@ -2166,31 +2165,30 @@ def _sentences(f):
                     f"**{_m2.replace('_', ' ')}** — see below.",
                 )
             )
+        # The suspect/unknown caveat is now raised once, above, for
+        # either mechanism branch. What is left here is the all-clear,
+        # and it is only an all-clear when the table is in fact clean.
+        elif not _grey:
+            out.append(
+                (
+                    "ok",
+                    "No unaccounted charge",
+                    "Every half-cycle's reversed charge sat either on "
+                    "a two-phase plateau or at the voltage limit with "
+                    "the current tapering. Both are expected.",
+                )
+            )
         else:
-            # The suspect/unknown caveat is now raised once, above, for
-            # either mechanism branch. What is left here is the all-clear,
-            # and it is only an all-clear when the table is in fact clean.
-            if not _grey:
-                out.append(
-                    (
-                        "ok",
-                        "No unaccounted charge",
-                        "Every half-cycle's reversed charge sat either on "
-                        "a two-phase plateau or at the voltage limit with "
-                        "the current tapering. Both are expected.",
-                    )
+            out.append(
+                (
+                    "ok",
+                    "The rest is accounted for",
+                    "Setting aside the half-cycles named above, every "
+                    "half-cycle's reversed charge sat either on a "
+                    "two-phase plateau or at the voltage limit with "
+                    "the current tapering. Both are expected.",
                 )
-            else:
-                out.append(
-                    (
-                        "ok",
-                        "The rest is accounted for",
-                        "Setting aside the half-cycles named above, every "
-                        "half-cycle's reversed charge sat either on a "
-                        "two-phase plateau or at the voltage limit with "
-                        "the current tapering. Both are expected.",
-                    )
-                )
+            )
     if bands.get("too few records"):
         out.append(
             (
@@ -2511,8 +2509,8 @@ def _sentences(f):
                 f"Peaks are tracked against cycle {f['reference_cycle']}",
                 _sentence_case(f.get("reference_reason", ""))
                 + ". That cycle's peak list "
-                f"is fitted in every other cycle, so it decides what the "
-                f"whole dataset is measured against.",
+                "is fitted in every other cycle, so it decides what the "
+                "whole dataset is measured against.",
             )
         )
     bad_peaks = [s for s in f.get("tracked", []) if s.get("discontinuity_is_failure")]
@@ -2976,7 +2974,7 @@ def build_report(
     m += [f"| `{folder}` | {what} |" for folder, what in _FOLDERS]
     m += [
         "",
-        f"---",
+        "---",
         "",
         "Generated by Ratatosk. Every number above comes from the CSVs in "
         "the folders listed.",

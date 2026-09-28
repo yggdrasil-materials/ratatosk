@@ -51,38 +51,37 @@ from __future__ import annotations
 
 import os
 import time
+
 import numpy as np
-
-from .compat import trapezoid
-
-from lmfit.models import PseudoVoigtModel, PolynomialModel
 from lmfit import Model as _LMModel
+from lmfit.models import PolynomialModel, PseudoVoigtModel
 from scipy.special import erf
 
-from .style import entry, verdict, bullet, section
+from .compat import trapezoid
+from .style import bullet, entry, section, verdict
 
 __all__ = [
+    "FIT_TOLERANCE",
+    "PARALLEL_MAX_WORKERS",
+    "PARALLEL_MIN_SECONDS",
+    "WORKER_MEMORY_HEADROOM",
     "FitSpec",
-    "spec_for_profile",
-    "shoulder_parents",
-    "calibrate_shape",
+    "_describe_band_set",
+    "band_regions",
     "build_model",
+    "calibrate_shape",
+    "evaluate",
     "fit_half_cycle",
     "fit_many",
-    "evaluate",
     "fit_quality",
-    "band_regions",
-    "reconcile_band_sets",
-    "_describe_band_set",
-    "residual_excess_regions",
-    "plan_workers",
-    "release_workers",
     "measure_worker_cost_mb",
     "memory_budget_workers",
-    "PARALLEL_MIN_SECONDS",
-    "PARALLEL_MAX_WORKERS",
-    "FIT_TOLERANCE",
-    "WORKER_MEMORY_HEADROOM",
+    "plan_workers",
+    "reconcile_band_sets",
+    "release_workers",
+    "residual_excess_regions",
+    "shoulder_parents",
+    "spec_for_profile",
 ]
 
 # Below this estimated total, run serially. Measured on Windows/Anaconda: a

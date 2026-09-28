@@ -57,46 +57,41 @@ from __future__ import annotations
 import os
 import re
 
-import numpy as np
-import pandas as pd
-import matplotlib.pyplot as plt
-import matplotlib.cm as cm
 import matplotlib.colors as mcolors  # noqa: F401  (used by ported code)
 import matplotlib.patheffects as path_effects
-import matplotlib.ticker as mticker  # noqa: F401  (used by ported code)
-from matplotlib import gridspec
+import matplotlib.pyplot as plt
+import matplotlib.ticker as mticker
+import numpy as np
+import pandas as pd
+from matplotlib import cm, gridspec
 from matplotlib.colors import Normalize
 
 from . import fitting as _ft
 from .style import (
-    rule,
-    heading,
-    section,
-    entry,
-    verdict,
     bullet,
+    half_cycle_labels,
     image_format,
     saved,
-    half_cycle_labels,
+    section,
 )
 
 __all__ = [
+    "as_detected_peaks",
+    "as_fit_results",
+    "as_processed_dqdv",
+    "as_tracked",
+    "as_user_parameters",
+    "plot_capacity_attribution",
+    "plot_delta_v",
+    "plot_detected_peaks",
     "plot_dqdv_all_cycles",
+    "plot_dqdv_heatmap",
     "plot_dqdv_key_cycles_combined",
     "plot_dqdv_key_cycles_split",
     "plot_dqdv_waterfall",
-    "plot_dqdv_heatmap",
-    "plot_preprocessing_qc",
-    "plot_detected_peaks",
     "plot_fit_quality",
+    "plot_preprocessing_qc",
     "plot_tracked_trends",
-    "plot_delta_v",
-    "plot_capacity_attribution",
-    "as_processed_dqdv",
-    "as_detected_peaks",
-    "as_fit_results",
-    "as_tracked",
-    "as_user_parameters",
     "set_figure_size",
 ]
 
@@ -585,7 +580,7 @@ def plot_dqdv_all_cycles(
             f"galvanostatic cycles of "
         )
         caption = (
-            f"Figure X. Differential capacity (dQ/dV) vs. voltage "
+            "Figure X. Differential capacity (dQ/dV) vs. voltage "
             + _cov
             + f"{composition}, cycled between {v_min:.2f} and "
             f"{v_max:.2f} V at {charge_rate} C. Positive values "
@@ -984,7 +979,7 @@ def plot_dqdv_waterfall(
         if np.isfinite(v_lo) and np.isfinite(v_hi) and v_hi > v_lo:
             ax.set_xlim(v_lo, v_hi + 0.06 * (v_hi - v_lo))
 
-        _apply_pub_style(ax, ylabel=f"dQ/dV (offset) / mAh V$^{{-1}}$ g$^{{-1}}$")
+        _apply_pub_style(ax, ylabel="dQ/dV (offset) / mAh V$^{-1}$ g$^{-1}$")
         step_display = (
             _charge_label(params) if step == "Charge" else _discharge_label(params)
         )
@@ -2166,10 +2161,10 @@ def plot_tracked_trends(tracked, user_parameters, save_location=None, file_forma
                     + ", so the panel shows how the fitted area changes and "
                     "not how much charge the process carried, "
                 )
-                + f"and (c) full width at half maximum. Filled "
-                f"markers are cycles in which the fit met the reliability "
-                f"criteria; open markers are cycles in which it did not, and "
-                f"are shown for completeness but excluded from the trends. "
+                + "and (c) full width at half maximum. Filled "
+                "markers are cycles in which the fit met the reliability "
+                "criteria; open markers are cycles in which it did not, and "
+                "are shown for completeness but excluded from the trends. "
                 + f"{_BAND_NOTE} "
                 + (
                     "The width band is the standard errors on sigma and "
@@ -2531,8 +2526,8 @@ def plot_capacity_attribution(
                 + (
                     ""
                     if _cap_ok
-                    else f" The areas in panel (a) are NOT capacities on this "
-                    f"dataset" + (f" — {_cap_why}" if _cap_why else "") + "."
+                    else " The areas in panel (a) are NOT capacities on this "
+                    "dataset" + (f" — {_cap_why}" if _cap_why else "") + "."
                 )
             )
             plt.show()
@@ -2611,7 +2606,7 @@ class _FitView:
     `ModelResult` anywhere near a process boundary — see the module docstring.
     """
 
-    __slots__ = ("_result", "_voltage", "_comps", "best_fit")
+    __slots__ = ("_comps", "_result", "_voltage", "best_fit")
 
     def __init__(self, result, voltage):
         self._result = result

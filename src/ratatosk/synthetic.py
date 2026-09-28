@@ -31,11 +31,12 @@ doing its job.
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+
 import numpy as np
 
 from .compat import trapezoid
 
-__all__ = ["SyntheticHalfCycle", "make_case", "make_series", "CASES", "pseudo_voigt"]
+__all__ = ["CASES", "SyntheticHalfCycle", "make_case", "make_series", "pseudo_voigt"]
 
 
 # ---------------------------------------------------------------------------

@@ -51,15 +51,15 @@ the whole module costs to run.
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
 import warnings
+from dataclasses import dataclass, field
 
 import numpy as np
+import pandas as pd
+from scipy.signal import find_peaks, peak_prominences, peak_widths, savgol_filter
 
 from .compat import trapezoid
-from .style import entry, verdict, bullet
-import pandas as pd
-from scipy.signal import find_peaks, peak_widths, peak_prominences, savgol_filter
+from .style import bullet, entry, verdict
 
 # NOT `from scipy.signal import PeakPropertyWarning` — SciPy raises it but
 # does not re-export it from the package namespace (checked on 1.17), so that
@@ -74,39 +74,39 @@ except Exception:  # pragma: no cover - layout changed
 
 
 __all__ = [
-    "DetectSpec",
-    "Detection",
-    "detect_half_cycle",
-    "detect_all",
-    "choose_reference_cycle",
-    "detect_peaks_single",
-    "infer_missing_seeds",
-    "DEFAULT_REFERENCE_CYCLE",
-    "REFERENCE_CYCLE_AUTO",
-    "formation_end",
-    "CE_SETTLED_TOLERANCE_PP",
-    "CE_SETTLED_RUN",
-    "REFERENCE_CYCLE_FLOOR",
-    "REFERENCE_CYCLE_FALLBACK",
-    "REFERENCE_CYCLE_CEILING",
-    "CE_SETTLED_MIN_LATER",
     "CE_SETTLED_MAX_PCT",
-    "SOUND_BANDS",
-    "detect_spec_for_profile",
-    "PROFILE_MIN_DISTANCE_MV",
-    "PROFILE_MIN_WIDTH_MV",
-    "PROFILE_MIN_WIDTH_BY_CLASS",
-    "local_noise",
+    "CE_SETTLED_MIN_LATER",
+    "CE_SETTLED_RUN",
+    "CE_SETTLED_TOLERANCE_PP",
+    "DEFAULT_REFERENCE_CYCLE",
     "NOISE_FLOOR",
-    "NOISE_SNR_MIN",
     "NOISE_SHARE_MIN",
-    "recurrent_maxima",
+    "NOISE_SNR_MIN",
     "PHASE_INVARIANCE",
-    "phase_stable",
-    "add_recurrent_seeds",
-    "RECURRENCE_SEEDS",
+    "PROFILE_MIN_DISTANCE_MV",
+    "PROFILE_MIN_WIDTH_BY_CLASS",
+    "PROFILE_MIN_WIDTH_MV",
     "RECURRENCE_MIN_OCCUPANCY",
     "RECURRENCE_MIN_SHARE",
+    "RECURRENCE_SEEDS",
+    "REFERENCE_CYCLE_AUTO",
+    "REFERENCE_CYCLE_CEILING",
+    "REFERENCE_CYCLE_FALLBACK",
+    "REFERENCE_CYCLE_FLOOR",
+    "SOUND_BANDS",
+    "DetectSpec",
+    "Detection",
+    "add_recurrent_seeds",
+    "choose_reference_cycle",
+    "detect_all",
+    "detect_half_cycle",
+    "detect_peaks_single",
+    "detect_spec_for_profile",
+    "formation_end",
+    "infer_missing_seeds",
+    "local_noise",
+    "phase_stable",
+    "recurrent_maxima",
 ]
 
 
@@ -780,12 +780,7 @@ def _ensure_curve_maximum(peaks_df, voltage, signal, *, min_distance_mV):
         # it would be inventing a peak, which is the failure this whole
         # module is written against.
         return peaks_df
-    row = {
-        c: np.nan
-        for c in (
-            peaks_df.columns if peaks_df is not None and not peaks_df.empty else []
-        )
-    }
+    row = dict.fromkeys(peaks_df.columns if peaks_df is not None and not peaks_df.empty else [], np.nan)
     row.update(
         voltage=v_max,
         height=float(y[i]),
@@ -947,9 +942,8 @@ def _assess_truncation(
             visible = 0.0
         if visible >= visible_fraction_threshold:
             return True, False  # truncated but usable
-        else:
-            return False, True  # discard
-    elif near_lower and not near_upper:
+        return False, True  # discard
+    if near_lower and not near_upper:
         # Left side clipped — use right_hw as reference
         if right_hw > 0:
             visible = (left_hw + right_hw) / (2.0 * right_hw)
@@ -957,17 +951,15 @@ def _assess_truncation(
             visible = 0.0
         if visible >= visible_fraction_threshold:
             return True, False
-        else:
-            return False, True
-    elif near_lower and near_upper:
+        return False, True
+    if near_lower and near_upper:
         # Clipped on BOTH flanks: neither half-maximum is inside the window,
         # so the visible fraction cannot be measured at all. Certifying that
         # as "not truncated" was the one case where the most severely
         # truncated peak got the most confident label. Flag it and let the
         # fit proceed — its area is a lower bound.
         return True, False
-    else:
-        return False, False
+    return False, False
 
 
 def _shoulder_sigma(neg_d2, i):
@@ -997,7 +989,7 @@ def _shoulder_sigma(neg_d2, i):
     while L > 0 and neg_d2[L] > 0:
         L -= 1
     R = i
-    while R < n - 1 and neg_d2[R] > 0:
+    while n - 1 > R and neg_d2[R] > 0:
         R += 1
     if neg_d2[L] > 0 or neg_d2[R] > 0:
         return np.nan  # never crossed: the lobe runs off the window
@@ -1654,14 +1646,14 @@ class DetectSpec:
     """
 
     __slots__ = (
-        "prominence_fraction",
+        "edge_exclusion_mV",
         "min_distance_mV",
         "min_width_mV",
-        "shoulder_detection",
-        "shoulder_min_separation_mV",
-        "shoulder_height_fraction",
+        "prominence_fraction",
         "shoulder_d2_prominence_fraction",
-        "edge_exclusion_mV",
+        "shoulder_detection",
+        "shoulder_height_fraction",
+        "shoulder_min_separation_mV",
         "truncation_visible_fraction",
     )
 
@@ -2083,7 +2075,7 @@ def choose_reference_cycle(
     if not cycles:
         return default, "no cycles available", REF_BAD
     if exists_step is None:
-        exists_step = lambda c, s: True  # noqa: E731
+        exists_step = lambda c, s: True
 
     start, settled_why, settled_ok = default, None, False
     if auto and efficiency:
@@ -2564,7 +2556,7 @@ def add_recurrent_seeds(
                 if _share < float(share_tolerance) * float(feat["share"]):
                     continue
                 prom = float(peak_prominences(y, [int(near)])[0][0])
-                row = {col: np.nan for col in df.columns}
+                row = dict.fromkeys(df.columns, np.nan)
                 row.update(
                     voltage=float(v[near]),
                     height=float(y[near]),
@@ -2709,7 +2701,7 @@ def infer_missing_seeds(
                     if not (_lo <= float(found[near]) <= _hi):
                         infer_missing_seeds.refused += 1
                         continue
-                row = {col: np.nan for col in df.columns}
+                row = dict.fromkeys(df.columns, np.nan)
                 row.update(
                     voltage=found[near],
                     peak_id=int(df["peak_id"].max()) + 1,

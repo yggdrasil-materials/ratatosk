@@ -38,49 +38,49 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 
 import numpy as np
-
-from .compat import trapezoid
-from .style import entry, bullet
 import pandas as pd
 from scipy.signal import savgol_filter
 
+from .compat import trapezoid
+from .style import bullet, entry
+
 __all__ = [
-    "histogram_dqdv",
-    "dqdv_sign",
-    "DQDV_METHOD",
-    "terminal_trim",
-    "apply_terminal_trim",
-    "TERMINAL_TRIM",
-    "TERMINAL_TRIM_FIXED_MV",
-    "TERMINAL_TRIM_FACTOR",
-    "TERMINAL_TRIM_MAX_FRACTION",
-    "TERMINAL_TRIM_BAND_MV",
-    "histogram_bin_for_profile",
-    "HISTOGRAM_BIN_BY_PROFILE",
-    "histogram_smooth_for_profile",
-    "HISTOGRAM_SMOOTH_BY_PROFILE",
-    "DQDV_METHODS",
-    "Reversal",
-    "HalfCycleSignal",
-    "preprocess_half_cycle",
-    "voltage_window",
-    "reversals",
-    "half_cycle_report",
-    "classify_dqdv_profile",
-    "auto_preprocess_params",
-    "remove_spikes",
-    "smooth_dqdv",
-    "rebin_dqdv",
-    "strip_cv_hold",
-    "orient_dqdv",
-    "ORIENT_PLATEAU_RECORDS",
-    "rebin_sensitivity",
-    "plateau_structure",
-    "REBIN_WEIGHTED",
-    "EXCLUDE_CV_HOLD",
     "CV_CURRENT_FRACTION",
     "CV_DV_FRACTION",
     "CV_MIN_POINTS",
+    "DQDV_METHOD",
+    "DQDV_METHODS",
+    "EXCLUDE_CV_HOLD",
+    "HISTOGRAM_BIN_BY_PROFILE",
+    "HISTOGRAM_SMOOTH_BY_PROFILE",
+    "ORIENT_PLATEAU_RECORDS",
+    "REBIN_WEIGHTED",
+    "TERMINAL_TRIM",
+    "TERMINAL_TRIM_BAND_MV",
+    "TERMINAL_TRIM_FACTOR",
+    "TERMINAL_TRIM_FIXED_MV",
+    "TERMINAL_TRIM_MAX_FRACTION",
+    "HalfCycleSignal",
+    "Reversal",
+    "apply_terminal_trim",
+    "auto_preprocess_params",
+    "classify_dqdv_profile",
+    "dqdv_sign",
+    "half_cycle_report",
+    "histogram_bin_for_profile",
+    "histogram_dqdv",
+    "histogram_smooth_for_profile",
+    "orient_dqdv",
+    "plateau_structure",
+    "preprocess_half_cycle",
+    "rebin_dqdv",
+    "rebin_sensitivity",
+    "remove_spikes",
+    "reversals",
+    "smooth_dqdv",
+    "strip_cv_hold",
+    "terminal_trim",
+    "voltage_window",
 ]
 
 
@@ -224,23 +224,23 @@ def classify_dqdv_profile(df, verbose=True):
     if mean_iqr_frac < _SHARP_IQR_FRACTION or mean_plat_frac > 0.6:
         profile_class = "sharp"
         description = (
-            f"Sharp two-phase profile. "
-            f"Typical of LTO, LFP, or other flat-plateau materials. "
-            f"Spike removal disabled; smoothing window reduced."
+            "Sharp two-phase profile. "
+            "Typical of LTO, LFP, or other flat-plateau materials. "
+            "Spike removal disabled; smoothing window reduced."
         )
     elif mean_iqr_frac < _MODERATE_IQR_FRACTION or mean_plat_frac > 0.35:
         profile_class = "moderate"
         description = (
-            f"Moderate peak sharpness. "
-            f"Mixed or moderately defined phase transitions. "
-            f"Spike threshold raised; smoothing window reduced."
+            "Moderate peak sharpness. "
+            "Mixed or moderately defined phase transitions. "
+            "Spike threshold raised; smoothing window reduced."
         )
     else:
         profile_class = "broad"
         description = (
-            f"Broad solid-solution profile. "
-            f"Typical of layered oxides (NMC, NNM, etc.). "
-            f"Standard preprocessing applied."
+            "Broad solid-solution profile. "
+            "Typical of layered oxides (NMC, NNM, etc.). "
+            "Standard preprocessing applied."
         )
 
     out = {

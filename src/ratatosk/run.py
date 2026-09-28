@@ -36,21 +36,21 @@ import platform
 import re
 import shutil
 import sys
+from datetime import UTC, datetime
 
 from .style import WORKING_ION_WORDS
-from datetime import datetime, timezone
 
 __all__ = [
-    "start_run",
-    "write_manifest",
-    "finalise_run",
-    "freeze_run",
     "dataset_folder",
     "dataset_folders",
-    "organise_run",
-    "write_dataset_info",
     "default_flags",
+    "finalise_run",
+    "freeze_run",
+    "organise_run",
+    "start_run",
     "subfolders",
+    "write_dataset_info",
+    "write_manifest",
 ]
 
 FREEZE_ROOT_NAME = "published"  # frozen runs live here, never overwritten
@@ -165,16 +165,16 @@ def default_flags():
     out = {}
     try:
         from . import (
-            signal,
+            analyse,
+            cycling,
             detect,
             fitting,
-            quality,
-            analyse,
-            plots,
-            cycling,
             io,
             params,
+            plots,
+            quality,
             report,
+            signal,
         )  # inline-ok: the notebook
 
         # has no package, raises ImportError here, and the `except` below
@@ -269,7 +269,8 @@ def _package_versions():
     'not installed' and 'import failed' are now distinguished, because
     'not loaded' read as "we did not check" when it meant "it was not there".
     """
-    import importlib, importlib.util
+    import importlib
+    import importlib.util
 
     out = {}
     for mod in (
@@ -317,7 +318,7 @@ def start_run(base_location, version, input_paths=None, note="", flags=None):
                     "name": os.path.basename(p),
                     "bytes": st.st_size,
                     "modified": datetime.fromtimestamp(
-                        st.st_mtime, timezone.utc
+                        st.st_mtime, UTC
                     ).isoformat(),
                     "sha256": _sha256(p),
                 }
@@ -328,7 +329,7 @@ def start_run(base_location, version, input_paths=None, note="", flags=None):
     manifest = {
         "run_id": run_id,
         "ratatosk_version": version,
-        "started_utc": datetime.now(timezone.utc).isoformat(),
+        "started_utc": datetime.now(UTC).isoformat(),
         "note": note,
         "operator": getpass.getuser(),
         "machine": platform.node(),
@@ -642,7 +643,7 @@ def finalise_run(
             )
 
     manifest["outputs"] = files
-    manifest["finished_utc"] = datetime.now(timezone.utc).isoformat()
+    manifest["finished_utc"] = datetime.now(UTC).isoformat()
     manifest["status"] = "complete"
 
     # Re-read the flags at the end. In 1.8.7 this mattered because start_run

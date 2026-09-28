@@ -78,34 +78,33 @@ import pandas as pd
 
 # The one definition of "this half-cycle is unfinished", shared with the
 # cycling tables so the fit and the headline metrics omit the same thing.
-
 from scipy.optimize import linear_sum_assignment
 from scipy.special import erf
 
 from .quality import PARTITION_DETERMINED_BELOW, UNATTRIBUTED_QUALIFIED_ABOVE
-from .style import section, entry, verdict, bullet, CAPACITY_COLUMN_ALIASES
+from .style import CAPACITY_COLUMN_ALIASES, bullet, entry, section, verdict
 
 __all__ = [
-    "parameters_frame",
-    "Tracking",
-    "track_peaks",
-    "DeltaV",
-    "delta_v",
-    "capacity_attribution",
-    "coherence_audit",
-    "Integrity",
-    "classify_reversals",
-    "half_cycle_integrity",
-    "cell_integrity_verdict",
-    "integrity_report",
-    "last_useful_cycle",
-    "half_cycles_in_progress",
-    "TRACKING_TOLERANCE_MV",
-    "TRACK_AGAINST_PREVIOUS_CYCLE",
+    "ATTRIBUTION_WITHHOLD_ABOVE",
     "INTEGRAL_FIDELITY_CEILING",
     "PAIR_MAX_SEPARATION_MV",
     "PLATEAU_DQDV_FRACTION",
-    "ATTRIBUTION_WITHHOLD_ABOVE",
+    "TRACKING_TOLERANCE_MV",
+    "TRACK_AGAINST_PREVIOUS_CYCLE",
+    "DeltaV",
+    "Integrity",
+    "Tracking",
+    "capacity_attribution",
+    "cell_integrity_verdict",
+    "classify_reversals",
+    "coherence_audit",
+    "delta_v",
+    "half_cycle_integrity",
+    "half_cycles_in_progress",
+    "integrity_report",
+    "last_useful_cycle",
+    "parameters_frame",
+    "track_peaks",
 ]
 
 
@@ -1121,7 +1120,7 @@ def parameters_frame(
     # edge falls on the far side of the centre from the flank it belongs to.
     _z_lo_r = ((P["window_v_min"] - P["centre"]) / _sig_r).astype(float)
     _z_hi_l = ((P["window_v_max"] - P["centre"]) / _sig_l).astype(float)
-    _phi = lambda z: 0.5 * (1.0 + erf(z / np.sqrt(2.0)))  # noqa: E731
+    _phi = lambda z: 0.5 * (1.0 + erf(z / np.sqrt(2.0)))
     _w = (_sig_l + _sig_r).replace(0.0, np.nan)
     _below = _sig_l * (_phi(np.minimum(_z_hi_l, 0.0)) - _phi(np.minimum(_z_lo, 0.0)))
     _above = _sig_r * (_phi(np.maximum(_z_hi, 0.0)) - _phi(np.maximum(_z_lo_r, 0.0)))
@@ -1828,7 +1827,7 @@ def capacity_retention_pct(cycle_table, reference_cycle=None):
     if dcol is None:
         return np.nan
     icol = cycle_column(t, ("Incomplete",))
-    good = t[t[icol] != True] if icol else t  # noqa: E712
+    good = t[t[icol] != True] if icol else t
     good = good[good["Cycle"].notna()].sort_values("Cycle")
     if reference_cycle is not None:
         good = good[good["Cycle"] >= float(reference_cycle)]
@@ -2792,8 +2791,8 @@ def capacity_attribution(
                     f"split stops being determined by the data."
                 )
                 print(
-                    f"      The fitted areas are still in the table; the "
-                    f"SHARE of capacity is not a measurement here."
+                    "      The fitted areas are still in the table; the "
+                    "SHARE of capacity is not a measurement here."
                 )
             rep = A[~A["attribution_withheld"]]
             if rep.empty:
@@ -2888,7 +2887,7 @@ def coherence_audit(
     P = params_df
     if P is None or P.empty:
         return pd.DataFrame()
-    rel = P[P["reliable"] == True] if "reliable" in P else P  # noqa: E712
+    rel = P[P["reliable"] == True] if "reliable" in P else P
     tol = COHERENCE_BAND_TOL_MV / 1000.0
 
     # A PAIR THAT CROSSES A RATE CHANGE IS NOT A PAIR. This audit compares
@@ -3406,7 +3405,7 @@ def cell_integrity_verdict(integrity, *, reference_cycle=None, n_cycles=None):
             "this reads, so it could not be assessed"
         )
         return out
-    out["n_total"] = int(len(d))
+    out["n_total"] = len(d)
     # FLAGGED means the run itself said something was wrong here — the bands
     # it escalates on, plus anything over theoretical, which is the physical
     # impossibility and is not always escalated (see `classify_integrity`).
@@ -3435,7 +3434,7 @@ def cell_integrity_verdict(integrity, *, reference_cycle=None, n_cycles=None):
     out["n_over_theoretical_within_tolerance"] = int((_over & ~_escalated).sum())
     flag = d["band"].astype(str).eq("ANOMALOUS") | _over.fillna(False)
     f = d[flag]
-    out["n_flagged"] = int(len(f))
+    out["n_flagged"] = len(f)
     if f.empty:
         out["verdict"] = "sound"
         out["sentence"] = (
@@ -3999,8 +3998,8 @@ def integrity_report(signals, *, window, name="", verbose=True, **kw):
         bad = R[R["band"] == "ANOMALOUS"].sort_values(
             "parasitic_fraction", ascending=False
         )
-        over = R[R["over_theoretical"] == True]  # noqa: E712
-        sane = R[R["over_theoretical"] != True]  # noqa: E712
+        over = R[R["over_theoretical"] == True]
+        sane = R[R["over_theoretical"] != True]
         print(
             entry(
                 "half-cycles",

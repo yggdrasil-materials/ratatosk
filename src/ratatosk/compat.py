@@ -35,11 +35,11 @@ import sys
 
 import numpy as np
 
-__all__ = ["trapezoid", "check_environment", "TESTED_AGAINST", "PYTHON_MINIMUM"]
+__all__ = ["PYTHON_MINIMUM", "TESTED_AGAINST", "check_environment", "trapezoid"]
 
 # `np.trapezoid` on numpy >= 2, `np.trapz` before it. Identical signature and
 # identical results; only the name changed.
-trapezoid = getattr(np, "trapezoid", None) or getattr(np, "trapz")
+trapezoid = getattr(np, "trapezoid", None) or np.trapz
 
 # What this pipeline has actually been run against. Not a hard requirement —
 # see the module docstring — but the numbers a bug report should quote.
