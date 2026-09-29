@@ -1,18 +1,22 @@
 [project]
-site_url = "https://www.example.com/"
-site_name = "Documentation"
-# site_description = "Your project description"
+site_url = "https://yggdrasil-materials.github.io/ratatosk/"
+site_name = "Ratatosk"
+site_description = "Validated electrochemical data-processing, analysis and integrity tool for battery research."
 # site_author = "Your name"
 
-# copyright = "Copyright &copy; 2026 Your name"
+copyright = "Copyright &copy; 2026 Nik Reeves-McLaren"
 
-# repo_url = "https://github.com/user/repo"
+repo_url = "https://github.com/yggdrasil-materials/ratatosk"
 # repo_name = "user/repo"
 # edit_uri = "edit/main/docs/"
 
 nav = [
-  { "Get started" = "index.md" },
-  { "Markdown in 5min" = "markdown.md" },
+  { "Overview" = "index.md" },
+  { "Installation" = "install.md" },
+  { "Contributing" = "contributing.md" },
+  { "Usage" = "usage.md" },
+  { "Science" = "science.md"},
+  { "API" = "api/index.md" }
 ]
 
 # extra_css = ["stylesheets/extra.css"]
@@ -78,9 +82,9 @@ scheme = "slate"
 toggle.icon = "lucide/moon"
 toggle.name = "Switch to system preference"
 
-# [[project.extra.social]]
-# icon = "fontawesome/brands/github"
-# link = "https://github.com/user/repo"
+[[project.extra.social]]
+icon = "fontawesome/brands/github"
+link = "https://github.com/yggdrasil-materials/ratatosk/"
 
 # [[project.extra.social]]
 # icon = "fontawesome/brands/mastodon"

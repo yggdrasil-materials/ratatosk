@@ -189,3 +189,6 @@ Thumbs.db
 
 # data
 data/
+
+# Misc
+docs/markdown.md
