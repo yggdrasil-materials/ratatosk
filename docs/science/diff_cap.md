@@ -1,4 +1,4 @@
-# Differential Capacity Analysis
+# Differential Capacity
 
 ## What a dQ/dV curve is
 
@@ -22,7 +22,7 @@ $$
 
 The derivative is therefore only as good as the voltage record. Where the cell
 sits on a flat plateau, $dV$ between consecutive records is small; where it is
-smaller than the instrument's voltage resolution, $\frac{dQ}{dV} is not a
+smaller than the instrument's voltage resolution, $\frac{dQ}{dV}$ is not a
 measurement of anything. This is the single largest limitation of the technique
 and §A4 returns to it.
 
