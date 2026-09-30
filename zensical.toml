@@ -12,15 +12,24 @@ repo_url = "https://github.com/yggdrasil-materials/ratatosk"
 
 nav = [
   { "Overview" = "index.md" },
-  { "Installation" = "install.md" },
-  { "Contributing" = "contributing.md" },
-  { "Usage" = "usage.md" },
-  { "Science" = "science.md"},
-  { "API" = "api/index.md" }
+  "install.md",
+  "contributing.md",
+  "usage.md",
+  { "Science" = [
+      "science/index.md",
+      "science/diff_cap.md",
+    ],
+  },
+  "api/index.md",
+  "glossary.md",
+  "science/ref.md"
 ]
 
 # extra_css = ["stylesheets/extra.css"]
-# extra_javascript = ["javascripts/extra.js"]
+extra_javascript = [
+  "javascripts/extra.js",
+  "https://unpkg.com/mathjax@3/es5/tex-mml-chtml.js",
+]
 
 [project.theme]
 # variant = "classic"

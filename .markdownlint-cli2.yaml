@@ -13,6 +13,7 @@ globs:
   - "**/*.md"
 
 ignores:
+  - "docs/index.md" # First line isn't h1 ('#') so always get a complaint
   - "tmp/"
   - "paper.md"
   - ".venv/"
