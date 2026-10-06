@@ -23,6 +23,7 @@ from __future__ import annotations
 import hashlib
 import os
 from dataclasses import dataclass, field, replace
+from pathlib import Path
 
 import numpy as np
 import pandas as pd
@@ -60,7 +61,7 @@ _STEP_NAMES = {
 }
 
 
-def file_sha256(path, block=1 << 20):
+def file_sha256(path: str | Path, block=1 << 20):
     h = hashlib.sha256()
     with open(path, "rb") as fh:
         for chunk in iter(lambda: fh.read(block), b""):
@@ -366,38 +367,34 @@ def preferred_engine():
         return "openpyxl"
 
 
-def open_workbook(path):
+def open_xlsx(path: str | Path) -> dict[str, pd.DataFrame]:
     """
-    Open one export once, for both sheets that are read out of it.
-
-    Returns `(ExcelFile, engine)`. The caller is responsible for closing it;
-    `Dataset` holds no reference to it, so it can be closed as soon as both
-    sheets have been read.
+    Open a `.xls[x]` spreadsheet and read all sheets.
 
     Raises rather than returning None. A workbook that cannot be opened at
     all is a different failure from one that has no 'test' sheet, and the
     two were indistinguishable while both were caught by the same
     `except Exception` inside the metadata reader.
-    """
-    engine = preferred_engine()
-    import warnings as _w
 
-    with _w.catch_warnings():
-        _w.filterwarnings("ignore", message=".*no default style.*")
-        try:
-            return pd.ExcelFile(path, engine=engine), engine
-        except Exception as exc:
-            if engine == "calamine":
-                # calamine is the faster reader, not the more tolerant one.
-                # Fall back before giving up on the file.
-                try:
-                    return pd.ExcelFile(path, engine="openpyxl"), "openpyxl"
-                except Exception:
-                    pass
-            raise OSError(
-                f"could not open {os.path.basename(path)} as an Excel "
-                f"workbook ({engine}): {exc}"
-            ) from exc
+    Parameters
+    ----------
+    path : pd.Excelfile, str
+        Returns a class for parsing the given Excel file and the engine name.
+
+    Returns
+    -------
+
+    dict[str, pd.DataFrame]
+    `(ExcelFile, engine)`. The caller is responsible for closing it;
+    `Dataset` holds no reference to it, so it can be closed as soon as both
+    sheets have been read.
+
+    """
+    try:
+        with pd.ExcelFile(path, engine="calamine") as xls:
+            return {sheet: pd.read_excel(xls, sheet) for sheet in xls.sheet_names}
+    except OSError as e:
+        raise (f"Could not open {path!s} as an Excel workbook.") from e
 
 
 def read_neware(

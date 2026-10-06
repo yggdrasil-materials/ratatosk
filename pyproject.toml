@@ -80,7 +80,7 @@ dev = [
 
 [tool.pytest]
 minversion = "9.1"
-addopts = ["-ra", "--showlocals --cov"]
+addopts = ["-ra", "--showlocals", "--cov"]
 strict = true
 filterwarnings = [
   "error",
@@ -187,3 +187,25 @@ possibly-unresolved-reference = "warn"
 
 [tool.hatch.version]
 source = "uv-dynamic-versioning"
+
+[tool.numpydoc_validation]
+checks = [
+  "all", # Perform all check except those listed below
+  "ES01",
+  "EX01",
+  "PR10", # Conflicts with black formatting
+  "SA01",
+]
+exclude = [  # don't report on objects that match any of these regex
+    "\\.undocumented_method$",
+    "\\.__repr__$",
+    "^test_",
+    "^conftest",
+    "^conf$",
+    "^noxfile.py$",
+]
+override_SS05 = [  # override SS05 to allow docstrings starting with these words
+    "^Process ",
+    "^Assess ",
+    "^Access ",
+]
