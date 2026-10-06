@@ -1,0 +1,5 @@
+# Ratatosk default configuration file
+base_dir: ./ # Base directory where code is being run
+output_dir: ./output # Where to save output to
+log_level: info # Verbosity used in logging
+cores: 2 # Number of cores to use when processing

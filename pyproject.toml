@@ -30,11 +30,13 @@ classifiers = [
 dependencies = [
   "joblib>=1.6",
   "lmfit>=1.3",
-  "loguru",
+  "loguru>=0.7.3",
   "matplotlib>=3.11",
   "numpy>=2.5",
+  "pydantic>=2.13.5",
   "python-calamine>=0.8",
   "psutil>=7.2",
+  "ruamel.yaml>=0.19.1",
   "scipy>=1.18",
   "seaborn>=0.13",
 ]
@@ -119,7 +121,14 @@ disallow_untyped_defs = false
 disallow_incomplete_defs = false
 
 [[tool.mypy.overrides]]
-module = "ratatosk.*"
+module = [
+  "loguru.*",
+  "numpy.*",
+  "pandas.*",
+  "pydantic.*",
+  "ratatosk.*",
+  "syrupy.*",
+]
 disallow_untyped_defs = true
 disallow_incomplete_defs = true
 

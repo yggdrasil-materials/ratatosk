@@ -21,12 +21,20 @@ The label is for humans; the measurement is for arithmetic.
 from __future__ import annotations
 
 import hashlib
+from argparse import Namespace
 from dataclasses import dataclass, field, replace
+from datetime import datetime
 from pathlib import Path
+from typing import Any
 
 import numpy as np
 import pandas as pd
 from loguru import logger
+from pydantic import RootModel
+from ruamel.yaml import YAML
+
+from ratatosk import CONFIG_DOCUMENTATION_REFERENCE
+from ratatosk.classes import Parameters
 
 # Neware long names -> the short names used throughout. Anything not listed is
 # carried through untouched: Current(A) in particular is needed by the
@@ -65,6 +73,140 @@ def file_sha256(path: str | Path, block: int = 1 << 20) -> str:
         for chunk in iter(lambda: fh.read(block), b""):
             h.update(chunk)
     return h.hexdigest()
+
+
+def read_yaml(filename: str | Path) -> Any:
+    """
+    Read a YAML file.
+    Parameters
+    ----------
+    filename : Union[str, Path]
+        YAML file to read.
+    Returns
+    -------
+    Any
+        Dictionary of the file.
+    """
+    with Path(filename).open(encoding="utf-8") as f:
+        yaml = YAML(typ="safe")
+        return yaml.load(f)
+
+
+def convert_path(path: str | Path) -> Path:
+    """
+    Ensure path is Path object.
+    Parameters
+    ----------
+    path : str | Path
+        Path to be converted.
+    Returns
+    -------
+    Path
+        Pathlib object of path.
+    """
+    return Path().cwd() if path == "./" else Path(path).expanduser()
+
+
+def dict_to_yaml(obj: Any) -> Any:
+    """
+    Clean a dictionary to basic data types for writing to YA
+    Parameters
+    ----------
+    obj : Any
+        An object for converting to basic data types.
+    Returns
+    -------
+    Any
+        ``obj`` as ``str``, ``int``, ``float``, ``bool``, ``
+    """
+    # Recurse on dictionaries
+    if isinstance(obj, dict):
+        new = {}
+        for k, v in obj.items():
+            key = k if isinstance(k, str) else str(k)
+            new[key] = dict_to_yaml(v)
+        return new
+    # Recurse on lists and tuples
+    if isinstance(obj, (list, tuple)):
+        return [dict_to_yaml(x) for x in obj]
+    # Safe types return as is
+    if isinstance(obj, (str, int, float, bool)) or obj is None:
+        return obj
+    # Convert Path -> string
+    if isinstance(obj, Path):
+        return str(obj)
+    # Convert numpy array -> nested lists
+    if isinstance(obj, np.ndarray):
+        return obj.tolist()
+    # Convert numpy scalar -> native Python scalar
+    if isinstance(obj, np.generic):
+        return obj.item()
+    # If nothing else is matched use string representation
+    return str(obj)
+
+
+def write_config(args: Namespace | dict[str, Any] | Parameters | None) -> None:
+    """
+    Write a configuration file to YAML.
+    Parameters
+    ----------
+    args : Namespace | dict[str, Any], optional
+        A Namespace object parsed from argparse. If there are values for ``output_dir`` and ``filename`` these will be
+        used to construct the path and filename to write the YAML file to.  If not then output files are contingent on
+        how the function is being called. If it is from ``ratatosk create_config`` then ``default_config.yaml`` will be
+        written. If it is at the end of processing then ``config_YY-MM-DD-hhmmss.yaml`` will be used.
+    """
+    # If args is `Namespace` then we are writing config with 'ratatosk create_config' subcommand
+    if isinstance(args, Namespace):
+        output_dir = Path("./") if args.output_dir is None else Path(args.output_dir)
+        config = vars(Parameters())
+        filename = "default_config.yaml" if args.filename is None else args.filename
+    # Otherwise we are writing after 'ratatosk optimise' and config is a dictionary, this won't have a 'filename'
+    # key/value pair
+    elif isinstance(args, dict):
+        output_dir = (
+            Path("./") if args["output_dir"] is None else Path(args["output_dir"])
+        )
+        filename = f"config_{get_date_time(strftime='%Y-%m-%d-%H%M%S')}.yaml"
+        config = args
+    # If we have 'Parameters' then configuration is stored as a dataclass and we again don't have 'filename' key/value pair
+    elif isinstance(args, Parameters):
+        output_dir = Path("./") if args.output_dir is None else Path(args.output_dir)  # type: ignore[redundant-expr]
+        filename = f"config_{get_date_time(strftime='%Y-%m-%d-%H%M%S')}.yaml"
+        config = RootModel[Parameters](args).model_dump()
+    else:
+        msg = f"args is neither 'Namespace', 'dict' or 'Parameters' : {type(args)}"
+        raise TypeError(msg)
+    if ".yaml" not in str(filename) and ".yml" not in str(filename):
+        config_path = output_dir / f"{filename}.yaml"
+    else:
+        config_path = output_dir / filename
+    logger_msg = "A sample configuration has been written to"
+    with config_path.open("w", encoding="utf-8") as f:
+        try:
+            f.write(f"# Config generated {get_date_time()}\n")
+            f.write(f"{CONFIG_DOCUMENTATION_REFERENCE}")
+            yaml_out = YAML()
+            yaml_out.indent(sequence=4, offset=2)
+            yaml_out.dump(dict_to_yaml(config), f)
+            logger.info(f"{logger_msg} : {config_path!s}")
+        except:  # noqa: E722, pylint: disable=W0702
+            logger.error(f"Failed to write config to : {config_path}")
+
+
+def get_date_time(strftime: str = "%Y-%m-%d %H:%M:%S") -> str:
+    """
+    Get the current date-time as a string for the systems current timezone.
+    Parameters
+    ----------
+    strftime : str
+        String for formatting date-time, default is ``%Y-%m-%d %H:%M:%S``.
+    Returns
+    -------
+    str
+        Date-time as a string for systems current timezone.
+    """
+    return datetime.now(tz=datetime.now().astimezone().tzinfo).strftime(strftime)
 
 
 @dataclass
@@ -441,7 +583,7 @@ def read_neware(
         Electrode type, options are `Positive` (default) and `Negative`.
     meta: str | None = None,
         ???
-    columns : dict, optionall
+    columns : dict, optional
         Dictionary for renaming columns. If `None` a default is used.
 
     Returns

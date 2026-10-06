@@ -20,3 +20,9 @@ else:
     RATATOSK_COMMIT = ""
 
 __all__ = ["__version__"]
+
+# pylint: disable=invalid-name
+CONFIG_DOCUMENTATION_REFERENCE = """# For more information on configuration and how to use it:
+# https://yggrdrasil-materials.github.io/ratatosk/\n"""
+CONFIG_DOCUMENTATION_REFERENCE += f"# Layopt version : {RATATOSK_BASE_VERSION}\n"
+CONFIG_DOCUMENTATION_REFERENCE += f"# Commit: {RATATOSK_COMMIT}\n"
