@@ -1,13 +1,31 @@
 """Tests of the io module."""
 
+import argparse
 from pathlib import Path
+from pkgutil import get_data
+from typing import Any
 
 import pytest
+from ruamel.yaml import YAML, YAMLError
+from ruamel.yaml.scanner import ScannerError
 
 from ratatosk import io
 
 BASE_DIR = Path.cwd()
 RESOURCES = BASE_DIR / "tests" / "resources"
+
+default_config = get_data(package="ratatosk", resource="default_config.yaml")
+yaml = YAML(typ="safe")
+DEFAULT_CONFIG = yaml.load(default_config)
+CONFIG = {
+    "this": "is",
+    "a": "test",
+    "yaml": "file",
+    "numbers": 123,
+    "logical": True,
+    "nested": {"something": "else"},
+    "a_list": [1, 2, 3],
+}
 
 
 @pytest.mark.parametrize(
@@ -34,6 +52,66 @@ def test_file_sha256(fixture_str, expected_hash: str, request) -> None:
     """Test `io.file_sha156()` function."""
     path = request.getfixturevalue(fixture_str)
     assert io.file_sha256(str(path)) == expected_hash
+
+
+def test_convert_path(tmp_path: Path) -> None:
+    """Test ``convert_path()``."""
+    test_dir = str(tmp_path)
+    converted_path = io.convert_path(test_dir)
+    assert isinstance(converted_path, Path)
+    assert tmp_path == converted_path
+
+
+def test_read_yaml() -> None:
+    """Test reading of YAML files using ``read_yaml()``."""
+    # Dummy config for testing 'read_yaml()'
+    sample_config = io.read_yaml(RESOURCES / "test.yaml")
+    assert sample_config == CONFIG
+
+
+@pytest.mark.parametrize(
+    ("filename", "expected_error"),
+    [
+        pytest.param(
+            RESOURCES / "does_not_exist.yaml", FileNotFoundError, id="FileNotFoundError"
+        ),
+        pytest.param(RESOURCES / "not.yaml", ScannerError, id="ScannerError"),
+        pytest.param(
+            RESOURCES / "duplicate_keys.yaml",
+            YAMLError,
+            id="YAMLError (duplicate keys)",
+        ),
+        pytest.param(
+            RESOURCES / "mixed_indentation.yaml",
+            YAMLError,
+            id="YAMLError (mixed indentation)",
+        ),
+    ],
+)
+def test_read_yaml_exceptions(filename: Path, expected_error: Any) -> None:
+    """Test ``read_yaml()`` raises different exceptions."""
+    with pytest.raises(expected_error):
+        io.read_yaml(filename=filename)
+
+
+@pytest.mark.parametrize(
+    ("args"),
+    [
+        pytest.param(argparse.Namespace(filename=None), id="no filename"),
+        pytest.param(
+            argparse.Namespace(filename="another_config.yaml"),
+            id="alternative filename",
+        ),
+    ],
+)
+def test_write_config(args: argparse.Namespace, tmp_path: Path) -> None:
+    """Test writing of YAML configuration file using ``write_config()``."""
+    args.output_dir = tmp_path
+    io.write_config(args)
+    if args.filename is None:
+        assert Path(tmp_path / "default_config.yaml").exists()
+    else:
+        assert Path(tmp_path / args.filename).exists()
 
 
 def test_dataset() -> None:

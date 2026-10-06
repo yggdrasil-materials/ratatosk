@@ -1,0 +1,27 @@
+# Ratatosk default data dictionary
+#
+# This file defines core static variables such as column names for a given file type
+neware:
+  columns: # Mapping long column names in output to short used in analysis
+    -"Cycle Index": "Cycle"
+    -"Step Type": "Step"
+    -"Voltage(V)": "Voltage"
+    -"Chg. Spec. Cap.(mAh/g)": "Charge_Capacity"
+    -"DChg. Spec. Cap.(mAh/g)": "Discharge_Capacity"
+    -"dQm/dV(mAh/V.g)": "dQ/dV"
+  numeric: # Numeric columns
+    - "Cycle"
+    - "Voltage"
+    - "Charge_Capacity"
+    - "Discharge_Capacity"
+    - "dQ/dV"
+  # ns-rse 2026-10-06 - Can likely do away with this and use regex to determine charge/discharge, based on below the
+  # presence of 'D' indicates "Discharge", otherwise state is "Charge" (do it case-insensitive just to be sure)
+  step_names: # Mapping step names in exported output to Charge/Discharge
+    "CCCV Chg": "Charge"
+    "CCCV CHG": "Charge"
+    "CC Chg": "Charge"
+    "CC CHG": "Charge"
+    "CC DChg": "Discharge"
+    "CC DCHG": "Discharge"
+    "CCCV DChg": "Discharge"
