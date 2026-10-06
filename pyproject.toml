@@ -127,6 +127,7 @@ module = [
   "pandas.*",
   "pydantic.*",
   "ratatosk.*",
+  "ruamel.yaml.*",
   "syrupy.*",
 ]
 disallow_untyped_defs = true
