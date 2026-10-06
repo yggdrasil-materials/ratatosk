@@ -9,7 +9,6 @@ from importlib.metadata import version
 
 from packaging.version import Version
 
-__all__ = ["__version__"]
 __version__ = version("ratatosk")
 __release__ = ".".join(__version__.split(".")[:-2])
 RATATOSK_VERSION = Version(__version__)
