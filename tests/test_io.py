@@ -1,6 +1,8 @@
 """Tests of the io module."""
 
 import argparse
+import os
+import sys
 from pathlib import Path
 from pkgutil import get_data
 from typing import Any
@@ -13,6 +15,8 @@ from ratatosk import io
 
 BASE_DIR = Path.cwd()
 RESOURCES = BASE_DIR / "tests" / "resources"
+
+GITHUB_WIN = os.getenv("GITHUB_ACTIONS") == "true" and sys.platform == "win32"
 
 default_config = get_data(package="ratatosk", resource="default_config.yaml")
 yaml = YAML(typ="safe")
@@ -28,6 +32,7 @@ CONFIG = {
 }
 
 
+@pytest.mark.skipif(GITHUB_WIN, reason="SHA256 checksums differ under M$-Win")
 @pytest.mark.parametrize(
     ("fixture_str", "expected_hash"),
     [
@@ -166,6 +171,7 @@ def test_open_xlsx(
     assert list(xlsx.keys()) == sheet_names
 
 
+@pytest.mark.skipif(GITHUB_WIN, reason="SHA256 checksums differ under M$-Win")
 @pytest.mark.parametrize(
     ("fixture_str", "path", "file_hash", "shape", "colnames"),
     [
