@@ -61,9 +61,25 @@ _STEP_NAMES = {
 }
 
 
-def file_sha256(path: str | Path, block=1 << 20):
+def file_sha256(path: str | Path, block: int = 1 << 20) -> str:
+    """Calculate SHA256 checksum for a given file.
+
+    Parameters
+    ----------
+    path : str | Path
+        Path to file.
+    block : int
+        Block size for reading file in chunks.
+
+    Returns
+    -------
+    str
+        SHA256 checksum for the file.
+
+    """
+
     h = hashlib.sha256()
-    with open(path, "rb") as fh:
+    with Path(path).open("rb") as fh:
         for chunk in iter(lambda: fh.read(block), b""):
             h.update(chunk)
     return h.hexdigest()
