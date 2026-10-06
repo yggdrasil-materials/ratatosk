@@ -63,6 +63,9 @@ notebooks = [
   "jupyter>=1.1",
   "marimo>=0.24",
 ]
+type_stubs = [
+  "pandas-stubs",
+]
 dev = [
   { include-group = "docs" },
   { include-group = "notebooks" },

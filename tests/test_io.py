@@ -36,7 +36,7 @@ def test_file_sha256(fixture_str, expected_hash: str, request) -> None:
     assert io.file_sha256(str(path)) == expected_hash
 
 
-def test_dataest() -> None:
+def test_dataset() -> None:
     """Test the `Dataset` class."""
     assert True
 
@@ -61,17 +61,6 @@ def test_truncate_cycles() -> None:
     assert True
 
 
-def test_preferred_engine() -> None:
-    """
-    Test the `io.preferred_engine()` function.
-
-    No test written yet, likely to remove this functions as its redundant, we will ensure that the `calamine` package is
-    always available by making it a package dependency.
-    """
-    assert True
-
-
-@pytest.mark.filterwarnings("error::ResourceWarning")
 @pytest.mark.parametrize(
     ("fixture_str", "n_sheets", "sheet_names"),
     [
@@ -90,7 +79,7 @@ def test_preferred_engine() -> None:
     ],
 )
 def test_open_xlsx(
-    fixture_str: str, n_sheets: int, sheet_names: str, request
+    fixture_str: str, n_sheets: int, sheet_names: list[str], request
 ) -> None:
     """Test the `io.open_workbook()` function."""
     path = request.getfixturevalue(fixture_str)
@@ -99,6 +88,58 @@ def test_open_xlsx(
     assert list(xlsx.keys()) == sheet_names
 
 
-def test_read_neware() -> None:
+@pytest.mark.parametrize(
+    ("fixture_str", "path", "file_hash", "shape", "colnames"),
+    [
+        pytest.param(
+            "record_df",
+            RESOURCES / "record.csv",
+            "3b192ee1a8ce8ed76d3b49b57f9006107ec5f416f93651952cbc64939be5d6d6",
+            (3, 26),
+            [
+                "DataPoint",
+                "Cycle",
+                "Step Index",
+                "Step",
+                "Time",
+                "Cumulative Time",
+                "Current(A)",
+                "Voltage",
+                "Capacity(Ah)",
+                "Spec. Cap.(mAh/g)",
+                "Chg. Cap.(Ah)",
+                "Charge_Capacity",
+                "DChg. Cap.(Ah)",
+                "Discharge_Capacity",
+                "Energy(Wh)",
+                "Spec. Energy(mWh/g)",
+                "Chg. Energy(Wh)",
+                "Chg. Spec. Energy(mWh/g)",
+                "DChg. Energy(Wh)",
+                "DChg. Spec. Energy(mWh/g)",
+                "Date",
+                "Power(W)",
+                "dQ/dV(mAh/V)",
+                "dQ/dV",
+                "Contact resistance(mΩ)",
+                "Module start-stop switch",
+            ],
+            id="neware record.csv",
+        )
+    ],
+)
+def test_read_neware(
+    fixture_str: str,
+    path: str | Path,
+    file_hash: str,
+    shape: tuple[int, int],
+    colnames: list[str],
+    request,
+) -> None:
     """Test the `io.open_workbook()` function."""
-    assert True
+    sheets = {"record": request.getfixturevalue(fixture_str)}
+    dataset = io.read_neware(sheets=sheets, sheet="record", path=path)
+    assert dataset.source_sha256 == file_hash
+    assert dataset.name == "record"
+    assert dataset.frame.shape == shape
+    assert list(dataset.frame.columns) == colnames

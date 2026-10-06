@@ -2,6 +2,7 @@
 
 from pathlib import Path
 
+import pandas as pd
 import pytest
 
 BASE_DIR = Path.cwd()
@@ -24,3 +25,9 @@ def file_path_namimno2_xlsx() -> Path:
 def file_path_mnc111_xlsx() -> Path:
     """Path to `tests/resources/JQ_MNC111_3-4.5V_0.1C_B_08052026.xlsx`"""
     return RESOURCES / "JQ_MNC111_3-4.5V_0.1C_B_08052026.xlsx"
+
+
+@pytest.fixture
+def record_df() -> pd.DataFrame:
+    """Load five rows from a `record` worksheet from `.csv` and return as Pandas DataFrame."""
+    return pd.read_csv(RESOURCES / "record.csv", sep=",")
