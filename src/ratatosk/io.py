@@ -21,33 +21,16 @@ The label is for humans; the measurement is for arithmetic.
 from __future__ import annotations
 
 import hashlib
-import os
 from dataclasses import dataclass, field, replace
 from pathlib import Path
 
 import numpy as np
 import pandas as pd
-
-__all__ = [
-    "COLUMNS",
-    "Dataset",
-    "apply_electrode_convention",
-    "file_sha256",
-    "read_neware",
-    "truncate_cycles",
-]
+from loguru import logger
 
 # Neware long names -> the short names used throughout. Anything not listed is
 # carried through untouched: Current(A) in particular is needed by the
 # constant-voltage detection and must survive unrenamed.
-COLUMNS = {
-    "Cycle Index": "Cycle",
-    "Step Type": "Step",
-    "Voltage(V)": "Voltage",
-    "Chg. Spec. Cap.(mAh/g)": "Charge_Capacity",
-    "DChg. Spec. Cap.(mAh/g)": "Discharge_Capacity",
-    "dQm/dV(mAh/V.g)": "dQ/dV",
-}
 _NUMERIC = ("Cycle", "Voltage", "Charge_Capacity", "Discharge_Capacity", "dQ/dV")
 
 _STEP_NAMES = {
@@ -77,7 +60,6 @@ def file_sha256(path: str | Path, block: int = 1 << 20) -> str:
         SHA256 checksum for the file.
 
     """
-
     h = hashlib.sha256()
     with Path(path).open("rb") as fh:
         for chunk in iter(lambda: fh.read(block), b""):
@@ -185,7 +167,7 @@ class Dataset:
         """
         v = pd.to_numeric(
             self.half_cycle(cycle, step)["Voltage"], errors="coerce"
-        ).values
+        ).to_numpy()
         v = v[np.isfinite(v)]
         if v.size >= 2:
             net = float(v[-1] - v[0])
@@ -215,13 +197,13 @@ class Dataset:
         d = self.half_cycle(cycle, step)
         if col not in d.columns:
             return float("nan")
-        q = pd.to_numeric(d[col], errors="coerce").values
+        q = pd.to_numeric(d[col], errors="coerce").to_numpy()
         q = q[np.isfinite(q)]
         if q.size < 2:
             return float("nan")
         return float(np.nanmax(q) - np.nanmin(q))
 
-    def record_spacing_mV(self, step=None):
+    def record_spacing_mv(self, step=None):
         """
         Median and minimum non-zero voltage step between consecutive records.
 
@@ -236,7 +218,7 @@ class Dataset:
                 continue
             v = pd.to_numeric(
                 self.half_cycle(cyc, st)["Voltage"], errors="coerce"
-            ).values
+            ).to_numpy()
             v = v[np.isfinite(v)]
             if v.size < 50:
                 continue
@@ -247,30 +229,53 @@ class Dataset:
             if nz.size:
                 dv.append(nz)
         if not dv:
-            return dict(
-                median_mV=float("nan"),
-                min_mV=float("nan"),
-                duplicate_fraction=float("nan"),
-            )
+            return {
+                "median_mV": float("nan"),
+                "min_mV": float("nan"),
+                "duplicate_fraction": float("nan"),
+            }
         allnz = np.concatenate(dv) * 1000.0
-        return dict(
-            median_mV=float(np.median(allnz)),
-            min_mV=float(allnz.min()),
-            duplicate_fraction=(zeros / total) if total else float("nan"),
-        )
+        return {
+            "median_mV": float(np.median(allnz)),
+            "min_mV": float(allnz.min()),
+            "duplicate_fraction": (zeros / total) if total else float("nan"),
+        }
 
 
 # ---------------------------------------------------------------------------
 
 
-def _tidy_steps(df):
+def _tidy_df(
+    df: pd.DataFrame, step_column: str = "Step Type", filter_on: str = "Rest"
+) -> pd.DataFrame:
+    """
+    Tidys a ? dataframe.
+
+    What is it doing?
+
+    Parameters
+    ----------
+    df : pd.DataFrame
+        Pandas dataframe.
+    step_column : str
+        Column name that holds the step data.
+    filter_on : str
+        Filter data and remove instances where the `step_column == filter_on`.
+
+    Returns
+    -------
+    pd.DataFrame
+        Pandas dataframe with `step_column` renamed and rows where `step_column == filter_on` removed.
+    """
+    if step_column not in df.columns:
+        return df
     out = df.copy()
-    if "Step Type" not in out.columns:
-        return out
-    out["Step Type"] = out["Step Type"].astype(str).str.strip()
-    out["Step Type"] = out["Step Type"].replace(_STEP_NAMES)
-    out = out[~out["Step Type"].str.contains("Rest", case=False, na=False)]
-    return out.reset_index(drop=True)
+    out[step_column] = out[step_column].astype(str).str.strip()
+    out[step_column] = out[step_column].replace(_STEP_NAMES)
+    return out[
+        ~out[step_column].str.contains(filter_on, case=False, na=False)
+    ].reset_index(drop=True)
+    # return out.reset_index(drop=True)
 
 
 def _apply_electrode_convention(df, electrode_type):
@@ -334,12 +339,15 @@ def apply_electrode_convention(dataset, electrode_type):
         # Re-stamping a swapped dataset as Positive would leave its Step
         # labels, capacity columns and dQ/dV sign inverted while claiming
         # otherwise — silently wrong data with no way to notice.
-        raise ValueError(
+        # ns-rse 2026-10-06 - Consider custom exception Class, see
+        #    https://docs.astral.sh/ruff/rules/raise-vanilla-args/
+        neg_electrode_error = (
             f"{dataset.name!r} was loaded as a negative electrode and its "
-            f"half-cycle labels are already swapped; it cannot be restamped "
+            "half-cycle labels are already swapped; it cannot be restamped "
             f"as {electrode_type!r}. Reload the file with the correct "
-            f"electrode type."
+            "electrode type."
         )
+        raise ValueError(neg_electrode_error)
     if str(electrode_type).lower() != "negative":
         return replace(dataset, electrode_type=str(electrode_type))
     df, swapped = _apply_electrode_convention(dataset.frame, electrode_type)
@@ -373,16 +381,6 @@ def truncate_cycles(dataset, max_cycle):
     return replace(dataset, frame=f[keep].reset_index(drop=True))
 
 
-def preferred_engine():
-    """calamine if it is installed, openpyxl otherwise. Asked once per file."""
-    try:
-        import python_calamine  # noqa: F401
-
-        return "calamine"
-    except ImportError:
-        return "openpyxl"
-
-
 def open_xlsx(path: str | Path) -> dict[str, pd.DataFrame]:
     """
     Open a `.xls[x]` spreadsheet and read all sheets.
@@ -410,82 +408,74 @@ def open_xlsx(path: str | Path) -> dict[str, pd.DataFrame]:
         with pd.ExcelFile(path, engine="calamine") as xls:
             return {sheet: pd.read_excel(xls, sheet) for sheet in xls.sheet_names}
     except OSError as e:
-        raise (f"Could not open {path!s} as an Excel workbook.") from e
+        error_msg = f"Could not open {path!s} as an Excel workbook."
+        raise OSError(error_msg) from e
 
 
 def read_neware(
-    path,
-    *,
-    name=None,
-    electrode_type="Positive",
-    meta=None,
-    engine=None,
-    usecols=True,
-    verbose=True,
-    book=None,
-):
+    sheets: dict[str, pd.DataFrame] | None = None,
+    sheet: str = "record",
+    path: str | Path | None = None,
+    name: str | None = None,
+    electrode_type: str = "Positive",
+    meta: str | None = None,
+    columns: dict | None = None,
+) -> Dataset:
     """
-    Read one Neware .xlsx export into a `Dataset`.
+    Read one Neware data from  `.xlsx` export.
 
-    calamine is used when available: measured 5-7x faster than openpyxl on
-    these files, with a maximum numeric difference of exactly 0.0.
+    A Neware export has two sheets we want `record` and `test`. These are extracted from the dictionary and used to
+    generate a `Dataset` object.
 
-    `book` is an already-open `pd.ExcelFile` for this same path. A Neware
-    export has two sheets we want — 'record' and 'test' — and opening the
-    workbook twice parses it twice. Measured on one 34 MB export: 3.02 s to
-    read 'test' by path against 1.33 s through an open handle, 36% of the
-    total load cost, because the by-path read also silently fell back to
-    openpyxl while 'record' was being read by calamine. `path` is still
-    required: it is what the SHA-256 and the provenance record refer to.
+    Parameters
+    ----------
+    sheets : dict[str, pd.DataFrame], optional
+        A dictionary of sheets from `io.open_xlsx`. If `None` then
+    sheet : str
+        The sheet to extract, defaults to "record".
+    path: str | Path,
+        Path to `xlsx` file.
+    name: str | None = None,
+        Name of the file.
+    electrode_type: str = "Positive",
+        Electrode type, options are `Positive` (default) and `Negative`.
+    meta: str | None = None,
+        ???
+    columns : dict, optionall
+        Dictionary for renaming columns. If `None` a default is used.
+
+    Returns
     """
-    name = name or os.path.splitext(os.path.basename(path))[0]
-
-    if engine is None:
-        engine = preferred_engine()
-    source = book if book is not None else path
-
-    wanted = list(COLUMNS) + [
-        "Chg. Cap.(Ah)",
-        "DChg. Cap.(Ah)",
-        "Chg. Energy(Wh)",
-        "DChg. Energy(Wh)",
-        "Chg. Spec. Energy(mWh/g)",
-        "DChg. Spec. Energy(mWh/g)",
-        "Current(A)",
-        "Spec. Energy(mWh/g)",
-        "Power(W)",
-        "Time",
-    ]
-    picker = (lambda c: c in wanted) if usecols else None
-
-    if verbose:
-        print(f"  reading {name} ({engine}) ...", flush=True)
-    # These exports carry no default cell style, and openpyxl warns about it
-    # once per file — eight files, eight warnings burying the load messages.
-    # Scoped, so reading a file does not permanently mute this warning for
-    # everything else in the caller's process.
-    import warnings as _w
-
-    with _w.catch_warnings():
-        _w.filterwarnings("ignore", message=".*no default style.*")
-        # An open ExcelFile already knows its engine; passing `engine=` with
-        # it is a TypeError on pandas, so it is only named for a path.
-        _kw = {} if book is not None else {"engine": engine}
-        try:
-            raw = pd.read_excel(
-                source, sheet_name="record", header=0, usecols=picker, **_kw
-            )
-        except Exception:
-            raw = pd.read_excel(source, sheet_name="record", header=0, **_kw)
-
-    df = _tidy_steps(raw).rename(columns=COLUMNS)
+    # name = name or os.path.splitext(os.path.basename(path))[0]
+    name = name or Path(path).stem
+    columns = (
+        columns
+        if columns is not None
+        else {
+            "Cycle Index": "Cycle",
+            "Step Type": "Step",
+            "Voltage(V)": "Voltage",
+            "Chg. Spec. Cap.(mAh/g)": "Charge_Capacity",
+            "DChg. Spec. Cap.(mAh/g)": "Discharge_Capacity",
+            "dQm/dV(mAh/V.g)": "dQ/dV",
+        }
+    )
+    sheet = sheet if sheet is not None else "record"
+    logger.info(f"  Extracting {name}")
+    df = _tidy_df(sheets[sheet]).rename(columns=columns)
     for c in _NUMERIC:
         if c in df.columns:
             df[c] = pd.to_numeric(df[c], errors="coerce")
 
     df, swapped = _apply_electrode_convention(df, electrode_type)
-
-    ds = Dataset(
+    n_cyc = int(df["Cycle"].nunique()) if "Cycle" in df else 0
+    log_msg = (
+        f"      {len(df):,} records, {n_cyc} cycles [anode: labels swapped]"
+        if swapped
+        else ""
+    )
+    logger.info(log_msg)
+    return Dataset(
         name=name,
         frame=df.reset_index(drop=True),
         meta=dict(meta or {}),
@@ -494,10 +484,3 @@ def read_neware(
         source_path=str(path),
         source_sha256=file_sha256(path),
     )
-    if verbose:
-        n_cyc = int(df["Cycle"].nunique()) if "Cycle" in df else 0
-        print(
-            f"      {len(df):,} records, {n_cyc} cycles"
-            + ("  [anode: labels swapped]" if swapped else "")
-        )
-    return ds
