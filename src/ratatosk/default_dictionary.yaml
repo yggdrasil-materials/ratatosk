@@ -3,12 +3,12 @@
 # This file defines core static variables such as column names for a given file type
 neware:
   columns: # Mapping long column names in output to short used in analysis
-    -"Cycle Index": "Cycle"
-    -"Step Type": "Step"
-    -"Voltage(V)": "Voltage"
-    -"Chg. Spec. Cap.(mAh/g)": "Charge_Capacity"
-    -"DChg. Spec. Cap.(mAh/g)": "Discharge_Capacity"
-    -"dQm/dV(mAh/V.g)": "dQ/dV"
+    - "Cycle Index": "Cycle"
+    - "Step Type": "Step"
+    - "Voltage(V)": "Voltage"
+    - "Chg. Spec. Cap.(mAh/g)": "Charge_Capacity"
+    - "DChg. Spec. Cap.(mAh/g)": "Discharge_Capacity"
+    - "dQm/dV(mAh/V.g)": "dQ/dV"
   numeric: # Numeric columns
     - "Cycle"
     - "Voltage"

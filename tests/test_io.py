@@ -102,10 +102,15 @@ def test_read_yaml_exceptions(filename: Path, expected_error: Any) -> None:
 @pytest.mark.parametrize(
     ("args"),
     [
-        pytest.param(argparse.Namespace(filename=None), id="no filename"),
+        pytest.param(argparse.Namespace(filename=None, type="config"), id="config, no filename"),
         pytest.param(
-            argparse.Namespace(filename="another_config.yaml"),
-            id="alternative filename",
+            argparse.Namespace(filename="another_config.yaml", type="config"),
+            id="config, alternative filename",
+        ),
+        pytest.param(argparse.Namespace(filename=None, type="data-dictionary"), id="data-dictionary, no filename"),
+        pytest.param(
+            argparse.Namespace(filename="another_data-dictionary.yaml", type="data-dictionary"),
+            id="data-dictionary, alternative filename",
         ),
     ],
 )
@@ -113,8 +118,10 @@ def test_write_config(args: argparse.Namespace, tmp_path: Path) -> None:
     """Test writing of YAML configuration file using ``write_config()``."""
     args.output_dir = tmp_path
     io.write_config(args)
-    if args.filename is None:
+    if args.filename is None and args.type == "config":
         assert Path(tmp_path / "default_config.yaml").exists()
+    elif args.filename is None and args.type == "data-dictionary":
+        assert Path(tmp_path / "default_dictionary.yaml").exists()
     else:
         assert Path(tmp_path / args.filename).exists()
 

@@ -1,22 +1,4 @@
-"""
-Reading a cycler export, and knowing what the columns mean.
-
-The one thing this module exists to prevent
--------------------------------------------
-For a negative electrode, 1.8.x swaps the Charge/Discharge labels so that
-"Discharge" means the useful half-cycle for every dataset. That is right for
-presentation and it is a trap for physics: in an LTO dataset the half-cycle
-labelled "Charge" is the one where the **voltage falls**.
-
-That trap was sprung. A cycle-integrity measure inferred the expected voltage
-direction from the label, and consequently reported all 64 LTO half-cycles as
-anomalous at 98-99% coulombic efficiency.
-
-So `Dataset` keeps the swap for labelling, and additionally offers
-`step_direction()`, which is **measured from the recorded voltage** and cannot
-be fooled. Everything in `signal` and `analyse` uses the measured direction.
-The label is for humans; the measurement is for arithmetic.
-"""
+"""Module for reading and writing data."""
 
 from __future__ import annotations
 
@@ -33,8 +15,11 @@ from loguru import logger
 from pydantic import RootModel
 from ruamel.yaml import YAML
 
-from ratatosk import CONFIG_DOCUMENTATION_REFERENCE
-from ratatosk.classes import Parameters
+from ratatosk import (
+    CONFIG_DOCUMENTATION_REFERENCE,
+    DATA_DICTIONARY_DOCUMENTATION_REFERENCE,
+)
+from ratatosk.classes import DataDictionary, Parameters
 
 # Neware long names -> the short names used throughout. Anything not listed is
 # carried through untouched: Current(A) in particular is needed by the
@@ -66,7 +51,6 @@ def file_sha256(path: str | Path, block: int = 1 << 20) -> str:
     -------
     str
         SHA256 checksum for the file.
-
     """
     h = hashlib.sha256()
     with Path(path).open("rb") as fh:
@@ -78,10 +62,12 @@ def file_sha256(path: str | Path, block: int = 1 << 20) -> str:
 def read_yaml(filename: str | Path) -> Any:
     """
     Read a YAML file.
+
     Parameters
     ----------
     filename : Union[str, Path]
         YAML file to read.
+
     Returns
     -------
     Any
@@ -95,10 +81,12 @@ def read_yaml(filename: str | Path) -> Any:
 def convert_path(path: str | Path) -> Path:
     """
     Ensure path is Path object.
+
     Parameters
     ----------
     path : str | Path
         Path to be converted.
+
     Returns
     -------
     Path
@@ -109,15 +97,17 @@ def convert_path(path: str | Path) -> Path:
 
 def dict_to_yaml(obj: Any) -> Any:
     """
-    Clean a dictionary to basic data types for writing to YA
+    Clean a dictionary to basic data types for writing to YAML.
+
     Parameters
     ----------
     obj : Any
         An object for converting to basic data types.
+
     Returns
     -------
     Any
-        ``obj`` as ``str``, ``int``, ``float``, ``bool``, ``
+        `obj` as `str`, `int`, `float`, `bool`, `list` or `dict`.
     """
     # Recurse on dictionaries
     if isinstance(obj, dict):
@@ -148,6 +138,7 @@ def dict_to_yaml(obj: Any) -> Any:
 def write_config(args: Namespace | dict[str, Any] | Parameters | None) -> None:
     """
     Write a configuration file to YAML.
+
     Parameters
     ----------
     args : Namespace | dict[str, Any], optional
@@ -159,9 +150,21 @@ def write_config(args: Namespace | dict[str, Any] | Parameters | None) -> None:
     # If args is `Namespace` then we are writing config with 'ratatosk create_config' subcommand
     if isinstance(args, Namespace):
         output_dir = Path("./") if args.output_dir is None else Path(args.output_dir)
-        config = vars(Parameters())
-        filename = "default_config.yaml" if args.filename is None else args.filename
-    # Otherwise we are writing after 'ratatosk optimise' and config is a dictionary, this won't have a 'filename'
+        if args.type == "config":
+            config = vars(Parameters())
+            filename = "default_config.yaml" if args.filename is None else args.filename
+            doc_ref = CONFIG_DOCUMENTATION_REFERENCE
+        elif args.type == "data-dictionary":
+            config = vars(DataDictionary())
+            filename = (
+                "default_dictionary.yaml" if args.filename is None else args.filename
+            )
+            doc_ref = DATA_DICTIONARY_DOCUMENTATION_REFERENCE
+        else:
+            logger.error(
+                "Invalid option for --type use either 'config' or 'data-dictionary'."
+            )
+    # Otherwise we are writing after 'ratatosk analysis' and config is a dictionary, this won't have a 'filename'
     # key/value pair
     elif isinstance(args, dict):
         output_dir = (
@@ -169,11 +172,19 @@ def write_config(args: Namespace | dict[str, Any] | Parameters | None) -> None:
         )
         filename = f"config_{get_date_time(strftime='%Y-%m-%d-%H%M%S')}.yaml"
         config = args
+        doc_ref = CONFIG_DOCUMENTATION_REFERENCE
     # If we have 'Parameters' then configuration is stored as a dataclass and we again don't have 'filename' key/value pair
     elif isinstance(args, Parameters):
         output_dir = Path("./") if args.output_dir is None else Path(args.output_dir)  # type: ignore[redundant-expr]
         filename = f"config_{get_date_time(strftime='%Y-%m-%d-%H%M%S')}.yaml"
         config = RootModel[Parameters](args).model_dump()
+        doc_ref = CONFIG_DOCUMENTATION_REFERENCE
+    # If we have 'DataDictionary' then configuration is stored as a dataclass and we again don't have 'filename' key/value pair
+    elif isinstance(args, DataDictionary):
+        output_dir = Path("./") if args.output_dir is None else Path(args.output_dir)  # type: ignore[redundant-expr]
+        filename = f"config_{get_date_time(strftime='%Y-%m-%d-%H%M%S')}.yaml"
+        config = RootModel[DataDictionary](args).model_dump()
+        doc_ref = DATA_DICTIONARY_DOCUMENTATION_REFERENCE
     else:
         msg = f"args is neither 'Namespace', 'dict' or 'Parameters' : {type(args)}"
         raise TypeError(msg)
@@ -185,7 +196,7 @@ def write_config(args: Namespace | dict[str, Any] | Parameters | None) -> None:
     with config_path.open("w", encoding="utf-8") as f:
         try:
             f.write(f"# Config generated {get_date_time()}\n")
-            f.write(f"{CONFIG_DOCUMENTATION_REFERENCE}")
+            f.write(f"{doc_ref}")
             yaml_out = YAML()
             yaml_out.indent(sequence=4, offset=2)
             yaml_out.dump(dict_to_yaml(config), f)
@@ -197,10 +208,12 @@ def write_config(args: Namespace | dict[str, Any] | Parameters | None) -> None:
 def get_date_time(strftime: str = "%Y-%m-%d %H:%M:%S") -> str:
     """
     Get the current date-time as a string for the systems current timezone.
+
     Parameters
     ----------
     strftime : str
         String for formatting date-time, default is ``%Y-%m-%d %H:%M:%S``.
+
     Returns
     -------
     str
@@ -501,9 +514,9 @@ def apply_electrode_convention(dataset, electrode_type):
     )
 
 
-def truncate_cycles(dataset, max_cycle):
+def truncate_cycles(dataset: Dataset, max_cycle) -> Dataset:
     """
-    Cut a dataset at `max_cycle`, returning a new one. None leaves it alone.
+    Filter a `Dataset.frame`, removing any values/data that exceed `max_cycle`.
 
     Truncation belongs HERE, to the Dataset, because the Dataset is what
     every later stage reads. 1.8.6 truncated a separate `electrochemical_data`
@@ -513,12 +526,27 @@ def truncate_cycles(dataset, max_cycle):
     fact by the console message, `dataset_info.txt` and the run manifest,
     while every capacity, retention and fade number was computed over the
     cycles they had asked to exclude.
+
+    Parameters
+    ----------
+    dataset : Dataset
+        Dataset object, must have `.frame` attribute populated.
+    max_cycle : float
+        Threshold for excluding values.
+
+    Returns
+    -------
+    Dataset
+        Dataset with updated `.frame` attribute filtered for values `<= max_cycle`.
     """
+    # ns-rse 2026-10-07 simplify the conditions here.
     if not max_cycle:
         return dataset
     f = dataset.frame
     if "Cycle" not in f.columns:
         return dataset
+    # ns-rse 2026-10-07 use boolean indexing to filter the dataset, overly cautious using pd.numeric() as would be
+    # expecting data to already be numeric
     keep = pd.to_numeric(f["Cycle"], errors="coerce") <= float(max_cycle)
     return replace(dataset, frame=f[keep].reset_index(drop=True))
 
@@ -541,10 +569,8 @@ def open_xlsx(path: str | Path) -> dict[str, pd.DataFrame]:
     -------
 
     dict[str, pd.DataFrame]
-    `(ExcelFile, engine)`. The caller is responsible for closing it;
-    `Dataset` holds no reference to it, so it can be closed as soon as both
-    sheets have been read.
-
+        Dictionary of data from a `xls[x]` file. Keys are sheet names and values are Pandas dataframes of the sheets
+        contents.
     """
     try:
         with pd.ExcelFile(path, engine="calamine") as xls:
@@ -582,13 +608,15 @@ def read_neware(
     electrode_type: str = "Positive",
         Electrode type, options are `Positive` (default) and `Negative`.
     meta: str | None = None,
-        ???
+        Something?
     columns : dict, optional
         Dictionary for renaming columns. If `None` a default is used.
 
     Returns
+    -------
+    Dataset
+        A `Dataset` object of the required data.
     """
-    # name = name or os.path.splitext(os.path.basename(path))[0]
     name = name or Path(path).stem
     columns = (
         columns
