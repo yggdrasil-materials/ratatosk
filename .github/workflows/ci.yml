@@ -38,6 +38,8 @@ jobs:
       - uses: astral-sh/setup-uv@v10.2.0
 
       - uses: j178/prek-action@v2
+        with:
+          extra-args: "--skip pytest --skip pylint"
 
       - name: Run Pylint
         run: uvx nox -s pylint -- --output-format=github
