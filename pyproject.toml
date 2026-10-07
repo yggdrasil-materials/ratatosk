@@ -41,11 +41,15 @@ dependencies = [
   "seaborn>=0.13",
 ]
 
+[project.scripts]
+ratatosk = "ratatosk.entry_point:entry_point"
+
 [project.urls]
 Homepage = "https://github.com/yggdrasil-materials/ratatosk"
 "Bug Tracker" = "https://github.com/yggdrasil-materials/ratatosk/issues"
 Discussions = "https://github.com/yggdrasil-materials/ratatosk/discussions"
 Changelog = "https://github.com/yggdrasil-materials/ratatosk/releases"
+
 
 
 [dependency-groups]
@@ -77,6 +81,7 @@ dev = [
   "ipdb>=0.13",
   "mypy>=2.3",
   "pre-commit>=4.6",
+  "prek>=0.5.5",
   "pylint>=4.0",
   "ruff>=0.16",
   "scipy-stubs>=1.18",
@@ -86,7 +91,7 @@ dev = [
 
 [tool.pytest]
 minversion = "9.1"
-addopts = ["-ra", "--showlocals", "--cov"]
+addopts = ["-ra", "--showlocals", "--cov", "-m", "not e2e"]
 strict = true
 filterwarnings = [
   "error",
@@ -95,7 +100,9 @@ log_level = "INFO"
 testpaths = [
   "tests",
 ]
-
+markers = [
+  "e2e: mark end-to-end tests: tests run weekly in GitHub Actions"
+]
 
 [tool.codespell]
 skip = 'uv.lock'
