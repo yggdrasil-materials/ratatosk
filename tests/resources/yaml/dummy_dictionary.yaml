@@ -1,0 +1,10 @@
+neware:
+  columns:
+    "a": "b"
+    "c": "d"
+  numeric:
+    - "e"
+    - "f"
+  step_names:
+    "g": "h"
+    "i": "j"

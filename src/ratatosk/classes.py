@@ -9,8 +9,7 @@ import yaml
 # import numpy as np
 # import numpy.typing as npt
 # from loguru import logger
-from pydantic import ConfigDict, Field
-from pydantic.dataclasses import dataclass
+from pydantic import Field
 from pydantic_settings import (
     BaseSettings,
     PydanticBaseSettingsSource,
@@ -19,9 +18,8 @@ from pydantic_settings import (
 
 import ratatosk
 
-# DEFAULT_CONFIG = get_data(package=ratatosk.__package__, resource="default_config.yaml")
-
 DEFAULT_CONFIG = files(ratatosk) / "default_config.yaml"
+DEFAULT_DATA_DICTIONARY = files(ratatosk) / "default_dictionary.yaml"
 
 
 def load_default_yaml(
@@ -108,7 +106,7 @@ class DefaultYamlSource(PydanticBaseSettingsSource):
 
 
 class Parameters(BaseSettings):
-    """Parameters."""
+    """Parameters for analysis."""
 
     base_dir: Path = Field(default=Path("./"), title="Base directory")
     output_dir: Path = Field(
@@ -166,45 +164,53 @@ class Parameters(BaseSettings):
         )
 
 
-@dataclass(
-    repr=True,
-    eq=True,
-    config=ConfigDict(arbitrary_types_allowed=True, validate_assignment=True),
-    validate_on_init=True,
-)
-class DataDictionary:
-    """Data Dictionary."""
+class FileStructures(BaseSettings):
+    """Data Dictionary for file structures."""
 
-    neware: dict[str, Any] = Field(
-        default={
-            "columns": {
-                "Cycle Index": "Cycle",
-                "Step Type": "Step",
-                "Voltage(V)": "Voltage",
-                "Chg. Spec. Cap.(mAh/g)": "Charge_Capacity",
-                "DChg. Spec. Cap.(mAh/g)": "Discharge_Capacity",
-                "dQm/dV(mAh/V.g)": "dQ/dV",
-            },
-            "numeric": [
-                "Cycle",
-                "Voltage",
-                "Charge_Capacity",
-                "Discharge_Capacity",
-                "dQ/dV",
-            ],
-            # ns-rse 2026-10-07 - Can likely do away with this and use regex to determine charge/discharge, based on below the
-            # presence of 'D' indicates "Discharge", otherwise state is "Charge" (do it case-insensitive just to be
-            # sure). If we can't though then we should flip this round, have 'Charge' and 'Discharge' as keys and the
-            # possible values a set that can be compared against
-            "step_names": {
-                "CCCV Chg": "Charge",
-                "CCCV CHG": "Charge",
-                "CC Chg": "Charge",
-                "CC CHG": "Charge",
-                "CC DChg": "Discharge",
-                "CC DCHG": "Discharge",
-                "CCCV DChg": "Discharge",
-            },
-        },
-        title="Neware data structure",
-    )
+    neware: dict[str, Any] = Field(default=None, title="Neware data dictionary.")
+    # Used to select the YAML source, not as an application setting.
+    config_file: Path | None = Field(default=DEFAULT_DATA_DICTIONARY, title=True)
+
+    @classmethod
+    def settings_customise_sources(
+        cls,
+        settings_cls: type[BaseSettings],
+        init_settings: PydanticBaseSettingsSource,
+        env_settings: PydanticBaseSettingsSource,
+        dotenv_settings: PydanticBaseSettingsSource,
+        file_secret_settings: PydanticBaseSettingsSource,
+    ) -> tuple[PydanticBaseSettingsSource, ...]:
+        """
+        Customize the sources used to populate settings.
+
+        Parameters
+        ----------
+        settings_cls : type[BaseSettings]
+            The settings class being configured.
+        init_settings : PydanticBaseSettingsSource
+            Source for values passed to the settings constructor.
+        env_settings : PydanticBaseSettingsSource
+            Source for environment-variable values.
+        dotenv_settings : PydanticBaseSettingsSource
+            Source for values loaded from a dotenv file.
+        file_secret_settings : PydanticBaseSettingsSource
+            Source for values loaded from secret files.
+
+        Returns
+        -------
+        tuple[PydanticBaseSettingsSource, ...]
+            Settings sources ordered from highest to lowest priority.
+        """
+        custom_file = init_settings.init_kwargs.get("config_file")
+        yaml_source = (
+            YamlConfigSettingsSource(settings_cls, yaml_file=custom_file)
+            if custom_file is not None
+            else DefaultYamlSource(settings_cls, yaml_file=DEFAULT_DATA_DICTIONARY)
+        )
+        return (
+            init_settings,
+            env_settings,
+            dotenv_settings,
+            yaml_source,
+            file_secret_settings,
+        )
