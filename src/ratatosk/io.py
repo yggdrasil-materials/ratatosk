@@ -6,6 +6,7 @@ import hashlib
 from argparse import Namespace
 from dataclasses import dataclass, field, replace
 from datetime import datetime
+from importlib.resources import files
 from pathlib import Path
 from typing import Any
 
@@ -15,11 +16,16 @@ from loguru import logger
 from pydantic import RootModel
 from ruamel.yaml import YAML
 
+import ratatosk
 from ratatosk import (
     CONFIG_DOCUMENTATION_REFERENCE,
     DATA_DICTIONARY_DOCUMENTATION_REFERENCE,
 )
-from ratatosk.classes import DataDictionary, Parameters
+from ratatosk.classes import FileStructures, Parameters
+
+# Set the default configurations and dictionaries
+DEFAULT_CONFIG = files(ratatosk) / "default_config.yaml"
+DEFAULT_DATA_DICTIONARY = files(ratatosk) / "default_dictionary.yaml"
 
 # Neware long names -> the short names used throughout. Anything not listed is
 # carried through untouched: Current(A) in particular is needed by the
@@ -151,11 +157,11 @@ def write_config(args: Namespace | dict[str, Any] | Parameters | None) -> None:
     if isinstance(args, Namespace):
         output_dir = Path("./") if args.output_dir is None else Path(args.output_dir)
         if args.type == "config":
-            config = vars(Parameters())
+            config = vars(Parameters(config_file=DEFAULT_CONFIG))
             filename = "default_config.yaml" if args.filename is None else args.filename
             doc_ref = CONFIG_DOCUMENTATION_REFERENCE
         elif args.type == "data-dictionary":
-            config = vars(DataDictionary())
+            config = vars(FileStructures(config_file=DEFAULT_DATA_DICTIONARY))
             filename = (
                 "default_dictionary.yaml" if args.filename is None else args.filename
             )
@@ -179,16 +185,16 @@ def write_config(args: Namespace | dict[str, Any] | Parameters | None) -> None:
         filename = f"config_{get_date_time(strftime='%Y-%m-%d-%H%M%S')}.yaml"
         config = RootModel[Parameters](args).model_dump()
         doc_ref = CONFIG_DOCUMENTATION_REFERENCE
-    # If we have 'DataDictionary' then configuration is stored as a dataclass and we again don't have 'filename' key/value pair
-    elif isinstance(args, DataDictionary):
+    # If we have 'FileStructures' then configuration is stored as a dataclass and we again don't have 'filename' key/value pair
+    elif isinstance(args, FileStructures):
         output_dir = Path("./") if args.output_dir is None else Path(args.output_dir)  # type: ignore[redundant-expr]
         filename = f"config_{get_date_time(strftime='%Y-%m-%d-%H%M%S')}.yaml"
-        config = RootModel[DataDictionary](args).model_dump()
+        config = RootModel[FileStructures](args).model_dump()
         doc_ref = DATA_DICTIONARY_DOCUMENTATION_REFERENCE
     else:
         msg = f"args is neither 'Namespace', 'dict' or 'Parameters' : {type(args)}"
         raise TypeError(msg)
-    if ".yaml" not in str(filename) and ".yml" not in str(filename):
+    if ".yaml" not in str(filename) and ".yml" not in str(filename):  # pylint: disable=possibly-used-before-assignment
         config_path = output_dir / f"{filename}.yaml"
     else:
         config_path = output_dir / filename
@@ -196,10 +202,10 @@ def write_config(args: Namespace | dict[str, Any] | Parameters | None) -> None:
     with config_path.open("w", encoding="utf-8") as f:
         try:
             f.write(f"# Config generated {get_date_time()}\n")
-            f.write(f"{doc_ref}")
+            f.write(f"{doc_ref}")  # pylint: disable=possibly-used-before-assignment
             yaml_out = YAML()
             yaml_out.indent(sequence=4, offset=2)
-            yaml_out.dump(dict_to_yaml(config), f)
+            yaml_out.dump(dict_to_yaml(config), f)  # pylint: disable=possibly-used-before-assignment
             logger.info(f"{logger_msg} : {config_path!s}")
         except:  # noqa: E722, pylint: disable=W0702
             logger.error(f"Failed to write config to : {config_path}")

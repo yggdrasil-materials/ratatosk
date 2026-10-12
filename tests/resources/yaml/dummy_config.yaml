@@ -1,0 +1,5 @@
+# A dummy Ratatosk configuration file
+base_dir: /tmp/ # Base directory where code is being run
+output_dir: ./output # Where to save output to
+log_level: warning # Verbosity used in logging
+cores: 6 # Number of cores to use when processing
