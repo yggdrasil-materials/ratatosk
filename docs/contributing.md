@@ -184,14 +184,8 @@ that commit history will be a little cleaner.
 
 [black]: https://black.readthedocs.io/en/stable/usage_and_configuration/the_basics.html
 [cc]: https://www.contributor-covenant.org/
-[direnv]: https://direnv.net/
-[gb]: https://git-scm.com/install/windows
-[gh_fork]: https://docs.github.com/articles/fork-a-repo
-[git_hooks]: https://git-scm.com/book/en/v2/Customizing-Git-Git-Hooks
-[gk]: https://gitkraken.com
 [mypy]: https://mypy-lang.org/
 [pc]: https://pre-commit.com
-[pep8]: https://peps.python.org/pep-0008/
 [pydantic]: https://pydantic.dev/docs/
 [pylint]: https://pylint.pycqa.org/en/latest/index.html
 [ratatosk]: https://github.com/yggdrasil-materials/ratatosk/

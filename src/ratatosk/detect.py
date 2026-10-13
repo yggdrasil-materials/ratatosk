@@ -780,7 +780,9 @@ def _ensure_curve_maximum(peaks_df, voltage, signal, *, min_distance_mV):
         # it would be inventing a peak, which is the failure this whole
         # module is written against.
         return peaks_df
-    row = dict.fromkeys(peaks_df.columns if peaks_df is not None and not peaks_df.empty else [], np.nan)
+    row = dict.fromkeys(
+        peaks_df.columns if peaks_df is not None and not peaks_df.empty else [], np.nan
+    )
     row.update(
         voltage=v_max,
         height=float(y[i]),

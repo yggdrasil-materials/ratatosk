@@ -1758,9 +1758,7 @@ def voltage_profiles_key(
     if COMMON_XAXIS_SCALE:
         for name, df in electrochemical_data.items():
             params = user_parameters.get(name, {})
-            key_cycles = (
-                OVERRIDE_KEY_CYCLES or params.get("key_cycles", [])
-            )
+            key_cycles = OVERRIDE_KEY_CYCLES or params.get("key_cycles", [])
 
             df_work = df.copy()
             for col in ["Charge_Capacity", "Discharge_Capacity"]:
@@ -1799,9 +1797,7 @@ def voltage_profiles_key(
         print(rule(composition))
         charge_rate_c = params.get("charge_rate_c", "Unknown")
         colour_palette = params.get("colour_palette", "viridis_r")
-        key_cycles = (
-            OVERRIDE_KEY_CYCLES or params.get("key_cycles", [])
-        )
+        key_cycles = OVERRIDE_KEY_CYCLES or params.get("key_cycles", [])
         is_anode = params.get("anode_labels_swapped", False)
         dch_label = _discharge_label(params)
         chg_label = _charge_label(params)
@@ -2511,8 +2507,7 @@ def comparative_capacity(
                     for comp, val in loadings.items():
                         print(f"    {comp:<30} {val:.2f} mg/cm²")
                     print(
-                        "  Specific capacity comparisons may "
-                        "be misleading at different"
+                        "  Specific capacity comparisons may be misleading at different"
                     )
                     print(
                         "  loadings — electrochemical properties often "

@@ -317,9 +317,7 @@ def start_run(base_location, version, input_paths=None, note="", flags=None):
                     "path": os.path.abspath(p),
                     "name": os.path.basename(p),
                     "bytes": st.st_size,
-                    "modified": datetime.fromtimestamp(
-                        st.st_mtime, UTC
-                    ).isoformat(),
+                    "modified": datetime.fromtimestamp(st.st_mtime, UTC).isoformat(),
                     "sha256": _sha256(p),
                 }
             )
