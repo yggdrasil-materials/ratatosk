@@ -533,9 +533,7 @@ def _input_with_default(
         if not raw:
             if default_value is not None:
                 return cast_type(default_value) if cast_type != str else default_value
-            print(
-                f"  {_S.WARN}No default available — please enter a value.{_S.RESET}"
-            )
+            print(f"  {_S.WARN}No default available — please enter a value.{_S.RESET}")
             continue
         try:
             value = cast_type(raw)
@@ -1181,9 +1179,7 @@ def collect_parameters(
                 if electrode_type_input in ["negative", "neg", "n"]:
                     electrode_type = "Negative"
                     break
-                print(
-                    f"  {_S.WARN}Enter 'positive'/'p' or 'negative'/'n'.{_S.RESET}"
-                )
+                print(f"  {_S.WARN}Enter 'positive'/'p' or 'negative'/'n'.{_S.RESET}")
 
             _last_electrode_type = electrode_type
             # ----- PIPELINE-LEVEL: POWER/ENERGY (asked once) -----
@@ -1674,9 +1670,7 @@ def collect_parameters(
                     [
                         c
                         for c in _VALID_CMAPS
-                        if palette_choice.lower()
-                        .replace("_d", "")
-                        .replace("_r", "")
+                        if palette_choice.lower().replace("_d", "").replace("_r", "")
                         in c.lower()
                     ]
                 )[:6]
@@ -1688,9 +1682,7 @@ def collect_parameters(
                         f"    Did you mean: {_S.VALUE}{', '.join(_suggestions)}{_S.RESET}?"
                     )
                 else:
-                    print(
-                        "    Check spelling, or choose a number from the list above."
-                    )
+                    print("    Check spelling, or choose a number from the list above.")
             if _FILE_FORMAT_GLOBAL is None:
                 while True:
                     file_format = input(

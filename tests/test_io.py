@@ -102,14 +102,21 @@ def test_read_yaml_exceptions(filename: Path, expected_error: Any) -> None:
 @pytest.mark.parametrize(
     ("args"),
     [
-        pytest.param(argparse.Namespace(filename=None, type="config"), id="config, no filename"),
+        pytest.param(
+            argparse.Namespace(filename=None, type="config"), id="config, no filename"
+        ),
         pytest.param(
             argparse.Namespace(filename="another_config.yaml", type="config"),
             id="config, alternative filename",
         ),
-        pytest.param(argparse.Namespace(filename=None, type="data-dictionary"), id="data-dictionary, no filename"),
         pytest.param(
-            argparse.Namespace(filename="another_data-dictionary.yaml", type="data-dictionary"),
+            argparse.Namespace(filename=None, type="data-dictionary"),
+            id="data-dictionary, no filename",
+        ),
+        pytest.param(
+            argparse.Namespace(
+                filename="another_data-dictionary.yaml", type="data-dictionary"
+            ),
             id="data-dictionary, alternative filename",
         ),
     ],
