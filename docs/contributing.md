@@ -29,7 +29,7 @@ After creating a virtual environment you will _always_ need to activate it so th
 the virtual environment prepended.  Depending on your operating system you will have to do one of the following to
 activate it:
 
-<!--markdownlint-disable MD046 -->
+<!-- markdownlint-disable MD046 -->
 === "GNU/Linux or OSX"
 
     ``` shell
@@ -41,9 +41,9 @@ activate it:
     ``` shell
     .venv\Scripts\activate
     ```
-<!--markdownlint-enable MD046 -->
+<!-- markdownlint-enable MD046 -->
 
-<!--markdownlint-disable MD046 -->
+<!-- markdownlint-disable MD046 -->
 !!! tip
 
     GNU/Linux and OSX users can automate this using the [`direnv`][direnv]
@@ -57,7 +57,7 @@ activate it:
     You will have to run `direnv allow` in the cloned repository to allow
     `direnv` to use this script but from that point on when you `cd` into the
     directory the environment should be activated.
-<!--markdownlint-enable MD046 -->
+<!-- markdownlint-enable MD046 -->
 
 ### Install the package for development
 
@@ -162,7 +162,7 @@ running the same hooks on Continuous Integration on GitHub where they will invar
 commits are made it helps reduce cloud computing resources which reduces environmental impact and has the added benefit
 that commit history will be a little cleaner.
 
-<!--markdownlint-disable MD046 -->
+<!-- markdownlint-disable MD046 -->
 !!! warning "GitKraken Users"
 
     If you use [GitKraken][gk] to manage your Git workflow you may well find that the hooks are _not_ run when making
@@ -172,20 +172,24 @@ that commit history will be a little cleaner.
     because the Virtual Environment, in the examples here managed by `uv`, is not active and so the `pre-commit` command
     can not be found. In which case you should do all your staging in GitKraken and then use a Command Line Interface
     (CLI) via [Git Bash for Windows][gb] to make your commit
-<!--markdownlint-enable MD046 -->
+<!-- markdownlint-enable MD046 -->
 
-<!--markdownlint-disable MD046 -->
+<!-- markdownlint-disable MD046 -->
 !!! tip "Git Bash"
 
     When installing [Git Bash for Windows][gb] you may be asked what editor to use for editing commit messages. It is
     recommended to select `nano` as the default (its included when installing Git Bash), you can the use `git commit -e`
     to edit your commit message. When done use `Ctrl + x` to exit and answer `Yes` when prompted to save changes.
-<!--markdownlint-enable MD046 -->
+<!-- markdownlint-enable MD046 -->
 
+<!-- markdownlint-disable -->
 [black]: https://black.readthedocs.io/en/stable/usage_and_configuration/the_basics.html
 [cc]: https://www.contributor-covenant.org/
+[gh_fork]: https://docs.github.com/articles/fork-a-repo
+[git_hooks]: https://git-scm.com/book/en/v2/Customizing-Git-Git-Hooks
 [mypy]: https://mypy-lang.org/
 [pc]: https://pre-commit.com
+[pep8]: https://peps.python.org/pep-0008/
 [pydantic]: https://pydantic.dev/docs/
 [pylint]: https://pylint.pycqa.org/en/latest/index.html
 [ratatosk]: https://github.com/yggdrasil-materials/ratatosk/
@@ -196,3 +200,4 @@ that commit history will be a little cleaner.
 [uv]: https://docs.astral.sh/uv
 [uv_install]: https://docs.astral.sh/uv/getting-started/installation/
 [ym]: https://github.com/yggdrasil-materials/
+<!-- markdownlint-enable -->

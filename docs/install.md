@@ -17,7 +17,7 @@ You can use the `pip` tool to install directly from GitHub. The following will i
 specify any branch, tag or commit by changing what follows the `.git@` at the end from `main` to the branch or tag you
 wish to install (or even specific commit hash).
 
-```
+``` shell
 pip install @ git+https://github.com/yggdrasil-materials/ratatosk.git@main
 ```
 
