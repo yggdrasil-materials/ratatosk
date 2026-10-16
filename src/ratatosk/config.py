@@ -2,17 +2,15 @@
 
 from argparse import Namespace
 from collections.abc import MutableMapping
-from datetime import datetime
+from datetime import UTC, datetime
 from pathlib import Path
 from pkgutil import get_data
-from typing import Any, TypeVar
+from typing import Any
 
 from loguru import logger
 
 from ratatosk import CONFIG_DOCUMENTATION_REFERENCE
 from ratatosk.io import convert_path, read_yaml
-
-MutableMappingType = TypeVar("MutableMappingType", bound="MutableMapping")  # pylint: disable=invalid-name
 
 
 def reconcile_config_args(
@@ -60,7 +58,7 @@ def reconcile_config_args(
     return config
 
 
-def merge_mappings(  # noqa: UP047
+def merge_mappings[MutableMappingType](  # pylint: disable=invalid-name
     map1: MutableMappingType, map2: MutableMappingType
 ) -> MutableMappingType:
     """
@@ -161,7 +159,7 @@ def write_config_with_comments(  # pylint: disable=too-many-branches
     with config_path.open("w", encoding="utf-8") as f:
         try:
             f.write(
-                f"# Config file generated {datetime.now(tz='utc').strftime('%Y-%m-%d %H:%M:%S')}\n"
+                f"# Config file generated {datetime.now(UTC).strftime('%Y-%m-%d %H:%M:%S')}\n"
             )
             f.write(f"{CONFIG_DOCUMENTATION_REFERENCE}")
             f.write(config.decode("utf-8"))

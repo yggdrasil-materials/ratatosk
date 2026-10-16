@@ -147,7 +147,7 @@ def write_config(args: Namespace | dict[str, Any] | Parameters | None) -> None:
 
     Parameters
     ----------
-    args : Namespace | dict[str, Any], optional
+    args : Namespace | dict[str, Any] | Parameters, optional
         A Namespace object parsed from argparse. If there are values for ``output_dir`` and ``filename`` these will be
         used to construct the path and filename to write the YAML file to.  If not then output files are contingent on
         how the function is being called. If it is from ``ratatosk create_config`` then ``default_config.yaml`` will be
@@ -198,7 +198,7 @@ def write_config(args: Namespace | dict[str, Any] | Parameters | None) -> None:
         config_path = output_dir / f"{filename}.yaml"
     else:
         config_path = output_dir / filename
-    logger_msg = "A sample configuration has been written to"
+    logger_msg = "Configuration written to"
     with config_path.open("w", encoding="utf-8") as f:
         try:
             f.write(f"# Config generated {get_date_time()}\n")
@@ -478,21 +478,25 @@ def _apply_electrode_convention(df, electrode_type):
     return d, True
 
 
-def apply_electrode_convention(dataset, electrode_type):
+def apply_electrode_convention(dataset: Dataset, electrode_type: str):
     """
     Return a copy of `dataset` with the convention for `electrode_type` applied.
 
-    1.8.7 loaded in Cell 2, asked for the electrode type in Cell 3, and applied
-    the convention in Cell 4 — in that order, because the operator has to be
-    asked before the answer can be used. `read_neware` can apply it directly
-    when the type is already known; this is for the interactive path, where it
-    is not.
-
-    Applying it twice is a no-op ONLY for the same answer. Re-applying
-    "Negative" to an already-swapped dataset returns it unchanged; re-stamping
-    it as "Positive" raises, because that would leave the Step labels,
-    capacity columns and dQ/dV sign inverted while the record claimed
+    Re-applying `Negative` to an already-swapped dataset returns it unchanged; re-stamping it as `Positive` raises,
+    because that would leave the `Step` labels,  capacity columns and `dQ/dV` sign inverted while the record claimed
     otherwise — silently mirrored data with nothing to notice it by.
+
+    Parameters
+    ----------
+    dataset : Dataset
+        Dataset to be processed.
+    electrode_type : str
+        Either `negative` or `positive` (case insensitive).
+
+    Returns
+    -------
+    Dataset
+        Dataset with electrode type switched.
     """
     if dataset.labels_swapped:
         if str(electrode_type).lower() == "negative":
@@ -604,17 +608,17 @@ def read_neware(
     Parameters
     ----------
     sheets : dict[str, pd.DataFrame], optional
-        A dictionary of sheets from `io.open_xlsx`. If `None` then
+        A dictionary of sheets from `io.open_xlsx`.
     sheet : str
         The sheet to extract, defaults to "record".
-    path: str | Path,
+    path : str | Path,
         Path to `xlsx` file.
-    name: str | None = None,
+    name : str | None = None,
         Name of the file.
-    electrode_type: str = "Positive",
+    electrode_type : str = "Positive",
         Electrode type, options are `Positive` (default) and `Negative`.
-    meta: str | None = None,
-        Something?
+    meta : str | None = None,
+        Something.
     columns : dict, optional
         Dictionary for renaming columns. If `None` a default is used.
 
@@ -660,3 +664,25 @@ def read_neware(
         source_path=str(path),
         source_sha256=file_sha256(path),
     )
+
+
+def find_files(
+    base_dir: str | Path | None = None, file_ext: str = "xlsx"
+) -> list[Path]:
+    """
+    Recursively scan the specified directory for images with the given file extension.
+
+    Parameters
+    ----------
+    base_dir : str | Path, optional
+        Directory to recursively search for files, if not specified the current directory is scanned.
+    file_ext : str
+        File extension to search for.
+
+    Returns
+    -------
+    List
+        List of files found with the extension in the given directory.
+    """
+    base_dir = Path("./") if base_dir is None else Path(base_dir)
+    return list(base_dir.glob("**/*" + file_ext))

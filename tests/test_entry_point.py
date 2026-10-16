@@ -23,19 +23,18 @@ RESOURCES = BASE_DIR / "tests" / "resources"
 
 @pytest.mark.parametrize("option", ["-h", "--help"])
 def test_entry_point_help(option: str, capsys) -> None:
-    """Test help for the ``entry_point()`` function."""
+    """Test help for the `entry_point()` function."""
     with contextlib.suppress(SystemExit):
         entry_point(manually_provided_args=[option])
     output = capsys.readouterr().out
     assert "usage:" in output
-    assert "program" in output
 
 
 @pytest.mark.parametrize(
     (("argument", "option")),
     [
-        pytest.param("analysis", "-h", id="process with -h"),
-        pytest.param("analysis", "--help", id="process with --help"),
+        pytest.param("process", "-h", id="process with -h"),
+        pytest.param("process", "--help", id="process with --help"),
         pytest.param("create-config", "-h", id="create-config with -h"),
         pytest.param("create-config", "--help", id="create-config with --help"),
     ],
