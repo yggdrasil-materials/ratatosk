@@ -115,6 +115,9 @@ class Parameters(BaseSettings):
     )
     log_level: str = Field(default="info", title="Log level")
     cores: int = Field(default=2, title="Cores to run optimisation on in parallel")
+    file_ext: str = Field(
+        default="xlsx", title="File extension of battery monitoring results."
+    )
 
     # Used to select the YAML source, not as an application setting.
     config_file: Path | None = Field(default=None, exclude=True)

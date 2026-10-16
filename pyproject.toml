@@ -28,6 +28,7 @@ classifiers = [
   "Typing :: Typed",
 ]
 dependencies = [
+  "art>=6.5",
   "joblib>=1.6",
   "lmfit>=1.3",
   "loguru>=0.7.3",
@@ -40,6 +41,7 @@ dependencies = [
   "ruamel.yaml>=0.19.1",
   "scipy>=1.18",
   "seaborn>=0.13",
+  "tqdm>=4.70.1",
 ]
 
 [project.scripts]

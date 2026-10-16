@@ -49,6 +49,7 @@ coverage.xml
 *.py,cover
 .hypothesis/
 cover/
+.testmondata
 
 # Translations
 *.mo

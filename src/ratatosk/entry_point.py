@@ -9,6 +9,7 @@ from typing import Any
 
 from ratatosk import __version__  # , run_modules
 from ratatosk.io import write_config
+from ratatosk.run_module import process
 
 
 def ratatosk_parser() -> arg.ArgumentParser:
@@ -22,13 +23,13 @@ def ratatosk_parser() -> arg.ArgumentParser:
     arg.ArgumentParser
         Argument parser.
     """
-    parser = arg.ArgumentParser(description="Run layopt.")
+    parser = arg.ArgumentParser(description="Run Ratatosk analysis.")
     parser.add_argument(
         "-v",
         "--version",
         action="version",
-        version=f"Installed version of Layopt: {__version__}",
-        help="Report the current version of Layopt that is installed",
+        version=f"Installed version of Ratatosk: {__version__}",
+        help="Report the current version of Ratatosk that is installed",
     )
     parser.add_argument(
         "-c",
@@ -39,12 +40,28 @@ def ratatosk_parser() -> arg.ArgumentParser:
         help="Path to a YAML configuration file.",
     )
     parser.add_argument(
+        "-b",
+        "--base-dir",
+        dest="base_dir",
+        type=Path,
+        required=False,
+        help="Base directory to search for files.",
+    )
+    parser.add_argument(
         "-o",
         "--output-dir",
         dest="output_dir",
         type=Path,
         required=False,
         help="Output directory to write results to.",
+    )
+    parser.add_argument(
+        "-e",
+        "--file-ext",
+        dest="file_ext",
+        type=str,
+        required=False,
+        help="File extension to search for.",
     )
     parser.add_argument(
         "-l",
@@ -69,14 +86,14 @@ def ratatosk_parser() -> arg.ArgumentParser:
         dest="module",
     )
 
-    # Add an analysis parser
-    analysis_parser = subparsers.add_parser(
-        "analysis",
-        description="Run Ratatosk analysis",
-        help="Run Rataosk analysis",
+    # Add an process parser
+    process_parser = subparsers.add_parser(
+        "process",
+        description="Process all files.",
+        help="Process all files.",
     )
     # ns-rse 2026-10-07 place holder, yet to write run_modules
-    analysis_parser.set_defaults()
+    process_parser.set_defaults(func=process)
 
     # Add a create configuration parser
     create_config_parser = subparsers.add_parser(
