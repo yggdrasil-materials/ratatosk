@@ -1,0 +1,32 @@
+# This CITATION.cff file was generated with cffinit.
+# Visit https://bit.ly/cffinit to generate yours today!
+
+cff-version: 1.2.0
+title: Ratatosk
+message: >-
+  If you use this software, please cite it using the
+  metadata from this file.
+type: software
+authors:
+  - given-names: Nik
+    family-names: Reeves-McLaren
+    email: nik.reeves-mclaren@sheffield.ac.uk
+    affiliation: University of Sheffield
+    orcid: 'https://orcid.org/0000-0002-1061-1230'
+  - given-names: Neil
+    family-names: 'https://orcid.org/0000-0002-1061-1230'
+    email: n.shephard@sheffield.ac.uk
+    affiliation: University of Sheffield
+    orcid: 'https://orcid.org/0000-0001-8301-6857'
+repository-code: 'https://github.com/yggdrasil-materials/ratatosk'
+url: 'https://yggdrasil-materials.github.io/ratatosk'
+abstract: >-
+  Validated electrochemical data-processing, analysis and
+  integrity tool for battery research.
+keywords:
+  - electrochemical
+  - batteries
+  - battery research
+  - analysis
+  - python
+license: MIT
