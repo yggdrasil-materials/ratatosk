@@ -4,3 +4,10 @@ output_dir: ./output # Where to save output to
 log_level: info # Verbosity used in logging
 cores: 2 # Number of cores to use when processing
 file_ext: xlsx # File extension of results to analyse
+terminal_trim: true # Whether to perform trimming of half-cycles
+terminal_trim_fixed_mv: 75.0 # ???
+terminal_trim_factor: 1.4 # ???
+terminal_trim_max_fraction: 0.1 # ???
+terminal_trim_band_mv: 20.0 # ???
+terminal_trim_interior: [0.2, 0.8] # ???
+dqdv_computation: histogram # Differential method, valid values are 'histogram' or 'derivative'
