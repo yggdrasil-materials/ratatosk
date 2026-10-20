@@ -11,6 +11,7 @@ from typing import TYPE_CHECKING, Any
 if TYPE_CHECKING:
     import argparse
 
+import numpy as np
 from art import tprint
 from loguru import logger
 from ruamel.yaml import YAML
@@ -22,6 +23,8 @@ from ratatosk import (
     classes,
     config,
     io,
+    quality,
+    signal,
 )
 
 
@@ -91,7 +94,9 @@ def _parse_configuration(  # pylint: disable=used-before-assignment
 
 
 def analysis(
-    filename: str | Path, config_parameters: classes.Parameters
+    filename: str | Path,
+    config_parameters: classes.Parameters,
+    file_structures: classes.FileStructures,
 ) -> tuple[str, int]:
     """Analyse a single file.
 
@@ -101,6 +106,8 @@ def analysis(
         Filename of file to be processed.
     config_parameters : classes.Parameters
         `Parameters` configuration object.
+    file_structures : classes.FileStructures
+        `FileStructures` configuration object.
 
     Returns
     -------
@@ -110,8 +117,98 @@ def analysis(
     if Path(filename).exists():
         # ns-rse 2026-10-15 - sometimes get full path, need to handle this variation
         # logger.info(f"Found file : {filename.relative_to(Path().cwd())}")
-        logger.info(f"Found file : {filename}")
-    assert isinstance(config_parameters, classes.Parameters)
+        sheets = io.read_xlsx(filename)
+        filename_stem = Path(filename).stem
+        logger.info(f"[{filename_stem}] : Loaded all worksheets.")
+    else:
+        error_msg = f"Unable to load {filename}"
+        raise FileExistsError(error_msg)
+    # If `record` is a sheet we are likely working with Neware files
+    if file_structures.neware["sheets"]["test_data"] in sheets:
+        metadata = io.extract_neware_metadata(
+            sheets=sheets,
+            filename=filename_stem,
+            sheet=file_structures.neware["sheets"]["metadata"],
+            metadata=None,
+        )
+        logger.info(f"[{filename_stem}] : Metadata loaded.")
+        dataset = io.read_neware(
+            sheets=sheets,
+            sheet=file_structures.neware["sheets"]["test_data"],
+            path=filename,
+            name=filename_stem,
+            electrode_type="Positive",
+            meta=metadata,
+            columns=file_structures.neware["column_mapping"],
+        )
+        logger.info(f"[{filename_stem}] : Test data loaded.")
+    else:
+        logger.info(
+            f"[{filename_stem}] : Missing {file_structures.neware['sheets']['test_data']}"
+            " worksheet probably not a 'Neware' output file."
+        )
+        return (Path(filename).stem, 0)
+    profile = signal.classify_dqdv_profile(df=dataset.df, filename=filename_stem)
+    logger.info(f"[{filename_stem}] : dq/dv profile classified.")
+    # ns-rse 2026-10-20 : Why does a function that pre-processes
+    auto_params = signal.auto_preprocess_params(profile)
+    logger.info(
+        f"[{filename_stem}] : pre-processing parameters automatically determined."
+    )
+    # ns-rse 2026-10-20 : Notebook overrides auto generated parameters with user input, not doing that in batch
+    # processing (yet!). What parameters should be over-written from configuration file though?
+    # ns-rse 2026-10-20 : This is messy having extracted and split dataframe into dictionary indexed by (cycle, step) we
+    # now have to pass the whole dataset in, which contains the original dataframe _and_ the dictionary of subsets just
+    # to extract the desired cycle/step. There are better ways of doing this!
+    signal_reports = {}
+    for cycle_step in dataset.half_cycle_keys():
+        signal_reports[cycle_step] = signal.half_cycle_report(
+            dataset=dataset,
+            cycle=cycle_step[0],
+            step=cycle_step[1],
+            params=auto_params,
+            window=signal.voltage_window(dataset),
+        )
+    logger.info(f"[{filename_stem}] : Initial half-cycle report complete.")
+    # Extract data from the dictionary of signal reports
+    # ns-rse 2026-10-20 : I wonder if its better to add these as attributes to the dataset in the previous step?
+    voltage_reconstruction, bin_width, empty_bins, voltage_size = [], [], 0, 0
+    for cycle_step, _signal in signal_reports.items():
+        # There is no voltage for this charge/cycle move on to the next
+        if not _signal.voltage.size:
+            continue
+        if np.isfinite(_signal.bin_width_mV):
+            bin_width.append(_signal.bin_width_mV)
+        empty_bins += _signal.n_empty_bins
+        voltage_size += _signal.voltage.size
+        capacity = (
+            "Charge_Capacity"
+            if cycle_step[1].lower().startswith("c")
+            else "Discharce_Capacity"
+        )
+        half_cycle_df = dataset.half_cycle(cycle=cycle_step[0], step=cycle_step[1])
+        if capacity not in half_cycle_df.columns:
+            continue
+        voltage_reconstruction.append(
+            quality.voltage_reconstruction(
+                voltage=_signal.voltage,
+                dqdv=_signal.dqdv,
+                q_measured=half_cycle_df[capacity].to_numpy(),
+                v_measured=half_cycle_df["Voltage"].to_numpy(),
+            )
+        )
+    logger.info(
+        f"[{filename_stem}] : Extracted and recontsructed voltages from half-cycles."
+    )
+    if config_parameters.terminal_trim:
+        signal.trim_terminals(
+            signal_reports,
+            terminal_trim_fixed_mv=config_parameters.terminal_trim_fixed_mv,
+            voltage_threshold=config_parameters.terminal_trim_band_mv,
+        )
+        logger.info(f"[{filename}] : Voltages trimmed.")
+    # assert isinstance(config_parameters, classes.Parameters)
+    # assert isinstance(dataset.df, pd.DataFrame)
     return (Path(filename).stem, 1)
 
 
@@ -130,9 +227,14 @@ def process(args: argparse.Namespace | None = None) -> None:  # pylint: disable=
     input_files = io.find_files(
         base_dir=config_parameters.base_dir, file_ext=config_parameters.file_ext
     )
-    processing_function = partial(analysis, config_parameters=config_parameters)
+    # Setup a partial function, we hard code the file_structures from the class, users should never have to fiddle with
+    # this, if new file support is required it is a development issue.
+    processing_function = partial(
+        analysis,
+        config_parameters=config_parameters,
+        file_structures=classes.FileStructures(),
+    )
     results = {}
-    analysis(filename=input_files[0], config_parameters=config_parameters)
     with (
         Pool(processes=config_parameters.cores) as pool,
         tqdm(

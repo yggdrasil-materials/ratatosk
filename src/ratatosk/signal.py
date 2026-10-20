@@ -39,10 +39,11 @@ from dataclasses import dataclass, field
 
 import numpy as np
 import pandas as pd
+from loguru import logger
 from scipy.signal import savgol_filter
 
 from .compat import trapezoid
-from .style import bullet, entry
+from .style import entry
 
 __all__ = [
     "CV_CURRENT_FRACTION",
@@ -98,7 +99,7 @@ _SHARP_IQR_FRACTION = 0.08  # IQR < 8% of range  -> two-phase plateau
 _MODERATE_IQR_FRACTION = 0.20  # IQR < 20% of range -> moderate
 
 
-def classify_dqdv_profile(df, verbose=True):
+def classify_dqdv_profile(df, filename: str):
     """
     Classify the electrochemical profile of a dataset to guide dQ/dV
     preprocessing.
@@ -200,14 +201,13 @@ def classify_dqdv_profile(df, verbose=True):
             plateau_fractions.append(plat_frac)
 
     if not iqr_fractions:
-        if verbose:
-            print(
-                entry(
-                    "profile",
-                    "broad",
-                    "assumed — no half-cycle had 20+ records spanning 10 mV",
-                )
-            )
+        logger.debug(
+            f"\n[{filename}]\n"
+            f"profile          : {profile_class}\n"
+            f"IQR/range        : {mean_iqr_frac:.3f}\n"
+            f"plateau fraction : {mean_plat_frac:.2f}\n"
+            f"description      : {description}"
+        )
         return {
             "class": "broad",
             "iqr_fraction": np.nan,
@@ -255,15 +255,13 @@ def classify_dqdv_profile(df, verbose=True):
     # kernel, and downstream the baseline degree and the sigma bounds — so a
     # run that does not say which class it chose does not say how any of its
     # numbers were produced. It was silent for four releases.
-    if verbose:
-        print(
-            entry(
-                "profile",
-                profile_class,
-                f"IQR/range {mean_iqr_frac:.3f}, plateau fraction {mean_plat_frac:.2f}",
-            )
-        )
-        print(bullet(description))
+    logger.debug(
+        f"\n[{filename}]\n"
+        f"profile          : {profile_class}\n"
+        f"IQR/range        : {mean_iqr_frac:.3f}\n"
+        f"plateau fraction : {mean_plat_frac:.2f}\n"
+        f"description      : {description}"
+    )
     return out
 
 
@@ -1665,7 +1663,63 @@ TERMINAL_TRIM_BAND_MV = 20.0
 TERMINAL_TRIM_INTERIOR = (0.2, 0.8)
 
 
-def terminal_trim(voltage, dqdv, *, factor=None, max_fraction=None, band_mV=None):
+def trim_terminals(
+    signal_report: dict[tuple[int, str], signal.HalfCycleSignal],
+    terminal_trim_fixed_mv: float | None,
+    states: tuple[str, str] = ("Charge", "Discharge"),
+    voltage_threshold: float = 20.0,
+) -> Any:
+    """
+    Trim the fixed span off each half-cycle's terminating end (high for charge, low for discharge).
+
+    Parameters
+    ----------
+    signal_report : dict[tuple[int, str], signal.HalfCycleSignal]
+        Dictionary of `HalfCycleSignal` reports.
+    terminal_trim_fixed_mv : float
+        Quantity to trim by.
+    states: tuple[str, str]
+        The states over which to perform trimming, default is `("Charge", "Discharge")` and shouldn't need changing.
+    voltage_threshold: float
+        Voltage threshold.
+    """
+    trimmed_cycles = {}
+    for state in states:
+        something = [
+            _signal
+            for cycle_step, _signal in signal_report.items()
+            if cycle_step[1] == state
+        ]
+        if terminal_trim_fixed_mv:
+            low_v = (terminal_trim_fixed_mv / 1000) if state == "Discharge" else 0.0
+            high_v = (terminal_trim_fixed_mv / 1000) if state == "Charge" else 0.0
+        else:
+            _tmp = [
+                terminal_trim(x.voltage, x.dqdv)
+                for x in something
+                if np.size(x.voltage) > voltage_threshold
+            ]
+            if not _tmp:
+                continue
+            low_v = np.median([low_volt for low_volt, _ in _tmp])
+            high_v = np.median([high_volt for _, high_volt in _tmp])
+        trimmed_cycles[state] = (low_v, high_v)
+        if low_v <= 0.0 and high_v <= 0.0:
+            continue
+        _subset = {
+            cycle_step: _signal
+            for cycle_step, _signal in signal_report.items()
+            if cycle_step[1] == state
+        }
+        for cycle_step, _signal in _subset.items():
+            signal_report[cycle_step] = apply_terminal_trim(
+                sig=_signal, low_V=low_v, high_V=high_v
+            )
+
+
+def terminal_trim(
+    voltage, dqdv, *, factor=None, max_fraction=None, band_mV=None
+) -> tuple[float, float]:
     """How far in from each end the curve is still the cut-off approach.
 
     Returns `(low_V, high_V)` — the span to remove at the bottom and top of
@@ -1697,7 +1751,7 @@ def terminal_trim(voltage, dqdv, *, factor=None, max_fraction=None, band_mV=None
     cap = max_fraction * span
     thr = factor * interior
 
-    def _walk(from_low):
+    def _walk(from_low: bool) -> float:
         d = (v - v[0]) if from_low else (v[-1] - v)
         step, out = band, 0.0
         while step <= cap:
