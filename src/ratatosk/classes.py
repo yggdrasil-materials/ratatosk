@@ -108,17 +108,26 @@ class DefaultYamlSource(PydanticBaseSettingsSource):
 class Parameters(BaseSettings):
     """Parameters for analysis."""
 
-    base_dir: Path = Field(default=Path("./"), title="Base directory")
+    base_dir: Path = Field(default=Path("./"), title="Base directory.")
     output_dir: Path = Field(
         default=Path("./output/"),
         title="Path to save the output to, default is './output/'.",
     )
     log_level: str = Field(default="info", title="Log level")
-    cores: int = Field(default=2, title="Cores to run optimisation on in parallel")
+    cores: int = Field(default=2, title="Cores to run optimisation on in parallel.")
     file_ext: str = Field(
         default="xlsx", title="File extension of battery monitoring results."
     )
-
+    terminal_trim: bool = Field(default=True, title="Whether to trim half-cycles.")
+    terminal_trim_fixed_mv: float = Field(default=75.0, title="Fixed mV to trim by.")
+    terminal_trim_factor: float = Field(default=1.4, title="???")
+    terminal_trim_max_fraction: float = Field(default=0.1, title="???")
+    terminal_trim_band_mv: float = Field(default=20.0, title="???")
+    terminal_trim_interior: tuple[float, float] = Field(default=(0.2, 0.8), title="???")
+    dqdv_computation: str = Field(
+        default="histogram",
+        title="Differential method, valid values are 'histogram' or 'derivative'",
+    )
     # Used to select the YAML source, not as an application setting.
     config_file: Path | None = Field(default=None, exclude=True)
 
