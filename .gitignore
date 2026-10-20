@@ -194,3 +194,6 @@ data/
 
 # Misc
 docs/markdown.md
+
+# Excel lockfiles
+.~*\#
