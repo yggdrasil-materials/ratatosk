@@ -15,6 +15,7 @@ from ratatosk import io
 
 BASE_DIR = Path.cwd()
 RESOURCES = BASE_DIR / "tests" / "resources"
+CSV_DIR = RESOURCES / "csv"
 
 GITHUB_WIN = os.getenv("GITHUB_ACTIONS") == "true" and sys.platform == "win32"
 
@@ -30,6 +31,8 @@ CONFIG = {
     "nested": {"something": "else"},
     "a_list": [1, 2, 3],
 }
+
+# pylint: disable=protected-access
 
 
 @pytest.mark.skipif(GITHUB_WIN, reason="SHA256 checksums differ under M$-Win")
@@ -175,12 +178,12 @@ def test_truncate_cycles() -> None:
         ),
     ],
 )
-def test_open_xlsx(
+def test_read_xlsx(
     fixture_str: str, n_sheets: int, sheet_names: list[str], request
 ) -> None:
     """Test the `io.open_workbook()` function."""
     path = request.getfixturevalue(fixture_str)
-    xlsx = io.open_xlsx(path)
+    xlsx = io.read_xlsx(path)
     assert len(xlsx) == n_sheets
     assert list(xlsx.keys()) == sheet_names
 
@@ -190,8 +193,8 @@ def test_open_xlsx(
     ("fixture_str", "path", "file_hash", "shape", "colnames"),
     [
         pytest.param(
-            "record_df",
-            RESOURCES / "record.csv",
+            "neware_record_df",
+            CSV_DIR / "neware_record.csv",
             "3b192ee1a8ce8ed76d3b49b57f9006107ec5f416f93651952cbc64939be5d6d6",
             (3, 26),
             [
@@ -238,6 +241,93 @@ def test_read_neware(
     sheets = {"record": request.getfixturevalue(fixture_str)}
     dataset = io.read_neware(sheets=sheets, sheet="record", path=path)
     assert dataset.source_sha256 == file_hash
-    assert dataset.name == "record"
+    assert dataset.name == "neware_record"
     assert dataset.frame.shape == shape
     assert list(dataset.frame.columns) == colnames
+
+
+@pytest.mark.parametrize(
+    ("df_fixture", "col", "row", "expected"),
+    [
+        pytest.param("dummy_df", 0, 0, 1, id="col 0, row 0, int"),
+        pytest.param("dummy_df", 0, 1, 2.0, id="col 0, row 1, float"),
+        pytest.param("dummy_df", 0, 2, "three", id="col 0, row 2, str"),
+        pytest.param("dummy_df", 0, 3, None, id="col 0, row 3, NaN returned as NaN"),
+        pytest.param("dummy_df", 0, 4, "", id="col 0, row 4, empty string"),
+        pytest.param("dummy_df", 0, 5, None, id="col 0, row 5, None"),
+        pytest.param("dummy_df", 1, 0, None, id="col 1, row 0, None"),
+        pytest.param("dummy_df", 1, 1, "", id="col 1, row 1, empty string"),
+        pytest.param("dummy_df", 1, 2, None, id="col 1, row 2, NaN returned as NaN"),
+        pytest.param("dummy_df", 1, 3, "three", id="col 1, row 3, str"),
+        pytest.param("dummy_df", 1, 4, 2.0, id="col 1, row 4, float"),
+        pytest.param("dummy_df", 1, 5, 1, id="col 1, row 5, int"),
+    ],
+)
+def test__get_cell_value(
+    df_fixture: str, col: int, row: int, expected: str | float | None, request
+) -> None:
+    """Test for `_get_cell_value()`."""
+    df = request.getfixturevalue(df_fixture)
+    assert io._get_cell_value(df=df, row=row, col=col) == expected
+
+
+@pytest.mark.parametrize(
+    ("text", "expected"),
+    [
+        pytest.param("0.1452", 0.1452, id="unsigned float, no text"),
+        pytest.param("-0.12", -0.12, id="negative float, no text"),
+        pytest.param("+10.1678", 10.1678, id="positive float, no text"),
+        pytest.param("-.12", -0.12, id="negative float, no text, no leading 0"),
+        pytest.param("+.1678", 0.1678, id="positive float, no text, no leading 0"),
+        pytest.param("0.1452", 0.1452, id="unsigned float, text"),
+        pytest.param("-0.12a", -0.12, id="negative float, text"),
+        pytest.param("+10.1678a", 10.1678, id="positive float, text"),
+        pytest.param("-.12a", -0.12, id="negative float, text, no leading 0"),
+        pytest.param("+.1678a", 0.1678, id="positive float, text, no leading 0"),
+        pytest.param("1", 1.0, id="unsigned int, no text"),
+        pytest.param("-10", -10.0, id="negative int, no text"),
+        pytest.param("+100", 100.0, id="positive int, no text"),
+        pytest.param("1b", 1.0, id="unsigned int, text"),
+        pytest.param("-10b", -10.0, id="negative int, text"),
+        pytest.param("+100b", 100.0, id="positive int, text"),
+    ],
+)
+def test__parse_numeric(text: str, expected: float) -> None:
+    """Test for `_parse_numeric()`."""
+    assert io._parse_numeric(text=text) == expected
+
+
+@pytest.mark.parametrize(
+    ("neware_metadata_fixture", "filename", "sheet", "metadata"),
+    [
+        pytest.param("neware_metadata_df", "testing", "test", None, id="No metadata"),
+        pytest.param(
+            "neware_metadata_df",
+            "testing",
+            "test",
+            {
+                "active_material_mass_mg": None,
+                "voltage_upper_V": None,
+                "voltage_lower_V": None,
+                "cycle_count": None,
+                "c_rate": None,
+                "charge_current_A": None,
+                "discharge_current_A": None,
+                "barcode": None,
+                "test_start_date": None,
+            },
+            id="Explicit metadata",
+        ),
+    ],
+)
+def test_extract_neware_metadata(
+    neware_metadata_fixture: str,
+    filename: str,
+    sheet: str,
+    metadata: dict[str, int | float | None],
+    request,
+    snapshot,
+) -> None:
+    """Test for `extract_neware_metadata()`."""
+    sheets = {"test": request.getfixturevalue(neware_metadata_fixture)}
+    assert io.extract_neware_metadata(sheets, filename, sheet, metadata) == snapshot

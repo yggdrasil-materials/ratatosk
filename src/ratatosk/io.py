@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
+import contextlib
 import hashlib
+import re
 from argparse import Namespace
 from dataclasses import dataclass, field, replace
 from datetime import datetime
@@ -561,7 +563,7 @@ def truncate_cycles(dataset: Dataset, max_cycle) -> Dataset:
     return replace(dataset, frame=f[keep].reset_index(drop=True))
 
 
-def open_xlsx(path: str | Path) -> dict[str, pd.DataFrame]:
+def read_xlsx(path: str | Path) -> dict[str, pd.DataFrame]:
     """
     Open a `.xls[x]` spreadsheet and read all sheets.
 
@@ -572,7 +574,7 @@ def open_xlsx(path: str | Path) -> dict[str, pd.DataFrame]:
 
     Parameters
     ----------
-    path : pd.Excelfile, str
+    path : str | Path
         Returns a class for parsing the given Excel file and the engine name.
 
     Returns
@@ -591,9 +593,9 @@ def open_xlsx(path: str | Path) -> dict[str, pd.DataFrame]:
 
 
 def read_neware(
-    sheets: dict[str, pd.DataFrame] | None = None,
+    sheets: dict[str, pd.DataFrame],
+    path: str | Path,
     sheet: str = "record",
-    path: str | Path | None = None,
     name: str | None = None,
     electrode_type: str = "Positive",
     meta: str | None = None,
@@ -609,10 +611,10 @@ def read_neware(
     ----------
     sheets : dict[str, pd.DataFrame], optional
         A dictionary of sheets from `io.open_xlsx`.
-    sheet : str
-        The sheet to extract, defaults to "record".
     path : str | Path,
         Path to `xlsx` file.
+    sheet : str
+        The sheet to extract, defaults to "record".
     name : str | None = None,
         Name of the file.
     electrode_type : str = "Positive",
@@ -643,9 +645,11 @@ def read_neware(
     sheet = sheet if sheet is not None else "record"
     logger.info(f"  Extracting {name}")
     df = _tidy_df(sheets[sheet]).rename(columns=columns)
-    for c in _NUMERIC:
-        if c in df.columns:
-            df[c] = pd.to_numeric(df[c], errors="coerce")
+    for column in _NUMERIC:
+        if column in df.columns:
+            df[column] = pd.to_numeric(df[column], errors="coerce")
+        else:
+            logger.info(f"{path} : Missing column {column}")
 
     df, swapped = _apply_electrode_convention(df, electrode_type)
     n_cyc = int(df["Cycle"].nunique()) if "Cycle" in df else 0
@@ -664,6 +668,143 @@ def read_neware(
         source_path=str(path),
         source_sha256=file_sha256(path),
     )
+
+
+def _get_cell_value(df: pd.DataFrame, row: int, col: int) -> str | None:
+    """
+    Extract the contents of a cell.
+
+    Parameters
+    ----------
+    df : pd.DataFrame
+        Pandas dataframe from which data is to be extracted.
+    row : str
+        Row to extract data from.
+    col : str
+        Column to extract data from.
+
+    Returns
+    -------
+    str | None
+        Returns the value of the cell, if a cell is `NaN` or out of range then `None` is returned.
+    """
+    try:
+        value = df.iloc[row, col]
+        return None if pd.isna(value) else value
+    except IndexError, KeyError:
+        return None
+
+
+def _parse_numeric(text: str | None) -> float | None:
+    """
+    Extract leading numeric value from '12.72mg' (`12.7`), '4.3V' (`4.3`) and so forth.
+
+    The regex here (`r"^([+-]?\\d*\\.?\\d+)"`) is looking for..
+
+    1. Whether there is a -/+ at (`[+-]?`) the start of the string (`^`)  (optional)
+    2. Zero or more numerical values (`\\d*`)
+    3. An optional period/decimal point
+    4. one or more digits (`\\d+`)
+
+    These are grouped into a value which is then converted to a `float`.
+
+    Parameters
+    ----------
+    text : str
+        String from which to extract numeric values.
+
+    Returns
+    -------
+    float | None
+        Float if numeric value is found otherwise `None`.
+    """
+    if text is None:
+        return None
+    match = re.match(r"^([+-]?\d*\.?\d+)", str(text).strip())
+    return float(match.group(1)) if match else None
+
+
+def extract_neware_metadata(
+    sheets: dict[str, pd.DataFrame],
+    filename: str | None = None,
+    sheet: str = "test",
+    metadata: dict[str, int | float | None] | None = None,
+) -> dict[str, int | float | None]:
+    """Extract metadata from a neware worksheet.
+
+    Parameters
+    ----------
+    sheets : dict[str, pd.DataFrame]
+        Dictionary of Pandas dataframes, should contain `sheet`.
+    filename : str, optional
+        Filename being processed.
+    sheet : str, optional
+        Sheet to extract, default is `test` and typically won't need changing.
+    metadata : dict[str, int | float | None], optional
+        Metadata to extract, if `None` default is used.
+
+    Returns
+    -------
+    dict[str, int | float | None]
+        Dictionary of metadata, if no values are found a dictionary with empty values is returned.
+    """
+    metadata = FileStructures().neware["metadata"] if metadata is None else metadata
+    sheet = sheet if sheet is not None else "record"
+    if sheet not in sheets:
+        logger.info(
+            f"{filename} : Missing {sheet} worksheet, can not extract metadata."
+        )
+        return metadata
+    df = sheets[sheet]
+    n_rows = min(10, len(df))
+    n_cols = min(15, len(df.columns))
+
+    for row in range(n_rows):
+        for col in range(n_cols - 2):
+            label = _get_cell_value(df=df, row=row, col=col)
+            if label is None:
+                continue
+            cell_label = str(label).lower().strip()
+            # logger.debug(f"Attempting to extract {cell_label}")
+            # Try cell + 2 columns to the right first (Neware merged cells), then cell + 1 column to the right
+            value = _get_cell_value(
+                df,
+                row=row,
+                col=col + 2,
+            )
+            # logger.debug(f"{cell_label} + 2 value : {value}")
+            if value is None:
+                value = _get_cell_value(df, row=row, col=col + 1)
+                # logger.debug(f"{cell_label} + 1 value : {value}")
+            if "active material" in cell_label:
+                mass = _parse_numeric(value)
+                if mass is not None and mass > 0:
+                    metadata["active_material_mass_mg"] = mass
+            elif "volt" in cell_label and "upper" in cell_label:
+                v = _parse_numeric(value)
+                if v is not None:
+                    metadata["voltage_upper_V"] = v
+            elif "volt" in cell_label and "lower" in cell_label:
+                v = _parse_numeric(value)
+                if v is not None:
+                    metadata["voltage_lower_V"] = v
+            elif "cycle" in cell_label and "count" in cell_label:
+                with contextlib.suppress(ValueError), contextlib.suppress(TypeError):
+                    metadata["cycle_count"] = int(float(str(value)))
+            elif "barcode" in cell_label:
+                for offset in [2, 1, 3]:
+                    bv = _get_cell_value(df=df, row=row, col=col + offset)
+                    if bv is not None and len(str(bv).strip()) > 3:
+                        metadata["barcode"] = str(bv).strip()
+                        break
+            elif "start time" in cell_label:
+                for offset in [2, 1]:
+                    sv = _get_cell_value(df=df, row=row, col=col + offset)
+                    if sv is not None:
+                        metadata["test_start_date"] = str(sv).strip()
+                        break
+
+    return metadata
 
 
 def find_files(
