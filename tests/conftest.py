@@ -2,6 +2,7 @@
 
 from pathlib import Path
 
+import numpy as np
 import pandas as pd
 import pytest
 
@@ -9,6 +10,7 @@ from ratatosk import classes
 
 BASE_DIR = Path.cwd()
 RESOURCES = BASE_DIR / "tests" / "resources"
+CSV_DIR = RESOURCES / "csv"
 XLS_DIR = RESOURCES / "xls"
 YAML_DIR = RESOURCES / "yaml"
 
@@ -32,12 +34,28 @@ def file_path_mnc111_xlsx() -> Path:
 
 
 @pytest.fixture
-def record_df() -> pd.DataFrame:
+def neware_metadata_df() -> pd.DataFrame:
+    """Neware metadata as dataframe."""
+    return pd.read_csv(CSV_DIR / "neware_metadata.csv", sep=",")
+
+
+@pytest.fixture
+def neware_record_df() -> pd.DataFrame:
     """Load five rows from a `record` worksheet from `.csv` and return as Pandas DataFrame."""
-    return pd.read_csv(RESOURCES / "record.csv", sep=",")
+    return pd.read_csv(CSV_DIR / "neware_record.csv", sep=",")
 
 
 @pytest.fixture
 def default_parameters() -> classes.Parameters:
     """The default configuration parameters."""
     return classes.Parameters()
+
+
+@pytest.fixture
+def dummy_df() -> pd.DataFrame:
+    return pd.DataFrame(
+        {
+            "a_column": [1, 2.0, "three", np.nan, "", None],
+            "b_column": [None, "", np.nan, "three", 2.0, 1],
+        }
+    )

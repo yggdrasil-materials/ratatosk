@@ -1,5 +1,5 @@
 neware:
-  columns:
+  column_mapping:
     "a": "b"
     "c": "d"
   numeric:
@@ -8,3 +8,9 @@ neware:
   step_names:
     "g": "h"
     "i": "j"
+  metadata:
+    "k": null
+    "l": null
+  sheets:
+    "m": "n"
+    "o": "p"

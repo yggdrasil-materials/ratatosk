@@ -53,7 +53,14 @@ def test_parameters(
 
 
 @pytest.mark.parametrize(
-    ("config_file", "neware_columns", "neware_numeric", "neware_step_names"),
+    (
+        "config_file",
+        "neware_column_mapping",
+        "neware_numeric",
+        "neware_step_names",
+        "neware_metadata",
+        "neware_sheets",
+    ),
     [
         pytest.param(
             files(ratatosk).joinpath("default_dictionary.yaml"),
@@ -75,6 +82,21 @@ def test_parameters(
                 "CC DCHG": "Discharge",
                 "CCCV DChg": "Discharge",
             },
+            {
+                "active_material_mass_mg": None,
+                "voltage_upper_V": None,
+                "voltage_lower_V": None,
+                "cycle_count": None,
+                "c_rate": None,
+                "charge_current_A": None,
+                "discharge_current_A": None,
+                "barcode": None,
+                "test_start_date": None,
+            },
+            {
+                "test_data": "record",
+                "metadata": "test",
+            },
             id="Default dictionary",
         ),
         pytest.param(
@@ -82,18 +104,24 @@ def test_parameters(
             {"a": "b", "c": "d"},
             ["e", "f"],
             {"g": "h", "i": "j"},
+            {"k": None, "l": None},
+            {"m": "n", "o": "p"},
             id="Dummy dictionary",
         ),
     ],
 )
-def test_data_dictionary(
+def test_data_dictionary_neware(
     config_file: Path | None,
-    neware_columns: dict[str, str],
+    neware_column_mapping: dict[str, str],
     neware_numeric: list[str],
     neware_step_names: dict[str, str],
+    neware_metadata: dict[str, None],
+    neware_sheets: dict[str, str],
 ) -> None:
     """Test for the `Parameters` class."""
     data_dictionary = classes.FileStructures(config_file=config_file)
-    assert data_dictionary.neware["columns"] == neware_columns
+    assert data_dictionary.neware["column_mapping"] == neware_column_mapping
     assert data_dictionary.neware["numeric"] == neware_numeric
     assert data_dictionary.neware["step_names"] == neware_step_names
+    assert data_dictionary.neware["metadata"] == neware_metadata
+    assert data_dictionary.neware["sheets"] == neware_sheets

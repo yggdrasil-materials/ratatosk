@@ -1,0 +1,27 @@
+# serializer version: 1
+# name: test_extract_neware_metadata[Explicit metadata]
+  dict({
+    'active_material_mass_mg': 8.24,
+    'barcode': 'JQ_MNC111_3-4.5V_0.1C_B_08052026',
+    'c_rate': None,
+    'charge_current_A': None,
+    'cycle_count': 17,
+    'discharge_current_A': None,
+    'test_start_date': '2026-05-08 18:10:29',
+    'voltage_lower_V': 2.9,
+    'voltage_upper_V': 4.6,
+  })
+# ---
+# name: test_extract_neware_metadata[No metadata]
+  dict({
+    'active_material_mass_mg': 8.24,
+    'barcode': 'JQ_MNC111_3-4.5V_0.1C_B_08052026',
+    'c_rate': None,
+    'charge_current_A': None,
+    'cycle_count': 17,
+    'discharge_current_A': None,
+    'test_start_date': '2026-05-08 18:10:29',
+    'voltage_lower_V': 2.9,
+    'voltage_upper_V': 4.6,
+  })
+# ---

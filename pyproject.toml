@@ -94,7 +94,7 @@ dev = [
 
 [tool.pytest]
 minversion = "9.1"
-addopts = ["-ra", "--showlocals", "--cov", "-m", "not e2e"]
+addopts = ["-ra", "--showlocals", "--cov", "--cov-branch", "-m", "not e2e"]
 strict = true
 filterwarnings = [
   "error",
