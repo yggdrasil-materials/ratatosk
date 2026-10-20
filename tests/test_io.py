@@ -242,8 +242,8 @@ def test_read_neware(
     dataset = io.read_neware(sheets=sheets, sheet="record", path=path)
     assert dataset.source_sha256 == file_hash
     assert dataset.name == "neware_record"
-    assert dataset.frame.shape == shape
-    assert list(dataset.frame.columns) == colnames
+    assert dataset.df.shape == shape
+    assert list(dataset.df.columns) == colnames
 
 
 @pytest.mark.parametrize(

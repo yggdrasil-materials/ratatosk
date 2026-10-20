@@ -242,7 +242,7 @@ class Dataset:
     """
 
     name: str
-    frame: pd.DataFrame
+    df: pd.DataFrame
     meta: dict = field(default_factory=dict)
     electrode_type: str = "Positive"
     labels_swapped: bool = False
@@ -286,8 +286,8 @@ class Dataset:
     def clean(self) -> pd.DataFrame:
         cached = self.__dict__.get("_clean_cache")
         if cached is None:
-            cols = [c for c in self._REQUIRED if c in self.frame.columns]
-            cached = self.frame.dropna(subset=cols)
+            cols = [c for c in self._REQUIRED if c in self.df.columns]
+            cached = self.df.dropna(subset=cols)
             self.__dict__["_clean_cache"] = cached
         return cached
 
@@ -517,7 +517,7 @@ def apply_electrode_convention(dataset: Dataset, electrode_type: str):
         raise ValueError(neg_electrode_error)
     if str(electrode_type).lower() != "negative":
         return replace(dataset, electrode_type=str(electrode_type))
-    df, swapped = _apply_electrode_convention(dataset.frame, electrode_type)
+    df, swapped = _apply_electrode_convention(dataset.df, electrode_type)
     return replace(
         dataset,
         frame=df.reset_index(drop=True),
@@ -554,7 +554,7 @@ def truncate_cycles(dataset: Dataset, max_cycle) -> Dataset:
     # ns-rse 2026-10-07 simplify the conditions here.
     if not max_cycle:
         return dataset
-    f = dataset.frame
+    f = dataset.df
     if "Cycle" not in f.columns:
         return dataset
     # ns-rse 2026-10-07 use boolean indexing to filter the dataset, overly cautious using pd.numeric() as would be
@@ -661,7 +661,7 @@ def read_neware(
     logger.info(log_msg)
     return Dataset(
         name=name,
-        frame=df.reset_index(drop=True),
+        df=df.reset_index(drop=True),
         meta=dict(meta or {}),
         electrode_type=electrode_type,
         labels_swapped=swapped,
