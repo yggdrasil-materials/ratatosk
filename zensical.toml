@@ -7,7 +7,7 @@ site_description = "Validated electrochemical data-processing, analysis and inte
 copyright = "Copyright &copy; 2026 Nik Reeves-McLaren"
 
 repo_url = "https://github.com/yggdrasil-materials/ratatosk"
-# repo_name = "user/repo"
+repo_name = "yggdrasil-materials/ratatosk"
 # edit_uri = "edit/main/docs/"
 
 nav = [
@@ -20,9 +20,15 @@ nav = [
       "science/diff_cap.md",
     ],
   },
-  "api/index.md",
   "glossary.md",
-  "science/ref.md"
+  { "Reference" = [
+      "ref/index.md",
+      "api/index.md",
+      "ref/classes.md",
+      "ref/workflow.md",
+    ],
+  },
+  "science/ref.md",
 ]
 
 # extra_css = ["stylesheets/extra.css"]
