@@ -4,10 +4,96 @@ output_dir: ./output # Where to save output to
 log_level: info # Verbosity used in logging
 cores: 2 # Number of cores to use when processing
 file_ext: xlsx # File extension of results to analyse
-terminal_trim: true # Whether to perform trimming of half-cycles
-terminal_trim_fixed_mv: 75.0 # ???
-terminal_trim_factor: 1.4 # ???
-terminal_trim_max_fraction: 0.1 # ???
-terminal_trim_band_mv: 20.0 # ???
-terminal_trim_interior: [0.2, 0.8] # ???
-dqdv_computation: histogram # Differential method, valid values are 'histogram' or 'derivative'
+# Remaining settings are listed in alphabetical order
+active:
+  fraction: 0.8
+  loading_mg_cm2: 4.173396285520811
+  material_mass_mg: 4.72
+anode_labels_swapped: false
+barcode: null
+battery_chemistry: null
+blend: [80.0, 10.0, 10.0]
+cell_id: A
+charge_current_a_from_file: 8.18e-05
+charge_rate_c: 0.1741
+composition: null
+counter_electrode:
+  mass_mg: 97.61556693234206
+  measured: False
+  metal: Na
+  metal_source: assumed
+cycling_verbose: true # How much of the cycling is reported
+dead_cell:
+  capacity_fraction: 0.02
+  run: 3
+discharge_current_a_from_file: null
+dqdv:
+  bin_mv: null # Voltage bin width  for the histogram in mV
+  computation: histogram # Differential method, valid values are 'histogram' or 'derivative'
+edge_exclusion_mv: 50.0
+electrode:
+  area_cm2: 1.1309733552923256
+  diameter_mm: 12.0
+  type: Positive
+electrolyte:
+  composition: null
+  volume_ul: 100.0
+fit_unresolved: true # Fit a dataset whose reference cycle says its peaks are not resolvable
+figure:
+  colour_palette: viridis_r
+  file_format: png
+  height_in: 5.0 # Figure height in inches applied to every figure produced
+  histogram_bin_mv: auto
+  histogram_smooth_bins: auto
+  theme: viridis_r # Theme to plot figures with
+  width_in: 6.73 # Figure width in inches applied to every figure produced
+key_cycles: [1, 5, 10, 20, 30, 40, 50]
+max_cycle: null # Cap the analysis at the given cycle
+peak:
+  min_distance_mv: auto
+  min_width_mvv: 5
+  prominence_fraction: 0.05
+polyorder: 3
+power_energy_analysis: true
+qc_cycle: 3 # Which cycle the preprocessing quality control figure shows raw against
+rebin_width_mv: auto
+reference_cycle: 2
+run_peak_fitting: true # Whether to fit the dQ/dV peaks
+second_smooth_window: auto
+separator_type: "SLS Select GF/6 glass microfibre (SLS4522)"
+shoulder_detection: true
+smoothing_window: auto
+spike:
+  removal: auto
+  threshold_multiplier: auto
+  window_size: 5
+stop_fitting_at_death: true # Stop fitting once the cell has stopped delivering charge
+terminal_trim:
+  run: true # Whether to perform trimming of half-cycles
+  band_mv: 20.0 # ???
+  fixed_mv: 75.0 # ???
+  factor: 1.4 # ???
+  interior: [0.2, 0.8] # ???
+  max_fraction: 0.1 # ???
+termination:
+  tol_mv: 20.0
+  tol_spreads: 5.0
+  reference_n: 10
+test_start_date: null
+theoretical_capacity:
+  library_formula: null
+  mah: 0.4719999999999999
+  mah_g: 100.0
+  source: null
+theoretical_charge:
+  current_ma: 0.08217519999999999
+  rate_mah_g: 17.41
+total_electrode_coating_mg: 5.8999999999999995
+total_loading_mg_cm2: 5.216745356901013
+tracking_tolerance_mv: 80.0
+voltage:
+  limit_lower_v_from_file: 1.9
+  limit_upper_v_from_file: 4.3
+  lower_v: 2.0
+  upper_v: 4.2
+  window_source: "measured from data"
