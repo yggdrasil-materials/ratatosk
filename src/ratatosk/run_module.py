@@ -12,6 +12,7 @@ if TYPE_CHECKING:
     import argparse
 
 import numpy as np
+import pandas as pd
 from art import tprint
 from loguru import logger
 from ruamel.yaml import YAML
@@ -20,6 +21,7 @@ from tqdm import tqdm
 from ratatosk import (
     RATATOSK_BASE_VERSION,
     RATATOSK_COMMIT,
+    analyse,
     classes,
     config,
     io,
@@ -114,6 +116,9 @@ def analysis(
     tuple[str, int]
         Tuple of `filename` and the value `1` (for now, will be returning actual data for aggregation in due course).
     """
+    ###############################################################################
+    ## Load File                                                                 ##
+    ###############################################################################
     if Path(filename).exists():
         # ns-rse 2026-10-15 - sometimes get full path, need to handle this variation
         # logger.info(f"Found file : {filename.relative_to(Path().cwd())}")
@@ -150,29 +155,43 @@ def analysis(
         return (Path(filename).stem, 0)
     profile = signal.classify_dqdv_profile(df=dataset.df, filename=filename_stem)
     logger.info(f"[{filename_stem}] : dq/dv profile classified.")
-    # ns-rse 2026-10-20 : Why does a function that pre-processes
+    ###############################################################################
+    ## Pre-Process Parameters                                                    ##
+    ###############################################################################
     auto_params = signal.auto_preprocess_params(profile)
     logger.info(
         f"[{filename_stem}] : pre-processing parameters automatically determined."
     )
+    # | Notebook  | Here       | Comment
+    # | name      | -          | Not looping over files here, we are processing ONE file.
+    # | ds        | dataset    |
+    # | _rec      | voltage_recondstruction |
+    # | _bw       | bin_width  |
+    # | _empty    | empty_bins | Just a counter
+    # | _bins     | voltage_bins | The number of voltage bins
     # ns-rse 2026-10-20 : Notebook overrides auto generated parameters with user input, not doing that in batch
     # processing (yet!). What parameters should be over-written from configuration file though?
     # ns-rse 2026-10-20 : This is messy having extracted and split dataframe into dictionary indexed by (cycle, step) we
     # now have to pass the whole dataset in, which contains the original dataframe _and_ the dictionary of subsets just
     # to extract the desired cycle/step. There are better ways of doing this!
+    ###############################################################################
+    ## Voltage Window                                                            ##
+    ###############################################################################
     signal_reports = {}
+    window = signal.voltage_window(dataset)
     for cycle_step in dataset.half_cycle_keys():
         signal_reports[cycle_step] = signal.half_cycle_report(
             dataset=dataset,
             cycle=cycle_step[0],
             step=cycle_step[1],
             params=auto_params,
-            window=signal.voltage_window(dataset),
+            window=window,
         )
     logger.info(f"[{filename_stem}] : Initial half-cycle report complete.")
     # Extract data from the dictionary of signal reports
     # ns-rse 2026-10-20 : I wonder if its better to add these as attributes to the dataset in the previous step?
-    voltage_reconstruction, bin_width, empty_bins, voltage_size = [], [], 0, 0
+    # ns-rse 2026-10-27 : This should be a function of its own
+    voltage_reconstruction, bin_width, empty_bins, voltage_bins = [], [], 0, 0
     for cycle_step, _signal in signal_reports.items():
         # There is no voltage for this charge/cycle move on to the next
         if not _signal.voltage.size:
@@ -180,7 +199,7 @@ def analysis(
         if np.isfinite(_signal.bin_width_mV):
             bin_width.append(_signal.bin_width_mV)
         empty_bins += _signal.n_empty_bins
-        voltage_size += _signal.voltage.size
+        voltage_bins += _signal.voltage.size
         capacity = (
             "Charge_Capacity"
             if cycle_step[1].lower().startswith("c")
@@ -200,13 +219,183 @@ def analysis(
     logger.info(
         f"[{filename_stem}] : Extracted and recontsructed voltages from half-cycles."
     )
+    ###############################################################################
+    ## Terminal Trim (Optional)                                                  ##
+    ###############################################################################
     if config_parameters.terminal_trim:
         signal.trim_terminals(
             signal_reports,
-            terminal_trim_fixed_mv=config_parameters.terminal_trim_fixed_mv,
-            voltage_threshold=config_parameters.terminal_trim_band_mv,
+            terminal_trim_fixed_mv=config_parameters.terminal_trim.fixed_mv,
+            voltage_threshold=config_parameters.terminal_trim.band_mv,
         )
         logger.info(f"[{filename}] : Voltages trimmed.")
+    if config_parameters.dqdv.computation == "derivative":
+        # ns-rse 2026-10-27 : Needs work, crashes if items in the dictionary (which are all `Dataset`) are all missing
+        # the `n.orientated` attribute, may be due to not running with 'derivative' in previous steps.
+        n_orientated = {
+            key: signal.n_orientated
+            for key, signal in signal_reports.items()
+            if signal.n_orientated
+        }
+        if n_orientated:
+            max_location = max(n_orientated, key=n_orientated.get)
+            logger.info(
+                f"[{filename}] Plateau sign corrected {sum(n_orientated.values())} record(s) across {len(n_orientated)} half-cycle(s)"
+            )
+            logger.info(
+                f"[{filename}] Most in cycle : {max_location[0]} {max_location[1]} ({n_orientated[max_location]})"
+            )
+    # CYCLE INTEGRITY (Cell 5 actually 21!)
+    # | Notebook         | Here                     | Comment                                           |
+    # | integrity        | integrity_report         | but not a dictionary as not looping               |
+    # | integrity_band   | integrity_band           | but not a dictionary as not looping               |
+    # | fit_limit        | fit_limit                | but not a dictionary as not looping               |
+    # | _caps            | capacities                 |
+    # | _last            | assigned to fit_limit        |
+    # | _why             | last_cycle_reason
+    # | _e               | row                      | its a row of a table so call it a row!            |
+    # | _d               | duration                 | its the duration for that row!                    |
+    ###############################################################################
+    ## Integrity Report                                                          ##
+    ###############################################################################
+    integrity_report, integrity_band = analyse.integrity_report(
+        signals=signal_reports,
+        window=window,
+        name=filename,
+        verbose=True,
+        filename=filename_stem,
+        theoretical_mAh_g=config_parameters.theoretical_capacity,
+    )
+    integrity_report.to_csv(
+        # ns-rse 2026-10-27 - Why is this have `output/tests/resources/xls` checking its just ``
+        config_parameters.output_dir / f"{filename_stem}_cycle_integrity.csv",
+        index=False,
+    )
+
+    ###############################################################################
+    ## Last Useful Cycle                                                         ##
+    ###############################################################################
+    capacities = {key: signal.capacity for key, signal in signal_reports.items()}
+    # If there is no capacity set everything to empty
+    if not capacity:
+        logger.warning(f"[{filename_stem}] No half-cycles with capacity.")
+        fit_limit = None
+        in_progress = ()
+        early_stops = pd.DataFrame()
+        not_measurements = ()
+    last_cycle, last_cycle_reason = analyse.last_useful_cycle(
+        capacities=capacities,
+        fraction=config_parameters.dead_cell.capacity_fraction,
+        run=config_parameters.dead_cell.run,
+    )
+    fit_limit = last_cycle if config_parameters.stop_fitting_at_death else None
+    max_charge_cycle = max(key for key, _ in capacities)
+    if fit_limit:
+        logger.warning(
+            f"[{filename_stem}] : Fitting stops at cycle {fit_limit} of {max_charge_cycle} "
+            f"({(1 - fit_limit / max_charge_cycle):.0%} of the record skipped)"
+        )
+    elif last_cycle:
+        logger.warning(
+            f"[{filename_stem}] : The cell died but the whole record will be fitted anyway. Reason for failure "
+            " ({config_parameters.stop_fitting_at_death=})...\n"
+            f"[{filename_stem}] :    {last_cycle_reason}"
+        )
+    else:
+        logger.info(f"[{filename_stem}] : The cell never stopped delivering.")
+        logger.info(f"[{filename_stem}] : {last_cycle_reason}.")
+
+    ###############################################################################
+    ## Termination Check                                                         ##
+    ###############################################################################
+    # ns-rse 2026-10-27 - do we need _another_ dataframe, should we not update the dataset.df attribute?
+    termination_check = analyse.termination_check(
+        dataset=dataset, tol_mv=config_parameters.termination.tol_mv
+    )
+    # Check and print output
+    # ns-rse 2026-10-27 - do we need to do this? Writing to disk is a heavy overhead and should only be done _after_ all
+    # analyses have been completed.
+    in_progress, in_progress_why = analyse.half_cycles_in_progress(
+        dataset, tol_mv=config_parameters.termination.tol_mv, checked=termination_check
+    )
+    if in_progress:
+        logger.warning(
+            f"[{filename_stem}] : The export caught a half-cycle mid-flight..."
+        )
+        logger.warning(f"[{filename_stem}] :  {in_progress_why}")
+    else:
+        logger.info(
+            f"[{filename_stem}] : Every half-cycle finished on its cut-off voltage."
+        )
+        logger.info(f"  {in_progress_why}")
+
+    ###############################################################################
+    # Early Terminations                                                         ##
+    ###############################################################################
+    early_terminations = analyse.early_terminations(
+        dataset=dataset,
+        tol_mv=config_parameters.termination.tol_mv,
+        checked=termination_check,
+    )
+    if not early_terminations.empty:
+        early_terminations.to_csv(
+            config_parameters.output_dir / f"{filename_stem}_early_terminations.csv",
+            index=False,
+        )
+        logger.warning(
+            f"[{filename_stem}] : {len(early_terminations)} half-cycle(s) ended short of the cut-off WITHOUT being"
+            "caught mid-export"
+        )
+        for _, row in early_terminations.iterrows():
+            duration = (
+                ""
+                if not np.isfinite(row["duration_frac"])
+                else f", after {100 * row['duration_frac']:.0f}% of a normal duration"
+            )
+            logger.warning(
+                f"[{filename}] :   Cycle {int(row['cycle'])} {row['step']}: {row['v_end']:.4f} V, {row['short_mV']:.0f}"
+                f" mV short {duration} — {row['termination_class']}"
+            )
+        logger.warning(
+            "These are excluded from the fit and capacity tables but kept in every figure and listed in "
+            f"{config_parameters.output_dir / filename_stem!s}_early_terminations.csv"
+        )
+        # Save the cycle and state of skipped stages
+        not_measurements = set(in_progress) | set(
+            (int(row.cycle), str(row.step)) for row in early_stops.itertuples()
+        )
+
+    ###############################################################################
+    ## Cycling Performance - Tables                                              ##
+    ###############################################################################
+    # ns-rse 2026-10-27 : Notebook passes a dictionary (electrochemical_data) with key of filename and value the
+    # dataframe attribute from the dataset object. Builds this twice(?) in "Cell 3a" and "Cell 3b"
+    # with the following comment...
+    #
+    # Cell 3a # `electrochemical_data` was a second dict holding exactly `ds.frame` for every
+    # Cell 3a # dataset, updated by hand in Cell 3b and read in three places. One of those
+    # Cell 3a # updates was missed in 1.9.0.9 and the two disagreed for a whole release. It
+    # Cell 3a # is now a VIEW built from the datasets, so it cannot fall behind them.
+    #
+    # Cell 3b # Rebuilt from the datasets, not patched alongside them. See Cell 3a.
+    #
+    # Requires user_parameters which is another dictionary in the Notebook, but @ns-rse has migrated to a dataclass for
+    # settings. For now we construct the necessary dictionaries but should update this to work with dataclasses (and
+    # ultimately have the configuration parameters as an attribute to the Dataclass itself so the configuration is
+    # linked to the data)
+    # Values used from user_parameter are...
+    #    rate_protocol
+    #    is_variable (which is copied to )
+    # user_parameters = {filename_stem: }
+    # cycling.annotate_rate_protocol(electrochemical_data={filename_stem: dataset.df})
+    ###############################################################################
+    ## Cycling Performance - Figures                                             ##
+    ###############################################################################
+
+    ###############################################################################
+    ## Cycling Performance - Supplementary Figures                               ##
+    ###############################################################################
+
     # assert isinstance(config_parameters, classes.Parameters)
     # assert isinstance(dataset.df, pd.DataFrame)
     return (Path(filename).stem, 1)
@@ -214,7 +403,7 @@ def analysis(
 
 def process(args: argparse.Namespace | None = None) -> None:  # pylint: disable=used-before-assignment
     """
-    Process all files in a given directory.
+    Process all files in a given directory in parallel.
 
     Parameters
     ----------
