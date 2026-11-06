@@ -31,7 +31,7 @@ repos:
       - id: rst-inline-touching-normal
 
   - repo: https://github.com/rbubley/mirrors-prettier
-    rev: "v3.9.6"
+    rev: "v3.9.10"
     hooks:
       - id: prettier
         types_or: [yaml, markdown, html, css, scss, javascript, json]
@@ -39,7 +39,7 @@ repos:
         exclude: ^(tests/resources)/.*$
 
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: "v0.16.6"
+    rev: "v0.17.3"
     hooks:
       - id: ruff-check
         args: ["--fix"]
@@ -47,7 +47,7 @@ repos:
         types_or: [python, pyi, jupyter, markdown, pyproject]
 
   - repo: https://github.com/pre-commit/mirrors-mypy
-    rev: "v2.3.1"
+    rev: "v2.4.1"
     hooks:
       - id: mypy
         files: src|tests|noxfile.py
@@ -77,20 +77,20 @@ repos:
         exclude: .pre-commit-config.yaml
 
   - repo: https://github.com/abravalheri/validate-pyproject
-    rev: "0.26"
+    rev: "v0.27"
     hooks:
       - id: validate-pyproject
         additional_dependencies: ["validate-pyproject-schema-store[all]"]
 
   - repo: https://github.com/python-jsonschema/check-jsonschema
-    rev: "0.38.0"
+    rev: "0.39.0"
     hooks:
       - id: check-dependabot
       - id: check-github-workflows
       - id: check-readthedocs
 
   - repo: https://github.com/zizmorcore/zizmor-pre-commit
-    rev: "v1.30.0"
+    rev: "v1.31.1"
     hooks:
       - id: zizmor
 
@@ -103,19 +103,19 @@ repos:
         exclude: .pre-commit-config.yaml
 
   - repo: https://github.com/DavidAnson/markdownlint-cli2
-    rev: v0.23.2
+    rev: v0.24.0
     hooks:
       - id: markdownlint-cli2
         args: ["--config .markdownlint-cli2.yaml"]
 
   - repo: https://github.com/numpy/numpydoc
-    rev: v1.11.0rc0
+    rev: v1.11.0
     hooks:
       - id: numpydoc-validation
         exclude: ^noxfile.py$
 
   - repo: https://github.com/astral-sh/uv-pre-commit
-    rev: 0.12.11
+    rev: 0.13.6
     hooks:
       - id: uv-lock
 
