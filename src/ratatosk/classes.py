@@ -1,16 +1,14 @@
 """Dataclass definitions."""
 
-from dataclasses import dataclass, field, replace
 from importlib.resources import files
 from pathlib import Path
 from typing import Any
-
-import yaml
 
 import numpy as np
 
 # import numpy.typing as npt
 import pandas as pd
+import yaml
 
 # from loguru import logger
 from pydantic import BaseModel, ConfigDict, Field
@@ -125,11 +123,9 @@ class Termination(BaseModel):
     """Class for type-checking the `termination` options."""
 
     model_config = ConfigDict(extra="forbid")
-    tol_mv: float = (Field(default=20.0, title="Tolerance for termination in mV."),)
-    tol_spreads: float = (
-        Field(default=5.0, title="Tolerance spread for termination."),
-    )
-    reference_n: int = (Field(default=10, title="Reference number for termination."),)
+    tol_mv: float = Field(default=20.0, title="Tolerance for termination in mV.")
+    tol_spreads: float = Field(default=5.0, title="Tolerance spread for termination.")
+    reference_n: int = Field(default=10, title="Reference number for termination.")
 
 
 class DqDv(BaseModel):
@@ -164,10 +160,10 @@ class Figure(BaseModel):
         title="Figure height in inches applied to every figure produced.",
     )
     histogram_smooth_bins: str | float | None = Field(
-        default=None, title="Histogram smoothing of bins, may be 'auto' or a float."
+        default="auto", title="Histogram smoothing of bins, may be 'auto' or a float."
     )
     histogram_bin_mv: str | float | None = Field(
-        default=None, title="Histogram bings in mV, may be 'auto' or a float value."
+        default="auto", title="Histogram bings in mV, may be 'auto' or a float value."
     )
     theme: str = Field(
         default="viridis_r",
@@ -230,8 +226,8 @@ class Spike(BaseModel):
     """Class for type-checking the `Spike` options."""
 
     model_config = ConfigDict(extra="forbid")
-    removal: str = Field(default="auto", title="Method of spike removal.")
-    threshold_multiplier: str | float = Field(
+    removal: str | None = Field(default="auto", title="Method of spike removal.")
+    threshold_multiplier: str | float | None = Field(
         default="auto", title="Threshold multiplier for spike removal."
     )
     window_size: int = Field(default=5, title="Window size.")
@@ -241,7 +237,7 @@ class Peak(BaseModel):
     """Class for type-checking the `Peak` options."""
 
     model_config = ConfigDict(extra="forbid")
-    min_distance_mv: str | float = Field(
+    min_distance_mv: str | float | None = Field(
         default="auto", title="Minimum distance in mV."
     )
     min_width_mvv: int = Field(default=5, title="Minimum width in mV.")
@@ -371,14 +367,14 @@ class Parameters(BaseSettings):
         default=3,
         title="Which cycle the preprocessing quality control figure shows raw against.",
     )
-    rebin_width_mv: str | int = Field(
+    rebin_width_mv: str | int | None = Field(
         default="auto", title="Rebin width, either 'auto' or an integer."
     )
     reference_cycle: int = Field(default=2, title="Reference cycle.")
     run_peak_fitting: bool = Field(
         default=True, title="Whether to fit the dQ/dV peaks."
     )
-    second_smooth_window: str | int = Field(
+    second_smooth_window: str | int | None = Field(
         default="auto",
         title="Second order smoothing window, either 'auto' or an integer.",
     )
@@ -386,7 +382,7 @@ class Parameters(BaseSettings):
     shoulder_detection: bool = Field(
         default=True, title="Whether to enable shoulder detection."
     )
-    smoothing_window: str | int = Field(
+    smoothing_window: str | int | None = Field(
         default="auto", title="Smoothing window, either 'auto' or an integer."
     )
     spike: Spike = Field(default_factory=Spike, title="Spike configuration options.")
@@ -474,9 +470,13 @@ class Parameters(BaseSettings):
 class FileStructures(BaseSettings):
     """Data Dictionary for file structures."""
 
+    # ns-rse 2026-11-06 : Set this to be a dataclass/BaseModel Neware as is done for Parameters which makes validating
+    # values easy
     neware: dict[str, Any] = Field(default=None, title="Neware data dictionary.")
     # Used to select the YAML source, not as an application setting.
-    config_file: Path | None = Field(default=DEFAULT_DATA_DICTIONARY, title=True)
+    config_file: Path | None = Field(
+        default=DEFAULT_DATA_DICTIONARY, title="Path to the configuration file."
+    )
 
     @classmethod
     def settings_customise_sources(
@@ -523,24 +523,48 @@ class FileStructures(BaseSettings):
         )
 
 
-@dataclass
-class Dataset:
+class Dataset(BaseModel):
     """
     One cell's data, in acquisition order, plus what is known about it.
 
-    `frame` is never re-sorted. Acquisition order is the only order in which
+    `df` is never re-sorted. Acquisition order is the only order in which
     "what happened next" is answerable, and three of this project's defects
     came from code that sorted by voltage and then asked a time-ordered
     question.
     """
 
-    name: str
-    df: pd.DataFrame
-    meta: dict = field(default_factory=dict)
-    electrode_type: str = "Positive"
-    labels_swapped: bool = False
-    source_path: str = ""
-    source_sha256: str = ""
+    model_config = ConfigDict(
+        extra="forbid",
+        arbitrary_types_allowed=True,
+        validate_assignment=True,
+        str_strip_whitespace=True,
+    )
+    name: Path | str = Field(title="Filename data is derived from.")
+    df: pd.DataFrame = Field(title="Dataframe of battery charge cycle data.")
+    meta: dict = Field(default={}, title="Metadata on the battery charging cycle.")
+    electrode_type: str = Field(
+        default="Positive", title="Electrode type, either 'Positive' or 'Negative'."
+    )
+    labels_swapped: bool = Field(
+        default=False, title="Whether electrode labels have been swapped or not."
+    )
+    source_path: str | Path = Field(title="Path to the original file.")
+    source_sha256: str = Field(
+        default="", title="SHA256 checksum of the original file."
+    )
+    active_loading_mg_cm2: float | None = Field(
+        default=None, title="Active loading in milligrams/cm^2."
+    )
+    barcode: str | None = Field(default=None, title="Barcode derived from filename.")
+    blend: list[float] = Field(default=[80.0, 10.0, 10.0], title="Blend.")
+    charge_current_a_from_file: float | None = Field(
+        default=None, title="Charge current from file."
+    )
+    charge_rate_c: float | None = Field(default=None, title="Charge rate current.")
+    composition: str | None = Field(default=None, title="Battery composition.")
+    counter_electrode: CounterElectrode = Field(
+        default_factory=CounterElectrode, title="Counter electrode."
+    )
 
     # -- structure ---------------------------------------------------------
 
@@ -577,16 +601,33 @@ class Dataset:
 
     @property
     def clean(self) -> pd.DataFrame:
+        """
+        Return a subset of the dataframe.
+
+        Returns
+        -------
+        pd.DataFrame
+            Subset of the required dataframes.
+        """
         cached = self.__dict__.get("_clean_cache")
         if cached is None:
-            cols = [c for c in self._REQUIRED if c in self.df.columns]
-            cached = self.df.dropna(subset=cols)
+            # ns-rse 2026-11-06 : Switch this to use the required/numeric columns from the default_dictionary.yaml
+            # (stored in FileStructures class rather than hard coded value).
+            cols = [c for c in self._REQUIRED if c in self.df.columns]  # pylint: disable=no-member
+            cached = self.df.dropna(subset=cols)  # pylint: disable=no-member
             self.__dict__["_clean_cache"] = cached
         return cached
 
     @property
-    def _half_cycles(self) -> dict:
-        """`{(cycle, step): frame}` for the whole dataset, built once."""
+    def _half_cycles(self) -> dict[tuple[int, str], pd.DataFrame]:
+        """
+        Build a dictionary of subsets of the `self.df` dataframe indexed by `cycle` and `step`.
+
+        Returns
+        -------
+        dict[tuple[int, str], pd.DataFrame]
+            Dictionary takes the form `{(cycle, step): pd.DataFrame}`.
+        """
         cached = self.__dict__.get("_half_cycle_cache")
         if cached is None:
             f = self.clean
@@ -600,11 +641,33 @@ class Dataset:
             self.__dict__["_half_cycle_cache"] = cached
         return cached
 
-    def half_cycle_keys(self):
-        """(cycle, step) pairs, in cycle order, Charge before Discharge."""
+    def half_cycle_keys(self) -> list[tuple[int, str]]:
+        """
+        Extract keys from half cycles.
+
+        Returns
+        -------
+        list[tuple[int, str]]
+            `(cycle, step)` pairs, in cycle order, Charge before Discharge.
+        """
         return list(self._half_cycles)
 
     def half_cycle(self, cycle, step) -> pd.DataFrame:
+        """
+        Extract a half-cycle (unique `cycle`/`step` combination).
+
+        Parameters
+        ----------
+        cycle : int
+            Cycle to extract.
+        step : str
+            Step to extract.
+
+        Returns
+        -------
+        pd.DataFrame
+            Dataframe corresponding to the `cycle`/`step` requested.
+        """
         # An absent key returns an EMPTY FRAME WITH THE RIGHT COLUMNS, which
         # is what the boolean mask returned and what every caller's
         # `len(df) < n` and `col in df.columns` tests expect.
@@ -612,7 +675,7 @@ class Dataset:
 
     # -- the part that matters ---------------------------------------------
 
-    def step_direction(self, cycle, step) -> float:
+    def step_direction(self, cycle: int, step: str) -> float:
         """
         +1 if the voltage rises through this half-cycle, -1 if it falls.
 
@@ -620,6 +683,18 @@ class Dataset:
         when the net travel is too small to read (a pure constant-voltage
         step), and says so by returning the label's implication rather than
         pretending to know.
+
+        Parameters
+        ----------
+        cycle : int
+            Cycle to extract step-direction for.
+        step : str
+            Step to extract the step-direction for.
+
+        Returns
+        -------
+        float
+            Voltage for the given cycle/step.
         """
         v = pd.to_numeric(
             self.half_cycle(cycle, step)["Voltage"], errors="coerce"
@@ -637,13 +712,25 @@ class Dataset:
         implied = 1.0 if str(step).lower().startswith("c") else -1.0
         return -implied if self.labels_swapped else implied
 
-    def capacity(self, cycle, step) -> float:
+    def capacity(self, cycle: int, step: str) -> float:
         """
         Charge passed in this half-cycle, from the cycler's own counter.
 
         The counter, not the integral of dQ/dV — those two are compared by
         `quality.integral_fidelity`, and using one to define the other would
         make that comparison meaningless.
+
+        Parameters
+        ----------
+        cycle : int
+            Cycle to extract step-direction for.
+        step : str
+            Step to extract the step-direction for.
+
+        Returns
+        -------
+        float
+            Charge passed in the half-cycle for the given cycle/step.
         """
         col = (
             "Charge_Capacity"
@@ -659,7 +746,7 @@ class Dataset:
             return float("nan")
         return float(np.nanmax(q) - np.nanmin(q))
 
-    def record_spacing_mv(self, step=None):
+    def record_spacing_mv(self, step: str | None = None) -> dict[str, float]:
         """
         Median and minimum non-zero voltage step between consecutive records.
 
@@ -667,6 +754,16 @@ class Dataset:
         not: 1.8.x keys it to the profile class, so the P3 exports get no
         rebinning at all despite 4% of their consecutive records sitting at an
         identical voltage. Measured here, acted on in 2.0.
+
+        Parameters
+        ----------
+        step : str, optional
+            Step to extract data for.
+
+        Returns
+        -------
+        dict[str, float]
+            Dictionary of the `median_mV`, `min_mV` and `duplicate_fraction` for the given step.
         """
         dv, zeros, total = [], 0, 0
         for cyc, st in self.half_cycle_keys():

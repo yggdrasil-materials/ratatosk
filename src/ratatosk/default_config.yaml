@@ -43,14 +43,14 @@ figure:
   colour_palette: viridis_r
   file_format: png
   height_in: 5.0 # Figure height in inches applied to every figure produced
-  histogram_bin_mv: auto
-  histogram_smooth_bins: auto
+  histogram_bin_mv: null
+  histogram_smooth_bins: null
   theme: viridis_r # Theme to plot figures with
   width_in: 6.73 # Figure width in inches applied to every figure produced
 key_cycles: [1, 5, 10, 20, 30, 40, 50]
 max_cycle: null # Cap the analysis at the given cycle
 peak:
-  min_distance_mv: auto
+  min_distance_mv: null
   min_width_mvv: 5
   prominence_fraction: 0.05
 polyorder: 3
