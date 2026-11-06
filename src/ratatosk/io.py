@@ -9,7 +9,9 @@ from argparse import Namespace
 from dataclasses import dataclass, field, replace
 from datetime import datetime
 from importlib.resources import files
-from pathlib import Path
+from pathlib import Path, PosixPath
+from pprint import pformat
+from types import NoneType
 from typing import Any
 
 import numpy as np
@@ -117,6 +119,28 @@ def dict_to_yaml(obj: Any) -> Any:
     Any
         `obj` as `str`, `int`, `float`, `bool`, `list` or `dict`.
     """
+    # @ns-rse : we have introduced custom dataclasses to the configuration dictionary, such classes now need converting
+    # to dictionaries so they can be correctly parsed
+    if type(obj) not in (
+        dict,
+        list,
+        tuple,
+        set,
+        str,
+        int,
+        float,
+        bool,
+        PosixPath,
+        np.ndarray,
+        np.generic,
+        NoneType,
+    ):
+        logger.debug(
+            f"Custom dataclass type detected ({obj=}) converting to dictionary."
+        )
+        obj = obj.__dict__
+        logger.debug(f"Dictionary representation...\n{pformat(obj)}")
+
     # Recurse on dictionaries
     if isinstance(obj, dict):
         new = {}
