@@ -36,6 +36,7 @@ backwards at full current away from a peak, and a sick one passes 34-103.
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from typing import Any
 
 import numpy as np
 import pandas as pd
@@ -1672,6 +1673,9 @@ def trim_terminals(
     """
     Trim the fixed span off each half-cycle's terminating end (high for charge, low for discharge).
 
+    This function corresponds to the "Cell 4 - Q, V, I, t -> dQ/dV" (in the `1.9.075
+    inline.ipynb`), specifically the section after `TRIM THE CUT-OFF APPROACH`.
+
     Parameters
     ----------
     signal_report : dict[tuple[int, str], signal.HalfCycleSignal]
@@ -1684,6 +1688,17 @@ def trim_terminals(
         Voltage threshold.
     """
     trimmed_cycles = {}
+    # Mapping from notebook
+    #
+    # |Notebook | Here      | Comment
+    # | _st     | state     |
+    # | _mine   | something | Rename : subset of signal_report that matches state, state_matches?
+    # | _fx (= TERMINAL_TRIM_FIXED_MV)    | terminal_trim_fixed_mv |
+    # | _lo     | low_v     | Low voltage
+    # | _lo     | high_v     | High voltage
+    # | _m      | _tmp      | Rename : trimmed voltages above threshold
+    # | dict comp | _subset | Easier to read by assigning first
+    # |
     for state in states:
         something = [
             _signal

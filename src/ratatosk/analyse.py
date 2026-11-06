@@ -72,9 +72,11 @@ straight line, and `detect.choose_reference_cycle` can be handed the callable
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from typing import Any
 
 import numpy as np
 import pandas as pd
+from loguru import logger
 
 # The one definition of "this half-cycle is unfinished", shared with the
 # cycling tables so the fit and the headline metrics omit the same thing.
@@ -390,7 +392,6 @@ def _flag_reliable_peaks(
     peak (e.g. the LTO two-phase feature) sits near it by design, so dropping
     on that criterion would remove real data.
     """
-    import pandas as pd
 
     if params_df is None or len(params_df) == 0:
         return pd.Series(dtype=bool)
@@ -607,8 +608,6 @@ def _auto_pair_peaks(
     if charge_ref_peaks.empty or discharge_ref_peaks.empty:
         return []
 
-    from scipy.optimize import linear_sum_assignment
-
     max_sep_V = max_sep_mV / 1000.0
     neg_tol_V = 0.005  # tolerate tiny negative from reference fit noise
 
@@ -628,16 +627,14 @@ def _auto_pair_peaks(
             # the labels were swapped upstream so "Discharge" is the
             # delithiation peak, which sits ABOVE the lithiation "Charge"
             # peak, so the expected ΔV is negative and the test flips.
-            if is_anode:
-                sign_ok = cv <= dv + neg_tol_V
-            else:
-                sign_ok = dv <= cv + neg_tol_V
+            sign_ok = cv <= dv + neg_tol_V if is_anode else dv <= cv + neg_tol_V
             if sep <= max_sep_V and sign_ok:
                 cost[i, j] = sep
 
     row_idx, col_idx = linear_sum_assignment(cost)
 
     pairs = []
+    # ns-rse : to fix ruff B905 missing strict=
     for i, j in zip(row_idx, col_idx):
         if cost[i, j] >= BIG:
             continue  # too far apart, or would give negative ΔV
@@ -946,11 +943,11 @@ def parameters_frame(
             d = {}
             if det_pk is not None and sx < len(det_pk):
                 d = det_pk.iloc[sx]
-            row = dict(
-                dataset=name if name is not None else detection.name,
-                cycle=int(cycle),
-                step=str(step),
-                fit_success=bool(fr.get("success")),
+            row = {
+                "dataset": name if name is not None else detection.name,
+                "cycle": int(cycle),
+                "step": str(step),
+                "fit_success": bool(fr.get("success")),
                 # `success` is "the fit ran without raising". CONVERGENCE is
                 # a different question and it is the one that matters here:
                 # `fit_half_cycle` records `res.success` separately, and
@@ -961,50 +958,51 @@ def parameters_frame(
                 # same components then fed drift, area retention and
                 # capacity attribution. Carried here so the reliability
                 # test can act on it.
-                converged=bool(fr.get("converged", True)),
-                hit_iteration_cap=bool(fr.get("hit_iteration_cap", False)),
+                "converged": bool(fr.get("converged", True)),
+                "hit_iteration_cap": bool(fr.get("hit_iteration_cap", False)),
                 # DID A PARAMETER FINISH ON A BOUND, AND DID MOVING IT OFF
                 # HELP? A diagnostic computed in the fitter and consumed by
                 # nothing is the pattern this project has now caught five
                 # times, so it travels to the table with the rest.
                 # See `fitting.BOUND_ESCAPE_RESTART`.
-                bound_escape_tried=int(fr.get("bound_escape_tried", 0) or 0),
-                bound_escape_used=bool(fr.get("bound_escape_used", False)),
-                nfev=int(fr.get("nfev", 0) or 0),
-                r_squared=fr.get("r_squared", np.nan),
-                reduced_chi_sq=fr.get("redchi", np.nan),
+                "bound_escape_tried": int(fr.get("bound_escape_tried", 0) or 0),
+                "bound_escape_used": bool(fr.get("bound_escape_used", False)),
+                "nfev": int(fr.get("nfev", 0) or 0),
+                "r_squared": fr.get("r_squared", np.nan),
+                "reduced_chi_sq": fr.get("redchi", np.nan),
                 # THE FOUR NUMBERS R2 HIDES. Per half-cycle, repeated on each
                 # of its component rows exactly as `r_squared` is, so the
                 # parameter table can be read without joining anything.
-                height_ratio=fr.get("height_ratio", np.nan),
-                overshoot=fr.get("overshoot", np.nan),
-                max_residual_frac=fr.get("max_residual_frac", np.nan),
-                residual_runs_z=fr.get("residual_runs_z", np.nan),
+                "height_ratio": fr.get("height_ratio", np.nan),
+                "overshoot": fr.get("overshoot", np.nan),
+                "max_residual_frac": fr.get("max_residual_frac", np.nan),
+                "residual_runs_z": fr.get("residual_runs_z", np.nan),
                 # The half-cycle's one shared asymmetry ratio, and whether it
                 # settled on a bound. There is only one of these per
                 # half-cycle, so nothing else would notice it pinning.
-                asymmetry_k=fr.get("asymmetry_k", np.nan),
-                asymmetry_k_fitted=fr.get("asymmetry_k_fitted", np.nan),
-                asymmetry_k_clipped=bool(fr.get("asymmetry_k_clipped", False)),
-                asymmetry_at_bound=bool(fr.get("asymmetry_at_bound", False)),
+                "asymmetry_k": fr.get("asymmetry_k", np.nan),
+                "asymmetry_k_fitted": fr.get("asymmetry_k_fitted", np.nan),
+                "asymmetry_k_clipped": bool(fr.get("asymmetry_k_clipped", False)),
+                "asymmetry_at_bound": bool(fr.get("asymmetry_at_bound", False)),
                 # A per-CYCLE detection index, not a cross-cycle identity:
                 # it shifts whenever detection finds a different number of
                 # peaks. `tracked_peak_id` is the one that means what
                 # `reference_peak_id` invited a reader to assume.
-                component_index=int(sx) + 1,
+                "component_index": int(sx) + 1,
                 # The width bound this half-cycle was actually fitted under,
                 # so the reliability test can ask whether a component is
                 # pinned at ITS OWN bound rather than at a module constant.
-                sigma_max_fitted=float(fr.get("sigma_max", np.nan)),
-                # ...and the LOWER bound, and the curve's own sampling
+                "sigma_max_fitted": float(
+                    fr.get("sigma_max", np.nan)
+                ),  # ...and the LOWER bound, and the curve's own sampling
                 # interval. A width sitting on its floor and a width read
                 # from three points are both statements about the
                 # MEASUREMENT rather than about the peak, and neither was
                 # available downstream. See `at_sigma_floor` and
                 # `width_undersampled`.
-                sigma_min_fitted=float(fr.get("sigma_min", np.nan)),
-                sample_mV=float(fr.get("sample_mV", np.nan)),
-                dropped_degenerate=int(fr.get("dropped_degenerate", 0)),
+                "sigma_min_fitted": float(fr.get("sigma_min", np.nan)),
+                "sample_mV": float(fr.get("sample_mV", np.nan)),
+                "dropped_degenerate": int(fr.get("dropped_degenerate", 0)),
                 # HOW MUCH DATA THIS FIT HAD, AND HOW MUCH OF IT IT SPENT.
                 # `fit_one` has computed `n_points`, `nvarys` and
                 # `n_shoulders_coupled` since the histogram rewrite and not one
@@ -1019,10 +1017,10 @@ def parameters_frame(
                 # are not the same measurement, and every standard error, every
                 # `*_poorly_determined` flag and every reliability verdict on
                 # this page rests on which of the two it was.
-                n_points=int(fr.get("n_points", 0) or 0),
-                nvarys=int(fr.get("nvarys", 0) or 0),
-                n_shoulders_coupled=int(fr.get("n_shoulders_coupled", 0) or 0),
-                points_per_parameter=(
+                "n_points": int(fr.get("n_points", 0) or 0),
+                "nvarys": int(fr.get("nvarys", 0) or 0),
+                "n_shoulders_coupled": int(fr.get("n_shoulders_coupled", 0) or 0),
+                "points_per_parameter": (
                     float(fr.get("n_points", 0) or 0) / float(fr["nvarys"])
                     if fr.get("nvarys")
                     else np.nan
@@ -1030,14 +1028,15 @@ def parameters_frame(
                 # WHERE THE COMPONENTS CAME FROM. A band added by the residual
                 # sweep is not a detected feature, and until now the table gave
                 # no way to tell one from the other at half-cycle level.
-                bands_from_residual=int(fr.get("bands_from_residual", 0) or 0),
-                # HOW MUCH OF THE CURVE THE BASELINE TOOK. `baseline_area` and
+                "bands_from_residual": int(
+                    fr.get("bands_from_residual", 0) or 0
+                ),  # HOW MUCH OF THE CURVE THE BASELINE TOOK. `baseline_area` and
                 # `curve_area` were both computed and neither published, so the
                 # one question a reader of an attributed area always asks —
                 # how much of this half-cycle did the model call background? —
                 # had no answer anywhere in the run. As a fraction, because the
                 # absolute is only meaningful beside a curve area nobody sees.
-                baseline_area_fraction=(
+                "baseline_area_fraction": (
                     float(fr["baseline_area"]) / float(fr["curve_area"])
                     if (
                         np.isfinite(fr.get("baseline_area", np.nan))
@@ -1046,29 +1045,29 @@ def parameters_frame(
                     )
                     else np.nan
                 ),
-                unattributed_fraction_fit=float(
+                "unattributed_fraction_fit": float(
                     fr.get("unattributed_fraction", np.nan)
                 ),
-                detected_voltage=float(d["voltage"]) if len(d) else np.nan,
-                is_shoulder=bool(d["is_shoulder"]) if len(d) else False,
+                "detected_voltage": float(d["voltage"]) if len(d) else np.nan,
+                "is_shoulder": bool(d["is_shoulder"]) if len(d) else False,
                 # SEEDED BY RECURRENCE, not by this half-cycle's own peak
                 # picker: a feature the run finds at the same potential cycle
                 # after cycle, whose prominence here is below every gate.
                 # Provenance matters — see `detect.recurrent_maxima`.
-                is_recurrent=bool(d.get("is_recurrent", False)) if len(d) else False,
+                "is_recurrent": bool(d.get("is_recurrent", False)) if len(d) else False,
                 # The DETECTION-STAGE geometric guess, kept because it is
                 # what seeded the fit. `fit_truncated` below is the answer.
-                is_truncated=bool(d["is_truncated"]) if len(d) else False,
-                window_v_min=float(fr.get("v_min", np.nan)),
-                window_v_max=float(fr.get("v_max", np.nan)),
+                "is_truncated": bool(d["is_truncated"]) if len(d) else False,
+                "window_v_min": float(fr.get("v_min", np.nan)),
+                "window_v_max": float(fr.get("v_max", np.nan)),
                 # A component seeded from a NEIGHBOURING cycle's peak list
                 # because this cycle's detection found nothing there. Set by
                 # `infer_missing_seeds`; the provenance matters, because a
                 # component that was never detected in the cycle it is
                 # reported for is a different kind of number from one that
                 # was.
-                is_inferred=bool(d.get("is_inferred", False)) if len(d) else False,
-            )
+                "is_inferred": bool(d.get("is_inferred", False)) if len(d) else False,
+            }
             for c in _PARAM_COLS:
                 row[c] = comp.get(c, np.nan)
             rows.append(row)
@@ -1132,7 +1131,7 @@ def parameters_frame(
         P["centre_stderr_ratio"] > TRUNCATION_CENTRE_STDERR_RATIO
     ).fillna(False)
 
-    P["reliable"] = _flag_reliable_peaks(P, sigma_max_mV=sigma_max_mV).values
+    P["reliable"] = _flag_reliable_peaks(P, sigma_max_mV=sigma_max_mV).to_numpy()
     # A component that was never DETECTED in the cycle it is reported for is
     # kept in the table and tracked, but is not evidence: it is excluded from
     # every headline trend by the one flag those trends already read. See
@@ -2110,21 +2109,21 @@ def track_peaks(
         for _, ref_pk in ref_peaks.iterrows():
             ref_v = float(ref_pk["voltage"])
             ref_id = int(ref_pk["peak_id"])
-            base_meta = dict(
-                is_shoulder=bool(ref_pk.get("is_shoulder", False)),
-                is_truncated=bool(ref_pk.get("is_truncated", False)),
-            )
+            base_meta = {
+                "is_shoulder": bool(ref_pk.get("is_shoulder", False)),
+                "is_truncated": (ref_pk.get("is_truncated", False)),
+            }
             for cycle in step_cycles:
                 cp = P[(P["cycle"] == cycle) & (P["step"] == step)]
-                base = dict(
-                    dataset=detection.name,
-                    cycle=cycle,
-                    step=step,
-                    tracked_peak_id=ref_id,
-                    reference_voltage=ref_v,
-                    r_squared=(cp["r_squared"].iloc[0] if not cp.empty else np.nan),
+                base = {
+                    "dataset": detection.name,
+                    "cycle": cycle,
+                    "step": step,
+                    "tracked_peak_id": ref_id,
+                    "reference_voltage": ref_v,
+                    "r_squared": (cp["r_squared"].iloc[0] if not cp.empty else np.nan),
                     **base_meta,
-                )
+                }
                 if ref_id in _never:
                     rows.append({**base, "status": "not_fitted", **nan_params})
                     continue
@@ -2256,6 +2255,7 @@ def track_peaks(
         if _sr is not None and pd.notna(_sr) and float(_sr) >= _pin:
             return False
         ra = ref_areas.get(k, np.nan)
+        # ns-rse Ruff SIM103 https://docs.astral.sh/ruff/rules/needless-bool/
         if (
             pd.notna(ra)
             and ra > 0
@@ -2377,32 +2377,32 @@ def track_peaks(
                 and np.isfinite(_gate_mV)
                 and _gate_mV > tolerance_mV
             )
-            summary[f"{step}_peak{tid}"] = dict(
-                step=step,
-                peak_id=int(tid),
-                reference_voltage=float(pk["reference_voltage"].iloc[0]),
-                is_shoulder=bool(pk["is_shoulder"].iloc[0]),
-                is_truncated=bool(pk["is_truncated"].iloc[0]),
-                is_ghost=is_ghost,
-                tracked=n_trk,
-                disappeared=n_dis,
-                no_fit=n_nf,
-                not_fitted=n_never,
-                never_fitted=bool(n_never and n_never == n_tot),
-                total_cycles=n_tot,
-                tracking_rate=(n_trk / n_tot if n_tot else 0.0),
-                max_shift_mV=_shift_mV,
-                drift_exceeds_tolerance=_beyond,
-                voltage_drift_mV=v_drift,
-                voltage_drift_first_cycle=_vstart_cycle,
-                voltage_drift_last_cycle=_vend_cycle,
-                voltage_drift_mV_per_cycle=(v_drift / _span if _span else np.nan),
-                area_retention_pct=a_ret,
-                discontinuity_events=n_ev,
-                discontinuity_is_failure=bool(n_ev and established),
-                first_discontinuity_cycle=first_ev,
-                max_centre_step_mV=max_step,
-                fit_conditional_continuity=(
+            summary[f"{step}_peak{tid}"] = {
+                "step": step,
+                "peak_id": int(tid),
+                "reference_voltage": float(pk["reference_voltage"].iloc[0]),
+                "is_shoulder": bool(pk["is_shoulder"].iloc[0]),
+                "is_truncated": bool(pk["is_truncated"].iloc[0]),
+                "is_ghost": is_ghost,
+                "tracked": n_trk,
+                "disappeared": n_dis,
+                "no_fit": n_nf,
+                "not_fitted": n_never,
+                "never_fitted": bool(n_never and n_never == n_tot),
+                "total_cycles": n_tot,
+                "tracking_rate": (n_trk / n_tot if n_tot else 0.0),
+                "max_shift_mV": _shift_mV,
+                "drift_exceeds_tolerance": _beyond,
+                "voltage_drift_mV": v_drift,
+                "voltage_drift_first_cycle": _vstart_cycle,
+                "voltage_drift_last_cycle": _vend_cycle,
+                "voltage_drift_mV_per_cycle": (v_drift / _span if _span else np.nan),
+                "area_retention_pct": a_ret,
+                "discontinuity_events": n_ev,
+                "discontinuity_is_failure": bool(n_ev and established),
+                "first_discontinuity_cycle": first_ev,
+                "max_centre_step_mV": max_step,
+                "fit_conditional_continuity": (
                     n_trk / (n_trk + n_dis) if (n_trk + n_dis) else np.nan
                 ),
                 # The shape this feature was actually fitted with, over the
@@ -2410,9 +2410,9 @@ def track_peaks(
                 # count, not a single label, because a feature that is a band
                 # in some cycles and a peak in others is telling you something
                 # about the fit's stability that a modal label would hide.
-                component_kind=_modal_kind(ts),
-                component_kind_mixed=_kind_is_mixed(ts),
-            )
+                "component_kind": _modal_kind(ts),
+                "component_kind_mixed": _kind_is_mixed(ts),
+            }
     tk.summary = summary
     if verbose:
         print("\n" + tk.summary_text())
@@ -2722,24 +2722,24 @@ def capacity_attribution(
             _keep = _countable_area(cd)
             total = float(_area(cd.loc[_keep]).sum())
             _total_all = float(_area(cd).sum())
-            row = dict(
-                cycle=int(cycle),
-                total_area=total,
-                total_area_all=_total_all,
-                n_excluded_from_area=int((~_keep).sum()),
-                basis_area=basis_area,
-                basis_cycle=basis_cycle,
-                closure_interval_width=width_out,
-                closure_interval_measured=measured,
-                attribution_withheld=withheld,
-                unattributed_fraction=(float(_un) if np.isfinite(_un) else np.nan),
-                unattributed_withheld=_un_bad,
-                integral_fidelity=_fid,
-                fidelity_withheld=_fid_bad,
-                retained_fraction=(
+            row = {
+                "cycle": int(cycle),
+                "total_area": total,
+                "total_area_all": _total_all,
+                "n_excluded_from_area": int((~_keep).sum()),
+                "basis_area": basis_area,
+                "basis_cycle": basis_cycle,
+                "closure_interval_width": width_out,
+                "closure_interval_measured": measured,
+                "attribution_withheld": withheld,
+                "unattributed_fraction": (float(_un) if np.isfinite(_un) else np.nan),
+                "unattributed_withheld": _un_bad,
+                "integral_fidelity": _fid,
+                "fidelity_withheld": _fid_bad,
+                "retained_fraction": (
                     np.nan if withheld or pd.isna(basis) else total / basis
                 ),
-            )
+            }
             for pid in pids:
                 pk = cd[cd["tracked_peak_id"] == pid]
                 area = float(_area(pk).iloc[0]) if not pk.empty else np.nan
@@ -3719,7 +3719,8 @@ def _step_end_reason(frame):
     return ""
 
 
-def termination_check(dataset, *, tol_mV=None):
+# ns-rse 2026-10-27 - Need to move TERMINATION_TOL_MV and TERMINATION_TOL_SPREADS into configuration
+def termination_check(dataset, *, tol_mv=None) -> pd.DataFrame:
     """
     Which half-cycles ended before reaching their cut-off voltage, and how far short.
 
@@ -3747,6 +3748,9 @@ def termination_check(dataset, *, tol_mV=None):
     keys = sorted(dataset.half_cycle_keys())
     rows = []
     for k in keys:
+        # ns-rse 2026-10-27 - Check what is returned to `hc` (presumably a subset of the dataframe that has been stored
+        # in a dictionary, i.e. pd.DataFrame), seems convoluted to be messing around with things in such a manner just
+        # to get a numpy array of data.
         hc = dataset.half_cycle(*k)
         v = pd.to_numeric(hc["Voltage"], errors="coerce").dropna().to_numpy()
         if v.size == 0:
@@ -3768,7 +3772,7 @@ def termination_check(dataset, *, tol_mV=None):
 
     # The LAST half-cycle in ACQUISITION order — the only one that can still
     # be running, because every earlier one finished before the next began.
-    fr = dataset.frame
+    fr = dataset.df
     last_key = (int(fr["Cycle"].iloc[-1]), str(fr["Step"].iloc[-1]))
     T["is_last"] = [(c, st) == last_key for c, st in zip(T.cycle, T.step)]
 
@@ -3823,7 +3827,7 @@ def termination_check(dataset, *, tol_mV=None):
                 else 0.0
             )
             tol = max(
-                TERMINATION_TOL_MV if tol_mV is None else float(tol_mV),
+                TERMINATION_TOL_MV if tol_mv is None else float(tol_mv),
                 TERMINATION_TOL_SPREADS * spread * 1000.0,
             )
             short = d * (lim - T.at[idx, "v_end"]) * 1000.0
@@ -3858,7 +3862,7 @@ def termination_check(dataset, *, tol_mV=None):
     return T.drop(columns=["order"])
 
 
-def half_cycles_in_progress(dataset, *, tol_mV=None, checked=None):
+def half_cycles_in_progress(dataset, *, tol_mv=None, checked=None):
     """
     The half-cycle an export was written during, if there is one.
 
@@ -3886,7 +3890,7 @@ def half_cycles_in_progress(dataset, *, tol_mV=None, checked=None):
     # and what stopped early without being caught — and used to recompute the
     # whole thing for each: 10.6 s a time on P3 cell A, 21 s per dataset, for
     # one identical answer.
-    T = termination_check(dataset, tol_mV=tol_mV) if checked is None else checked
+    T = termination_check(dataset, tol_mv=tol_mv) if checked is None else checked
     if T.empty:
         return set(), "no half-cycles to judge"
     last = T[T["is_last"]]
@@ -3925,7 +3929,7 @@ def half_cycles_in_progress(dataset, *, tol_mV=None, checked=None):
     )
 
 
-def early_terminations(dataset, *, tol_mV=None, checked=None):
+def early_terminations(dataset, *, tol_mv=None, checked=None) -> pd.DataFrame:
     """
     Half-cycles that stopped short of the cut-off but were NOT caught in
     flight — a fault, not a snapshot. See TERMINATION_DURATION_FRACTION.
@@ -3934,7 +3938,7 @@ def early_terminations(dataset, *, tol_mV=None, checked=None):
     the columns a reader needs to judge it: how far short, how long it ran
     against its peers, and the cycler's own reason where it wrote one.
     """
-    T = termination_check(dataset, tol_mV=tol_mV) if checked is None else checked
+    T = termination_check(dataset, tol_mv=tol_mv) if checked is None else checked
     if T.empty:
         return T
     bad = T[
@@ -3954,7 +3958,9 @@ def early_terminations(dataset, *, tol_mV=None, checked=None):
     return bad[[c for c in cols if c in bad.columns]].reset_index(drop=True)
 
 
-def integrity_report(signals, *, window, name="", verbose=True, **kw):
+def integrity_report(
+    signals, *, window, name="", verbose=True, filename: str, **kw
+) -> tuple[pd.DataFrame, Any]:
     """
     Band every half-cycle, and return a lookup that `detect` can use.
 
@@ -4000,64 +4006,41 @@ def integrity_report(signals, *, window, name="", verbose=True, **kw):
         )
         over = R[R["over_theoretical"] == True]
         sane = R[R["over_theoretical"] != True]
-        print(
-            entry(
-                "half-cycles",
-                str(len(R)),
-                ", ".join(
-                    f"{int(counts.get(k, 0))} {k}"
-                    for k in ("clean", "suspect", "ANOMALOUS", "too few records")
-                    if counts.get(k, 0)
-                ),
-            )
+        summary = ", ".join(
+            f"{int(counts.get(k, 0))} {k}"
+            for k in ("clean", "suspect", "ANOMALOUS", "too few records.")
+            if counts.get(k, 0)
         )
+        logger.info(f"[{filename}] : Half-cycles {len(R)}, {summary}")
         if not bad.empty:
-            tot = bad["parasitic_charge"].sum()
-            print(
-                verdict(
-                    "bad",
-                    f"{tot:.0f} mAh/g unaccounted for across {len(bad)} half-cycle(s)",
-                )
+            # ns-rse 2026-10-27 - Replace this with sensible logger.warning()
+            bad_charge = bad["parasitic_charge"].sum()
+            logger.warning(
+                f"{bad_charge:.0f} nAh/g unaccounted for across {len(bad)} half-cycles(s). First five..."
             )
             for r in bad.head(5).itertuples():
-                print(
-                    bullet(
-                        f"cycle {r.cycle} {r.step}: "
-                        f"{r.parasitic_charge:.0f} mAh/g of "
-                        f"{r.capacity:.0f} ({r.parasitic_fraction:.0%})"
-                    )
+                logger.warning(
+                    f"   Cycle {r.cycle} ({r.step}): "
+                    f"{r.parasitic_charge:.0f} mAh/g of "
+                    f"{r.capacity:.0f} ({r.parasitic_fraction:.0%})"
                 )
+            tot = bad["parasitic_charge"].sum()
         if len(over):
-            print(
-                verdict(
-                    "bad",
-                    f"{len(over)} half-cycle(s) passed more "
-                    f"charge than the material can hold",
-                )
+            logger.warning(
+                f"{len(over)} half-cycle(s) passed more charge than the material can hold."
             )
-            print(
-                bullet(
-                    f"up to {over['capacity_ratio'].max():.1f}x "
-                    f"theoretical. A curve cannot vouch for charge the "
-                    f"material could not have held, so these are "
-                    f"condemned whatever their shape."
-                )
+            logger.warning(
+                f"up to {over['capacity_ratio'].max():.1f}x theoretical. A curve cannot vouch for charge the material"
+                "could not have held, so these are condemned whatever their shape."
             )
+
         if (sane["plateau_charge"] > 0).any():
             p = sane.loc[sane["plateau_charge"] > 0, "plateau_charge"]
-            print(
-                entry(
-                    "plateau reversals",
-                    f"{len(p)} of {len(sane)}",
-                    f"median {p.median():.1f} mAh/g",
-                )
+            logger.warning(
+                f"[{filename}] : Plateau reversals {len(p)} of {len(sane)} median {p.median():.1f} mAh/g"
             )
-            print(
-                bullet(
-                    "A flat two-phase feature, not a fault — counted "
-                    "over the half-cycles that stayed within the "
-                    "material's capacity."
-                )
+            logger.warning(
+                "A flat two-phase feature, not a fault — counted over the half-cycles that stayed within the material's capacity."
             )
         # `> 0` let through holds carrying a thousandth of a mAh/g, which
         # then printed as "median 0.0 mAh/g" — an alarm about zero. The floor
@@ -4065,11 +4048,8 @@ def integrity_report(signals, *, window, name="", verbose=True, **kw):
         # figures to be read.
         if (R["cv_charge"] > CV_HOLD_REPORT_FLOOR).any():
             c = R.loc[R["cv_charge"] > CV_HOLD_REPORT_FLOOR, "cv_charge"]
-            print(
-                entry(
-                    "constant-voltage hold",
-                    f"{len(c)} half-cycle(s)",
-                    f"median {c.median():.3g} mAh/g — protocol, not chemistry",
-                )
+            logger.info(
+                f"[{filename}] : Constant-voltage hold {len(c)} half-cycle(s) median {c.median():.3g} mAh/g — protocol, "
+                "not chemistry",
             )
     return R, band
