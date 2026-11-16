@@ -264,7 +264,7 @@ def analysis(
         name=filename,
         verbose=True,
         filename=filename_stem,
-        theoretical_mAh_g=config_parameters.theoretical_capacity,
+        theoretical_mAh_g=config_parameters.theoretical_capacity.mah_g,
     )
     integrity_report.to_csv(
         # ns-rse 2026-10-27 - Why is this have `output/tests/resources/xls` checking its just ``
