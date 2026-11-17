@@ -3959,7 +3959,7 @@ def early_terminations(dataset, *, tol_mv=None, checked=None) -> pd.DataFrame:
 
 
 def integrity_report(
-    signals, *, window, name="", verbose=True, filename: str, **kw
+    signals, *, window, filename="", verbose=True, **kw
 ) -> tuple[pd.DataFrame, Any]:
     """
     Band every half-cycle, and return a lookup that `detect` can use.
@@ -3976,23 +3976,23 @@ def integrity_report(
         g = half_cycle_integrity(signals[key], window=window, **kw)
         recs[(int(g.cycle), str(g.step))] = g.band
         rows.append(
-            dict(
-                dataset=name,
-                cycle=g.cycle,
-                step=g.step,
-                capacity=g.capacity,
-                theoretical_mAh_g=g.theoretical_mAh_g,
-                capacity_ratio=g.capacity_ratio,
-                over_theoretical=g.over_theoretical,
-                n_records=g.n_records,
-                n_reversals=g.n_reversals,
-                plateau_charge=g.plateau_charge,
-                cv_charge=g.cv_charge,
-                parasitic_charge=g.parasitic_charge,
-                parasitic_fraction=g.parasitic_fraction,
-                band=g.band,
-                reason=g.reason,
-            )
+            {
+                "dataset": filename,
+                "cycle": g.cycle,
+                "step": g.step,
+                "capacity": g.capacity,
+                "theoretical_mAh_g": g.theoretical_mAh_g,
+                "capacity_ratio": g.capacity_ratio,
+                "over_theoretical": g.over_theoretical,
+                "n_records": g.n_records,
+                "n_reversals": g.n_reversals,
+                "plateau_charge": g.plateau_charge,
+                "cv_charge": g.cv_charge,
+                "parasitic_charge": g.parasitic_charge,
+                "parasitic_fraction": g.parasitic_fraction,
+                "band": g.band,
+                "reason": g.reason,
+            }
         )
     R = pd.DataFrame(rows)
 

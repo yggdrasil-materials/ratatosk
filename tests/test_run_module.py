@@ -7,7 +7,7 @@ from pathlib import Path
 import pytest
 from loguru import logger
 
-from ratatosk import RATATOSK_BASE_VERSION, run_module
+from ratatosk import RATATOSK_BASE_VERSION, classes, run_module
 from ratatosk.entry_point import entry_point
 
 BASE_DIR = Path.cwd()
@@ -109,3 +109,23 @@ def test_completion_message(
     assert check in caplog.text
     assert "yggdrasil-materials.github.io/ratatosk" in caplog.text
     assert RATATOSK_BASE_VERSION in caplog.text
+
+
+@pytest.mark.slow
+@pytest.mark.parametrize(
+    ("file_path_fixture"),
+    [
+        pytest.param("file_path_namimno2_xlsx", id="NaNiMNo2"),
+        pytest.param("file_path_mnc111_xlsx", id="MNC111"),
+    ],
+)
+def test_analysis(
+    file_path_fixture: str, default_parameters: classes.Parameters, request, snapshot
+) -> None:
+    """Test for `analysis()` function."""
+    filename = request.getfixturevalue(file_path_fixture)
+    _, results = run_module.analysis(
+        filename=filename, config_parameters=default_parameters
+    )
+    assert results["cycle_integrity"].to_string() == snapshot
+    assert results["early_terminations"].to_string() == snapshot

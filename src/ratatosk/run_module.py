@@ -98,8 +98,8 @@ def _parse_configuration(  # pylint: disable=used-before-assignment
 def analysis(
     filename: str | Path,
     config_parameters: classes.Parameters,
-    file_structures: classes.FileStructures,
-) -> tuple[str, int]:
+    file_structures: classes.FileStructures | None = None,
+) -> tuple[str, dict[str, pd.DataFrame]]:
     """Analyse a single file.
 
     Parameters
@@ -108,7 +108,7 @@ def analysis(
         Filename of file to be processed.
     config_parameters : classes.Parameters
         `Parameters` configuration object.
-    file_structures : classes.FileStructures
+    file_structures : classes.FileStructures, optional
         `FileStructures` configuration object.
 
     Returns
@@ -116,6 +116,12 @@ def analysis(
     tuple[str, int]
         Tuple of `filename` and the value `1` (for now, will be returning actual data for aggregation in due course).
     """
+    ###############################################################################
+    ## Load file structures if not provided                                      ##
+    ###############################################################################
+    file_structures = (
+        classes.FileStructures() if file_structures is None else file_structures
+    )
     ###############################################################################
     ## Load File                                                                 ##
     ###############################################################################
@@ -258,12 +264,11 @@ def analysis(
     ###############################################################################
     ## Integrity Report                                                          ##
     ###############################################################################
-    integrity_report, integrity_band = analyse.integrity_report(
+    integrity_report, _integrity_band = analyse.integrity_report(
         signals=signal_reports,
         window=window,
-        name=filename,
-        verbose=True,
         filename=filename_stem,
+        verbose=True,
         theoretical_mAh_g=config_parameters.theoretical_capacity.mah_g,
     )
     integrity_report.to_csv(
@@ -361,9 +366,9 @@ def analysis(
             f"{config_parameters.output_dir / filename_stem!s}_early_terminations.csv"
         )
         # Save the cycle and state of skipped stages
-        not_measurements = set(in_progress) | set(
+        _not_measurements = set(in_progress) | {
             (int(row.cycle), str(row.step)) for row in early_stops.itertuples()
-        )
+        }
 
     ###############################################################################
     ## Cycling Performance - Tables                                              ##
@@ -398,7 +403,10 @@ def analysis(
 
     # assert isinstance(config_parameters, classes.Parameters)
     # assert isinstance(dataset.df, pd.DataFrame)
-    return (Path(filename).stem, 1)
+    return (
+        str(Path(filename).stem),
+        {"cycle_integrity": integrity_report, "early_terminations": early_terminations},
+    )
 
 
 def process(args: argparse.Namespace | None = None) -> None:  # pylint: disable=used-before-assignment
