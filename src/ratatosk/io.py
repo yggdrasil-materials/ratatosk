@@ -2,12 +2,16 @@
 
 from __future__ import annotations
 
+import contextlib
 import hashlib
+import re
 from argparse import Namespace
-from dataclasses import dataclass, field, replace
+from dataclasses import replace
 from datetime import datetime
 from importlib.resources import files
-from pathlib import Path
+from pathlib import Path, PosixPath
+from pprint import pformat
+from types import NoneType
 from typing import Any
 
 import numpy as np
@@ -21,7 +25,7 @@ from ratatosk import (
     CONFIG_DOCUMENTATION_REFERENCE,
     DATA_DICTIONARY_DOCUMENTATION_REFERENCE,
 )
-from ratatosk.classes import FileStructures, Parameters
+from ratatosk.classes import Dataset, FileStructures, Parameters
 
 # Set the default configurations and dictionaries
 DEFAULT_CONFIG = files(ratatosk) / "default_config.yaml"
@@ -115,6 +119,28 @@ def dict_to_yaml(obj: Any) -> Any:
     Any
         `obj` as `str`, `int`, `float`, `bool`, `list` or `dict`.
     """
+    # @ns-rse : we have introduced custom dataclasses to the configuration dictionary, such classes now need converting
+    # to dictionaries so they can be correctly parsed
+    if type(obj) not in (
+        dict,
+        list,
+        tuple,
+        set,
+        str,
+        int,
+        float,
+        bool,
+        PosixPath,
+        np.ndarray,
+        np.generic,
+        NoneType,
+    ):
+        logger.debug(
+            f"Custom dataclass type detected ({obj=}) converting to dictionary."
+        )
+        obj = obj.__dict__
+        logger.debug(f"Dictionary representation...\n{pformat(obj)}")
+
     # Recurse on dictionaries
     if isinstance(obj, dict):
         new = {}
@@ -226,181 +252,6 @@ def get_date_time(strftime: str = "%Y-%m-%d %H:%M:%S") -> str:
         Date-time as a string for systems current timezone.
     """
     return datetime.now(tz=datetime.now().astimezone().tzinfo).strftime(strftime)
-
-
-@dataclass
-class Dataset:
-    """
-    One cell's data, in acquisition order, plus what is known about it.
-
-    `frame` is never re-sorted. Acquisition order is the only order in which
-    "what happened next" is answerable, and three of this project's defects
-    came from code that sorted by voltage and then asked a time-ordered
-    question.
-    """
-
-    name: str
-    frame: pd.DataFrame
-    meta: dict = field(default_factory=dict)
-    electrode_type: str = "Positive"
-    labels_swapped: bool = False
-    source_path: str = ""
-    source_sha256: str = ""
-
-    # -- structure ---------------------------------------------------------
-
-    # 1.8.7 Module 1 drops rows with a missing Voltage, Cycle, Step or dQ/dV
-    # BEFORE anything else, and every half-cycle it processes comes from that
-    # cleaned frame. Reproducing it matters for more than row counts: where
-    # several records share a voltage, `sort_values` breaks the tie by input
-    # order, so a frame containing extra rows sorts its duplicates differently
-    # and the smoothed curve diverges. On the P3 cells 15 of 40 half-cycles
-    # differed for exactly this reason until the dropna was matched.
-    _REQUIRED = ("Voltage", "Cycle", "Step", "dQ/dV")
-
-    # BOTH OF THESE ARE CACHED, and the cache is the difference between a
-    # run you wait two minutes for and one you do not.
-    #
-    # `half_cycle` used to boolean-mask the WHOLE frame on every call:
-    # `f[(f["Cycle"] == cycle) & (f["Step"] == step)]`, 82,337 rows scanned
-    # to return 200 of them. Under pandas 3 the `Step == "Charge"` half of
-    # that is a string comparison that null-checks the entire column, and it
-    # dominates: 10.2 ms per call, with `_isna_string_dtype` alone taking
-    # 5.4 s of a 13.4 s `termination_check`.
-    #
-    # Cells 4 and 5 make 3,444 such calls per dataset — 42 s, or 126 s for a
-    # triplicate. ONE `groupby(["Cycle", "Step"])` produces all 440 groups in
-    # 0.03 s, which is 168x faster than 440 masks, and every later call is a
-    # dict lookup.
-    #
-    # Safe because `frame` is never re-sorted (see the class docstring) and
-    # nothing mutates a half-cycle in place: `orient_dqdv` copies before
-    # writing and `strip_cv_hold` only slices. `replace()` builds a NEW
-    # Dataset, so a modified frame gets a fresh cache rather than a stale one.
-    # The groups preserve the frame's own row order, so the stable-sort
-    # tie-breaking that the port fidelity depends on is unchanged.
-
-    @property
-    def clean(self) -> pd.DataFrame:
-        cached = self.__dict__.get("_clean_cache")
-        if cached is None:
-            cols = [c for c in self._REQUIRED if c in self.frame.columns]
-            cached = self.frame.dropna(subset=cols)
-            self.__dict__["_clean_cache"] = cached
-        return cached
-
-    @property
-    def _half_cycles(self) -> dict:
-        """`{(cycle, step): frame}` for the whole dataset, built once."""
-        cached = self.__dict__.get("_half_cycle_cache")
-        if cached is None:
-            f = self.clean
-            if not {"Cycle", "Step"} <= set(f.columns):
-                cached = {}
-            else:
-                cached = {
-                    (int(c), str(s)): d
-                    for (c, s), d in f.groupby(["Cycle", "Step"], sort=True)
-                }
-            self.__dict__["_half_cycle_cache"] = cached
-        return cached
-
-    def half_cycle_keys(self):
-        """(cycle, step) pairs, in cycle order, Charge before Discharge."""
-        return list(self._half_cycles)
-
-    def half_cycle(self, cycle, step) -> pd.DataFrame:
-        # An absent key returns an EMPTY FRAME WITH THE RIGHT COLUMNS, which
-        # is what the boolean mask returned and what every caller's
-        # `len(df) < n` and `col in df.columns` tests expect.
-        return self._half_cycles.get((int(cycle), str(step)), self.clean.iloc[:0])
-
-    # -- the part that matters ---------------------------------------------
-
-    def step_direction(self, cycle, step) -> float:
-        """
-        +1 if the voltage rises through this half-cycle, -1 if it falls.
-
-        MEASURED, never inferred from the label. Falls back to the label only
-        when the net travel is too small to read (a pure constant-voltage
-        step), and says so by returning the label's implication rather than
-        pretending to know.
-        """
-        v = pd.to_numeric(
-            self.half_cycle(cycle, step)["Voltage"], errors="coerce"
-        ).to_numpy()
-        v = v[np.isfinite(v)]
-        if v.size >= 2:
-            net = float(v[-1] - v[0])
-            if abs(net) > 1e-4:  # one voltage LSB
-                return 1.0 if net > 0 else -1.0
-        # The label fallback must respect the swap. On a negative electrode
-        # the half-cycle LABELLED Charge is the one where the voltage falls,
-        # so reading the label naively returned the wrong sign — and this
-        # branch fires precisely on a pure constant-voltage hold, the one
-        # place the measurement cannot correct it.
-        implied = 1.0 if str(step).lower().startswith("c") else -1.0
-        return -implied if self.labels_swapped else implied
-
-    def capacity(self, cycle, step) -> float:
-        """
-        Charge passed in this half-cycle, from the cycler's own counter.
-
-        The counter, not the integral of dQ/dV — those two are compared by
-        `quality.integral_fidelity`, and using one to define the other would
-        make that comparison meaningless.
-        """
-        col = (
-            "Charge_Capacity"
-            if str(step).lower().startswith("c")
-            else "Discharge_Capacity"
-        )
-        d = self.half_cycle(cycle, step)
-        if col not in d.columns:
-            return float("nan")
-        q = pd.to_numeric(d[col], errors="coerce").to_numpy()
-        q = q[np.isfinite(q)]
-        if q.size < 2:
-            return float("nan")
-        return float(np.nanmax(q) - np.nanmin(q))
-
-    def record_spacing_mv(self, step=None):
-        """
-        Median and minimum non-zero voltage step between consecutive records.
-
-        Reported because the rebinning decision should be keyed to this and is
-        not: 1.8.x keys it to the profile class, so the P3 exports get no
-        rebinning at all despite 4% of their consecutive records sitting at an
-        identical voltage. Measured here, acted on in 2.0.
-        """
-        dv, zeros, total = [], 0, 0
-        for cyc, st in self.half_cycle_keys():
-            if step is not None and st != step:
-                continue
-            v = pd.to_numeric(
-                self.half_cycle(cyc, st)["Voltage"], errors="coerce"
-            ).to_numpy()
-            v = v[np.isfinite(v)]
-            if v.size < 50:
-                continue
-            d = np.abs(np.diff(v))
-            zeros += int((d == 0).sum())
-            total += d.size
-            nz = d[d > 0]
-            if nz.size:
-                dv.append(nz)
-        if not dv:
-            return {
-                "median_mV": float("nan"),
-                "min_mV": float("nan"),
-                "duplicate_fraction": float("nan"),
-            }
-        allnz = np.concatenate(dv) * 1000.0
-        return {
-            "median_mV": float(np.median(allnz)),
-            "min_mV": float(allnz.min()),
-            "duplicate_fraction": (zeros / total) if total else float("nan"),
-        }
 
 
 # ---------------------------------------------------------------------------
@@ -515,7 +366,7 @@ def apply_electrode_convention(dataset: Dataset, electrode_type: str):
         raise ValueError(neg_electrode_error)
     if str(electrode_type).lower() != "negative":
         return replace(dataset, electrode_type=str(electrode_type))
-    df, swapped = _apply_electrode_convention(dataset.frame, electrode_type)
+    df, swapped = _apply_electrode_convention(dataset.df, electrode_type)
     return replace(
         dataset,
         frame=df.reset_index(drop=True),
@@ -552,7 +403,7 @@ def truncate_cycles(dataset: Dataset, max_cycle) -> Dataset:
     # ns-rse 2026-10-07 simplify the conditions here.
     if not max_cycle:
         return dataset
-    f = dataset.frame
+    f = dataset.df
     if "Cycle" not in f.columns:
         return dataset
     # ns-rse 2026-10-07 use boolean indexing to filter the dataset, overly cautious using pd.numeric() as would be
@@ -561,7 +412,7 @@ def truncate_cycles(dataset: Dataset, max_cycle) -> Dataset:
     return replace(dataset, frame=f[keep].reset_index(drop=True))
 
 
-def open_xlsx(path: str | Path) -> dict[str, pd.DataFrame]:
+def read_xlsx(path: str | Path) -> dict[str, pd.DataFrame]:
     """
     Open a `.xls[x]` spreadsheet and read all sheets.
 
@@ -572,7 +423,7 @@ def open_xlsx(path: str | Path) -> dict[str, pd.DataFrame]:
 
     Parameters
     ----------
-    path : pd.Excelfile, str
+    path : str | Path
         Returns a class for parsing the given Excel file and the engine name.
 
     Returns
@@ -591,9 +442,9 @@ def open_xlsx(path: str | Path) -> dict[str, pd.DataFrame]:
 
 
 def read_neware(
-    sheets: dict[str, pd.DataFrame] | None = None,
+    sheets: dict[str, pd.DataFrame],
+    path: str | Path,
     sheet: str = "record",
-    path: str | Path | None = None,
     name: str | None = None,
     electrode_type: str = "Positive",
     meta: str | None = None,
@@ -609,10 +460,10 @@ def read_neware(
     ----------
     sheets : dict[str, pd.DataFrame], optional
         A dictionary of sheets from `io.open_xlsx`.
-    sheet : str
-        The sheet to extract, defaults to "record".
     path : str | Path,
         Path to `xlsx` file.
+    sheet : str
+        The sheet to extract, defaults to "record".
     name : str | None = None,
         Name of the file.
     electrode_type : str = "Positive",
@@ -643,9 +494,11 @@ def read_neware(
     sheet = sheet if sheet is not None else "record"
     logger.info(f"  Extracting {name}")
     df = _tidy_df(sheets[sheet]).rename(columns=columns)
-    for c in _NUMERIC:
-        if c in df.columns:
-            df[c] = pd.to_numeric(df[c], errors="coerce")
+    for column in _NUMERIC:
+        if column in df.columns:
+            df[column] = pd.to_numeric(df[column], errors="coerce")
+        else:
+            logger.info(f"{path} : Missing column {column}")
 
     df, swapped = _apply_electrode_convention(df, electrode_type)
     n_cyc = int(df["Cycle"].nunique()) if "Cycle" in df else 0
@@ -657,13 +510,150 @@ def read_neware(
     logger.info(log_msg)
     return Dataset(
         name=name,
-        frame=df.reset_index(drop=True),
+        df=df.reset_index(drop=True),
         meta=dict(meta or {}),
         electrode_type=electrode_type,
         labels_swapped=swapped,
         source_path=str(path),
         source_sha256=file_sha256(path),
     )
+
+
+def _get_cell_value(df: pd.DataFrame, row: int, col: int) -> str | None:
+    """
+    Extract the contents of a cell.
+
+    Parameters
+    ----------
+    df : pd.DataFrame
+        Pandas dataframe from which data is to be extracted.
+    row : str
+        Row to extract data from.
+    col : str
+        Column to extract data from.
+
+    Returns
+    -------
+    str | None
+        Returns the value of the cell, if a cell is `NaN` or out of range then `None` is returned.
+    """
+    try:
+        value = df.iloc[row, col]
+        return None if pd.isna(value) else value
+    except IndexError, KeyError:
+        return None
+
+
+def _parse_numeric(text: str | None) -> float | None:
+    """
+    Extract leading numeric value from '12.72mg' (`12.7`), '4.3V' (`4.3`) and so forth.
+
+    The regex here (`r"^([+-]?\\d*\\.?\\d+)"`) is looking for..
+
+    1. Whether there is a -/+ at (`[+-]?`) the start of the string (`^`)  (optional)
+    2. Zero or more numerical values (`\\d*`)
+    3. An optional period/decimal point
+    4. one or more digits (`\\d+`)
+
+    These are grouped into a value which is then converted to a `float`.
+
+    Parameters
+    ----------
+    text : str
+        String from which to extract numeric values.
+
+    Returns
+    -------
+    float | None
+        Float if numeric value is found otherwise `None`.
+    """
+    if text is None:
+        return None
+    match = re.match(r"^([+-]?\d*\.?\d+)", str(text).strip())
+    return float(match.group(1)) if match else None
+
+
+def extract_neware_metadata(
+    sheets: dict[str, pd.DataFrame],
+    filename: str | None = None,
+    sheet: str = "test",
+    metadata: dict[str, int | float | None] | None = None,
+) -> dict[str, int | float | None]:
+    """Extract metadata from a neware worksheet.
+
+    Parameters
+    ----------
+    sheets : dict[str, pd.DataFrame]
+        Dictionary of Pandas dataframes, should contain `sheet`.
+    filename : str, optional
+        Filename being processed.
+    sheet : str, optional
+        Sheet to extract, default is `test` and typically won't need changing.
+    metadata : dict[str, int | float | None], optional
+        Metadata to extract, if `None` default is used.
+
+    Returns
+    -------
+    dict[str, int | float | None]
+        Dictionary of metadata, if no values are found a dictionary with empty values is returned.
+    """
+    metadata = FileStructures().neware["metadata"] if metadata is None else metadata
+    sheet = sheet if sheet is not None else "record"
+    if sheet not in sheets:
+        logger.info(
+            f"{filename} : Missing {sheet} worksheet, can not extract metadata."
+        )
+        return metadata
+    df = sheets[sheet]
+    n_rows = min(10, len(df))
+    n_cols = min(15, len(df.columns))
+
+    for row in range(n_rows):
+        for col in range(n_cols - 2):
+            label = _get_cell_value(df=df, row=row, col=col)
+            if label is None:
+                continue
+            cell_label = str(label).lower().strip()
+            # logger.debug(f"Attempting to extract {cell_label}")
+            # Try cell + 2 columns to the right first (Neware merged cells), then cell + 1 column to the right
+            value = _get_cell_value(
+                df,
+                row=row,
+                col=col + 2,
+            )
+            # logger.debug(f"{cell_label} + 2 value : {value}")
+            if value is None:
+                value = _get_cell_value(df, row=row, col=col + 1)
+                # logger.debug(f"{cell_label} + 1 value : {value}")
+            if "active material" in cell_label:
+                mass = _parse_numeric(value)
+                if mass is not None and mass > 0:
+                    metadata["active_material_mass_mg"] = mass
+            elif "volt" in cell_label and "upper" in cell_label:
+                v = _parse_numeric(value)
+                if v is not None:
+                    metadata["voltage_upper_V"] = v
+            elif "volt" in cell_label and "lower" in cell_label:
+                v = _parse_numeric(value)
+                if v is not None:
+                    metadata["voltage_lower_V"] = v
+            elif "cycle" in cell_label and "count" in cell_label:
+                with contextlib.suppress(ValueError), contextlib.suppress(TypeError):
+                    metadata["cycle_count"] = int(float(str(value)))
+            elif "barcode" in cell_label:
+                for offset in [2, 1, 3]:
+                    bv = _get_cell_value(df=df, row=row, col=col + offset)
+                    if bv is not None and len(str(bv).strip()) > 3:
+                        metadata["barcode"] = str(bv).strip()
+                        break
+            elif "start time" in cell_label:
+                for offset in [2, 1]:
+                    sv = _get_cell_value(df=df, row=row, col=col + offset)
+                    if sv is not None:
+                        metadata["test_start_date"] = str(sv).strip()
+                        break
+
+    return metadata
 
 
 def find_files(

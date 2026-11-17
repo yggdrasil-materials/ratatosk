@@ -2,7 +2,10 @@
 #
 # This file defines core static variables such as column names for a given file type
 neware:
-  columns: # Mapping long column names in output to short used in analysis
+  sheets:
+    test_data: record
+    metadata: test
+  column_mapping: # Mapping long column names in output to short used in analysis
     "Cycle Index": "Cycle"
     "Step Type": "Step"
     "Voltage(V)": "Voltage"
@@ -10,11 +13,21 @@ neware:
     "DChg. Spec. Cap.(mAh/g)": "Discharge_Capacity"
     "dQm/dV(mAh/V.g)": "dQ/dV"
   numeric: # Numeric columns
-    - "Cycle"
-    - "Voltage"
-    - "Charge_Capacity"
-    - "Discharge_Capacity"
-    - "dQ/dV"
+    - Cycle
+    - Voltage
+    - Charge_Capacity
+    - Discharge_Capacity
+    - dQ/dV
+  metadata:
+    active_material_mass_mg: null
+    voltage_upper_V: null
+    voltage_lower_V: null
+    cycle_count: null
+    c_rate: null
+    charge_current_A: null
+    discharge_current_A: null
+    barcode: null
+    test_start_date: null
   # ns-rse 2026-10-06 - Can likely do away with this and use regex to determine charge/discharge, based on below the
   # presence of 'D' indicates "Discharge", otherwise state is "Charge" (do it case-insensitive just to be sure)
   step_names: # Mapping step names in exported output to Charge/Discharge
@@ -25,3 +38,167 @@ neware:
     "CC DChg": "Discharge"
     "CC DCHG": "Discharge"
     "CCCV DChg": "Discharge"
+
+# specific_capacity_library:
+#   "LiCoO2":
+#     n : 1.0
+#     M : 97.871
+#     ion : "Li"
+#     note : "1 Li per formula unit (full extraction to CoO2)"
+#     aliases :
+#       - "lco"
+#       - "licoo2"
+#       - "lithiumcobaltoxide"
+#       - "lithiumcobaltate"
+#   "LiMn2O4":
+#     n : 1.0
+#     M : 180.812
+#     ion : "Li"
+#     note : "1 Li per formula unit (spinel 4 V plateau)"
+#     aliases :
+#       - "lmo"
+#       - "limn2o4"
+#       - "lithiummanganeseoxide"
+#       - "lithiummanganatespinel"
+#   "LiNi1/3Mn1/3Co1/3O2":
+#     n : 1.0
+#     M : 96.460
+#     ion : "Li"
+#     note : "1 Li per formula unit (full delithiation)"
+#     aliases :
+#       - "nmc111"
+#       - "ncm111"
+#       - "mnc111"
+#       - "lini13mn13co13o2"
+#       - "lini033mn033co033o2"
+#       - "lini0333mn0333co0333o2"
+#   "LiNi0.8Mn0.1Co0.1O2":
+#     n : 1.0
+#     M : 97.280
+#     ion : "Li"
+#     note : "1 Li per formula unit (full delithiation)"
+#     aliases :
+#       - "nmc811"
+#       - "ncm811"
+#       - "mnc811"
+#       - "lini08mn01co01o2"
+#   "LiCoMnO4":
+#     n : 1.0
+#     M : 184.807
+#     ion : "Li"
+#     note : "1 Li per formula unit (5 V spinel)"
+#     aliases :
+#       - "licomno4"
+#       - "lcmo"
+#       - "limncoo4"
+#   "Li4Ti5O12":
+#     n : 3.0
+#     M : 459.083
+#     ion : "Li"
+#     note : "3 Li per formula unit (8a -> 16c Ti4+/Ti3+)"
+#     aliases :
+#       - "lto"
+#       - "li4ti5o12"
+#       - "lithiumtitanate"
+#       - "lithiumtitaniumoxide"
+#   "Na0.67Ni0.33Mn0.67O2":
+#     n : 0.67
+#     M : 103.578
+#     ion : "Na"
+#     note : "0.67 Na per formula unit UNDOPED parent P3 composition — a doped sample is not this number"
+#         # NOT `Na2/3Ni1/3Mn2/3O2`: that stoichiometry is M = 103.514 and
+#         # 172.6 mAh/g and answering it with 173.4 under a formula the
+#         # operator did not write is exactly the near-match this library
+#         # refuses everywhere else. It gets no default until it is entered
+#         # here with its own arithmetic.
+#     aliases :
+#       - "nnm"
+#       - "na067ni033mn067o2"
+
+# counter_metal_density:
+#   - Li : 0.534
+#   - Na : 0.971
+
+# default_counter:
+#   - thickness: 0.5
+#   - diameter: 16.0
+
+# default_electrode:
+#   - diameter: 12.0
+
+# default_key_cycles: [1, 5, 10, 20, 30, 40, 50]
+
+# recommended_palettes:
+#   - viridis_r  # perceptually uniform, colourblind-safe (recommended)
+#   - Greys  # greyscale light->dark
+#   - Greys_r  # greyscale dark->light
+#   - plasma  # perceptually uniform, vibrant
+#   - inferno  # perceptually uniform, high contrast
+#   - magma  # perceptually uniform, warm
+#   - cividis  # perceptually uniform, colourblind-safe
+#   - Reds  # sequential red
+#   - YlOrRd  # yellow->orange->red
+#   - OrRd  # orange->red
+#   - Blues  # sequential blue
+#   - Paired  # categorical pairs
+#   - Accent  # categorical accent colours
+#   - rocket  # seaborn sequential (dark->light)
+#   - mako  # seaborn sequential (cool)
+#   - flare  # seaborn sequential (warm)
+#   - crest  # seaborn sequential (teal)
+#   - vlag  # seaborn diverging (blue/red)
+#   - icefire  # seaborn diverging (cool/warm)
+#   - PRGn  # diverging purple/green
+#   - Spectral  # diverging rainbow
+
+# detection_keys:
+#   - peak_min_distance_mv
+#   - peak_prominence_fraction
+#   - peak_min_width_mv
+#   - edge_exclusion_mv
+#   - shoulder_detection
+# analysis_keys:
+#   - reference_cycle
+#   - tracking_tolerance_mv
+
+# keys_by_dqdv_method:
+#   derivative:
+#     - smoothing_window
+#     - polyorder
+#     - spike_removal
+#     - spike_window_size
+#     - spike_threshold_multiplier
+#     - rebin_width_mv
+#     - second_smooth_window
+#   histogram:
+#     - histogram_bin_mv
+#     - histogram_smooth_bins
+
+# analysis_defaults:
+#   - smoothing_window: auto
+#   - polyorder: 3
+#   - spike_removal: auto
+#   - spike_window_size: 5
+#   - spike_threshold_multiplier: auto
+#   - rebin_width_mv: auto
+#   - second_smooth_window: auto
+#   - histogram_bin_mV: auto
+#   - histogram_smooth_bins: auto
+#   - peak_prominence_fraction: 0.05
+#   - peak_min_distance_mV: auto
+#   - peak_min_width_mV: 5
+#   - reference_cycle: 2
+#   - shoulder_detection: True
+#   - edge_exclusion_mV: 50
+#   - tracking_tolerance_mV: 80
+
+# preprocess_keys:
+#   - smoothing_window
+#   - polyorder
+#   - spike_removal
+#   - spike_window_size
+#   - spike_threshold_multiplier
+#   - rebin_width_mV
+#   - second_smooth_window
+#   - histogram_bin_mV
+#   - histogram_smooth_bins
