@@ -6,7 +6,7 @@ import contextlib
 import hashlib
 import re
 from argparse import Namespace
-from dataclasses import dataclass, field, replace
+from dataclasses import replace
 from datetime import datetime
 from importlib.resources import files
 from pathlib import Path, PosixPath
