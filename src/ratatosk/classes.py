@@ -111,21 +111,25 @@ class TerminalTrim(BaseModel):
     """A class for type-checking the `terminal_trim` options."""
 
     model_config = ConfigDict(extra="forbid")
-    run: bool = Field(default=True, title="Whether to trim half-cycles.")
-    fixed_mv: float = Field(default=75.0, title="Fixed mV to trim by.")
-    factor: float = Field(default=1.4, title="???")
-    max_fraction: float = Field(default=0.1, title="???")
-    band_mv: float = Field(default=20.0, title="???")
-    interior: tuple[float, float] = Field(default=(0.2, 0.8), title="???")
+    run: bool = Field(default=True, description="Whether to trim half-cycles.")
+    fixed_mv: float = Field(default=75.0, description="Fixed mV to trim by.")
+    factor: float = Field(default=1.4, description="???")
+    max_fraction: float = Field(default=0.1, description="???")
+    band_mv: float = Field(default=20.0, description="???")
+    interior: tuple[float, float] = Field(default=(0.2, 0.8), description="???")
 
 
 class Termination(BaseModel):
     """Class for type-checking the `termination` options."""
 
     model_config = ConfigDict(extra="forbid")
-    tol_mv: float = Field(default=20.0, title="Tolerance for termination in mV.")
-    tol_spreads: float = Field(default=5.0, title="Tolerance spread for termination.")
-    reference_n: int = Field(default=10, title="Reference number for termination.")
+    tol_mv: float = Field(default=20.0, description="Tolerance for termination in mV.")
+    tol_spreads: float = Field(
+        default=5.0, description="Tolerance spread for termination."
+    )
+    reference_n: int = Field(
+        default=10, description="Reference number for termination."
+    )
 
 
 class DqDv(BaseModel):
@@ -134,11 +138,11 @@ class DqDv(BaseModel):
     model_config = ConfigDict(extra="forbid")
     computation: str = Field(
         default="histogram",
-        title="Differential method, valid values are 'histogram' or 'derivative'",
+        description="Differential method, valid values are 'histogram' or 'derivative'",
     )
     bin_mv: float | None = Field(
         default=None,
-        title="Voltage bin width for the histogram path in mV. Determines the resolution of the curve.",
+        description="Voltage bin width for the histogram path in mV. Determines the resolution of the curve.",
     )
 
 
@@ -149,29 +153,32 @@ class Figure(BaseModel):
     # ns-rse 2026-10-29 Duplication of theme, choose one and use it
     colour_palette: str = Field(
         default="viridis_r",
-        title="Colour palette to use when plotting (default 'viridis_r') should match 'theme'.",
+        description="Colour palette to use when plotting (default 'viridis_r') should match 'theme'.",
     )
     file_format: str = Field(
-        default="png", title="Default format for figure output (default is 'png')."
+        default="png",
+        description="Default format for figure output (default is 'png').",
     )
 
     height_in: float = Field(
         default=5.0,
-        title="Figure height in inches applied to every figure produced.",
+        description="Figure height in inches applied to every figure produced.",
     )
     histogram_smooth_bins: str | float | None = Field(
-        default="auto", title="Histogram smoothing of bins, may be 'auto' or a float."
+        default="auto",
+        description="Histogram smoothing of bins, may be 'auto' or a float.",
     )
     histogram_bin_mv: str | float | None = Field(
-        default="auto", title="Histogram bings in mV, may be 'auto' or a float value."
+        default="auto",
+        description="Histogram bings in mV, may be 'auto' or a float value.",
     )
     theme: str = Field(
         default="viridis_r",
-        title="Theme to plot figures with.",
+        description="Theme to plot figures with.",
     )
     width_in: float = Field(
         default=6.73,
-        title="Figure width in inches applied to every figure produced.",
+        description="Figure width in inches applied to every figure produced.",
     )
 
 
@@ -179,8 +186,10 @@ class DeadCell(BaseModel):
     """Class for type-checking the `DeadCell` options."""
 
     model_config = ConfigDict(extra="forbid")
-    capacity_fraction: float = Field(default=0.02, title="Dead cell capacity fraction.")
-    run: int = Field(default=3, title="Runs to signify a dead cell.")
+    capacity_fraction: float = Field(
+        default=0.02, description="Dead cell capacity fraction."
+    )
+    run: int = Field(default=3, description="Runs to signify a dead cell.")
 
 
 class TheoreticalCapacity(BaseModel):
@@ -188,11 +197,15 @@ class TheoreticalCapacity(BaseModel):
 
     model_config = ConfigDict(extra="forbid")
     library_formula: str | None = Field(
-        default=None, title="Theoretical capacity library formula."
+        default=None, description="Theoretical capacity library formula."
     )
-    mah: float | None = Field(default=None, title="Theoretical capacity in mAh.")
-    mah_g: float | None = Field(default=None, title="Theoretical capacity in mAh/g.")
-    source: str | None = Field(default=None, title="Source of theoretical capacity.")
+    mah: float | None = Field(default=None, description="Theoretical capacity in mAh.")
+    mah_g: float | None = Field(
+        default=None, description="Theoretical capacity in mAh/g."
+    )
+    source: str | None = Field(
+        default=None, description="Source of theoretical capacity."
+    )
 
 
 class TheoreticalCharge(BaseModel):
@@ -200,10 +213,10 @@ class TheoreticalCharge(BaseModel):
 
     model_config = ConfigDict(extra="forbid")
     current_ma: float | None = Field(
-        default=None, title="Theoretical charge current in mA."
+        default=None, description="Theoretical charge current in mA."
     )
     rate_mah_g: float | None = Field(
-        default=None, title="Theoretical charge rate in mAh/g."
+        default=None, description="Theoretical charge rate in mAh/g."
     )
 
 
@@ -212,25 +225,27 @@ class Voltage(BaseModel):
 
     model_config = ConfigDict(extra="forbid")
     limit_lower_v_from_file: float | None = Field(
-        default=None, title="Lower voltage limit from data."
+        default=None, description="Lower voltage limit from data."
     )
     limit_upper_v_from_file: float | None = Field(
-        default=None, title="Upper voltage limit from data."
+        default=None, description="Upper voltage limit from data."
     )
-    lower_v: float | None = Field(default=None, title="Lower voltage.")
-    upper_v: float | None = Field(default=None, title="Upper voltage.")
-    window_source: str = Field(default="measured from data", title="Source of voltages")
+    lower_v: float | None = Field(default=None, description="Lower voltage.")
+    upper_v: float | None = Field(default=None, description="Upper voltage.")
+    window_source: str = Field(
+        default="measured from data", description="Source of voltages"
+    )
 
 
 class Spike(BaseModel):
     """Class for type-checking the `Spike` options."""
 
     model_config = ConfigDict(extra="forbid")
-    removal: str | None = Field(default="auto", title="Method of spike removal.")
+    removal: str | None = Field(default="auto", description="Method of spike removal.")
     threshold_multiplier: str | float | None = Field(
-        default="auto", title="Threshold multiplier for spike removal."
+        default="auto", description="Threshold multiplier for spike removal."
     )
-    window_size: int = Field(default=5, title="Window size.")
+    window_size: int = Field(default=5, description="Window size.")
 
 
 class Peak(BaseModel):
@@ -238,28 +253,33 @@ class Peak(BaseModel):
 
     model_config = ConfigDict(extra="forbid")
     min_distance_mv: str | float | None = Field(
-        default="auto", title="Minimum distance in mV."
+        default="auto", description="Minimum distance in mV."
     )
-    min_width_mvv: int = Field(default=5, title="Minimum width in mV.")
-    prominence_fraction: float = Field(default=0.05, title="Prominence fraction.")
+    min_width_mvv: int = Field(default=5, description="Minimum width in mV.")
+    prominence_fraction: float = Field(default=0.05, description="Prominence fraction.")
 
 
 class Electrolyte(BaseModel):
     """Class for type-checking the `Electrolyte` options."""
 
     model_config = ConfigDict(extra="forbid")
-    composition: str | None = Field(default=None, title="Electrolyte composition.")
-    volume_ul: float = Field(default=100.0, title="Volume in uL.")
+    composition: str | None = Field(
+        default=None, description="Electrolyte composition."
+    )
+    volume_ul: float = Field(default=100.0, description="Volume in uL.")
 
 
 class Electrode(BaseModel):
     """Class for type-checking the `Electrode` options."""
 
     model_config = ConfigDict(extra="forbid")
-    area_cm2: float | None = Field(default=None, title="Electrode area in cm2.")
-    diameter_mm: float | None = Field(default=None, title="Electrode diameter in mm.")
+    area_cm2: float | None = Field(default=None, description="Electrode area in cm2.")
+    diameter_mm: float | None = Field(
+        default=None, description="Electrode diameter in mm."
+    )
     type: str | None = Field(
-        default="Positive", title="Electrode type (either 'Positive' or 'Negative')."
+        default="Positive",
+        description="Electrode type (either 'Positive' or 'Negative').",
     )
 
 
@@ -267,14 +287,17 @@ class CounterElectrode(BaseModel):
     """Class for type-checking the `CounterElectrode` options."""
 
     model_config = ConfigDict(extra="forbid")
-    mass_mg: float | None = Field(default=None, title="Mass in mg.")
+    mass_mg: float | None = Field(default=None, description="Mass in mg.")
     measured: bool | None = Field(
-        default=None, title="Whether the Counter Electrode features were measured."
+        default=None,
+        description="Whether the Counter Electrode features were measured.",
     )
-    metal: str | None = Field(default=None, title="Metal type of counter electrode.")
+    metal: str | None = Field(
+        default=None, description="Metal type of counter electrode."
+    )
     metal_source: str | None = Field(
         default="assumed",
-        title="Source of metal type of counter electrode (default is 'assumed').",
+        description="Source of metal type of counter electrode (default is 'assumed').",
     )
 
 
@@ -282,12 +305,12 @@ class Active(BaseModel):
     """Class for type-checking the `Active` options."""
 
     model_config = ConfigDict(extra="forbid")
-    fraction: float = Field(default=0.8, title="Active fraction")
+    fraction: float = Field(default=0.8, description="Active fraction")
     loading_mg_cm2: float | None = Field(
-        default=None, title="Active loading in mg/cm2."
+        default=None, description="Active loading in mg/cm2."
     )
     material_mass_mg: float | None = Field(
-        default=None, title="Active material mass in mg."
+        default=None, description="Active material mass in mg."
     )
 
 
@@ -296,127 +319,144 @@ class Parameters(BaseSettings):
 
     # Attributes are listed alphabetically to facilitate discovery, please maintain this when adding new attributes.
     active: Active = Field(
-        default_factory=Active, title="Active configuration options."
+        default_factory=Active, description="Active configuration options."
     )
 
-    anode_labels_swapped: bool = Field(default=False, title="Anode labels swapped.")
+    anode_labels_swapped: bool = Field(
+        default=False, description="Anode labels swapped."
+    )
 
-    base_dir: Path = Field(default=Path("./"), title="Base directory.")
+    base_dir: Path = Field(default=Path("./"), description="Base directory.")
     barcode: str | None = Field(
-        default=None, title="Barcode (typically mirrors the filename)."
+        default=None, description="Barcode (typically mirrors the filename)."
     )
 
-    battery_chemistry: str | None = Field(default=None, title="Battery chemistry.")
-    blend: list[float] = Field(default=[80.0, 10.0, 10.0], title="Blend.")
-    cell_id: str | None = Field(default=None, title="Cell ID.")
+    battery_chemistry: str | None = Field(
+        default=None, description="Battery chemistry."
+    )
+    blend: list[float] = Field(default=[80.0, 10.0, 10.0], description="Blend.")
+    cell_id: str | None = Field(default=None, description="Cell ID.")
     charge_current_a_from_file: float | None = Field(
-        default=None, title="Charge current A from file."
+        default=None, description="Charge current A from file."
     )
-    charge_rate_c: float | None = Field(default=None, title="Charge rate current.")
+    charge_rate_c: float | None = Field(
+        default=None, description="Charge rate current."
+    )
 
-    composition: str | None = Field(default=None, title="Composition.")
+    composition: str | None = Field(default=None, description="Composition.")
     counter_electrode: CounterElectrode = Field(
         default_factory=CounterElectrode,
-        title="Counter electrode configuration options.",
+        description="Counter electrode configuration options.",
     )
-    cores: int = Field(default=2, title="Cores to run optimisation on in parallel.")
+    cores: int = Field(
+        default=2, description="Cores to run optimisation on in parallel."
+    )
     cycling_verbose: bool = Field(
-        default=True, title="How much of the cycling is reported."
+        default=True, description="How much of the cycling is reported."
     )
     dead_cell: DeadCell = Field(
-        default_factory=DeadCell, title="Dead cell configuration options."
+        default_factory=DeadCell, description="Dead cell configuration options."
     )
     discharge_current_a_from_file: float | None = Field(
-        default=None, title="Discharge current A from file."
+        default=None, description="Discharge current A from file."
     )
-    dqdv: DqDv = Field(default_factory=DqDv, title="dq/dv configuration options.")
+    dqdv: DqDv = Field(default_factory=DqDv, description="dq/dv configuration options.")
     file_ext: str = Field(
-        default="xlsx", title="File extension of battery monitoring results."
+        default="xlsx", description="File extension of battery monitoring results."
     )
-    edge_exclusion_mv: float | None = Field(default=50, title="Edge exclusion in mV.")
+    edge_exclusion_mv: float | None = Field(
+        default=50, description="Edge exclusion in mV."
+    )
 
     electrode: Electrode = Field(
-        default_factory=Electrode, title="Electrode attributes."
+        default_factory=Electrode, description="Electrode attributes."
     )
     electrolyte: Electrolyte = Field(
-        default_factory=Electrolyte, title="Electrolyte composition."
+        default_factory=Electrolyte, description="Electrolyte composition."
     )
     fit_unresolved: bool = Field(
         default=True,
-        title="Fit a dataset whose reference cycle says its peaks are not resolvable.",
+        description="Fit a dataset whose reference cycle says its peaks are not resolvable.",
     )
-    figure: Figure = Field(default_factory=Figure, title="Figure plotting options.")
+    figure: Figure = Field(
+        default_factory=Figure, description="Figure plotting options."
+    )
     key_cycles: list[int] = Field(
-        default=[1, 5, 10, 20, 30, 40, 50], title="Key cycles to summarise and plot."
+        default=[1, 5, 10, 20, 30, 40, 50],
+        description="Key cycles to summarise and plot.",
     )
-    log_level: str = Field(default="info", title="Log level")
+    log_level: str = Field(default="info", description="Log level")
     output_dir: Path = Field(
         default=Path("./output/"),
-        title="Path to save the output to, default is './output/'.",
+        description="Path to save the output to, default is './output/'.",
     )
     max_cycle: int | None = Field(
         default=None,
-        title="Cap the analysis at the given cycle, default is 'None' which includes all cycles.",
+        description="Cap the analysis at the given cycle, default is 'None' which includes all cycles.",
     )
-    peak: Peak = Field(default_factory=Peak, title="Peak fitting options.")
-    polyorder: int = Field(default=3, title="Polyorder.")
+    peak: Peak = Field(default_factory=Peak, description="Peak fitting options.")
+    polyorder: int = Field(default=3, description="Polyorder.")
     power_energy_analysis: bool = Field(
-        default=True, title="Whether to run power energy analysis."
+        default=True, description="Whether to run power energy analysis."
     )
     qc_cycle: int = Field(
         default=3,
-        title="Which cycle the preprocessing quality control figure shows raw against.",
+        description="Which cycle the preprocessing quality control figure shows raw against.",
     )
     rebin_width_mv: str | int | None = Field(
-        default="auto", title="Rebin width, either 'auto' or an integer."
+        default="auto", description="Rebin width, either 'auto' or an integer."
     )
-    reference_cycle: int = Field(default=2, title="Reference cycle.")
+    reference_cycle: int = Field(default=2, description="Reference cycle.")
     run_peak_fitting: bool = Field(
-        default=True, title="Whether to fit the dQ/dV peaks."
+        default=True, description="Whether to fit the dQ/dV peaks."
     )
     second_smooth_window: str | int | None = Field(
         default="auto",
-        title="Second order smoothing window, either 'auto' or an integer.",
+        description="Second order smoothing window, either 'auto' or an integer.",
     )
-    separator_type: str | None = Field(default=None, title="Separator type.")
+    separator_type: str | None = Field(default=None, description="Separator type.")
     shoulder_detection: bool = Field(
-        default=True, title="Whether to enable shoulder detection."
+        default=True, description="Whether to enable shoulder detection."
     )
     smoothing_window: str | int | None = Field(
-        default="auto", title="Smoothing window, either 'auto' or an integer."
+        default="auto", description="Smoothing window, either 'auto' or an integer."
     )
-    spike: Spike = Field(default_factory=Spike, title="Spike configuration options.")
+    spike: Spike = Field(
+        default_factory=Spike, description="Spike configuration options."
+    )
     stop_fitting_at_death: bool = Field(
-        default=True, title="Stop fitting once the cell has stopped delivering charge."
+        default=True,
+        description="Stop fitting once the cell has stopped delivering charge.",
     )
     terminal_trim: TerminalTrim = Field(
-        default_factory=TerminalTrim, title="Terminal trimming configuration options."
+        default_factory=TerminalTrim,
+        description="Terminal trimming configuration options.",
     )
     termination: Termination = Field(
-        default_factory=Termination, title="Termination configuration options."
+        default_factory=Termination, description="Termination configuration options."
     )
-    test_start_date: str | None = Field(default=None, title="Test start date")
+    test_start_date: str | None = Field(default=None, description="Test start date")
 
     theoretical_capacity: TheoreticalCapacity = Field(
         default_factory=TheoreticalCapacity,
-        title="Theoretical capacity configuration options.",
+        description="Theoretical capacity configuration options.",
     )
     theoretical_charge: TheoreticalCharge = Field(
         default_factory=TheoreticalCharge,
-        title="Theoretical charge configuration options.",
+        description="Theoretical charge configuration options.",
     )
     total_electrode_coating_mg: float | None = Field(
-        default=None, title="Total electrode coating in mg"
+        default=None, description="Total electrode coating in mg"
     )
     total_loading_mg_cm2: float | None = Field(
-        default=None, title="Total loading in mg/cm2"
+        default=None, description="Total loading in mg/cm2"
     )
 
     tracking_tolerance_mv: float = Field(
-        default=80.0, title="Tracking tolerance in mV."
+        default=80.0, description="Tracking tolerance in mV."
     )
     voltage: Voltage = Field(
-        default_factory=Voltage, title="Voltage configuration options."
+        default_factory=Voltage, description="Voltage configuration options."
     )
 
     # Used to select the YAML source, not as an application setting.
@@ -472,10 +512,10 @@ class FileStructures(BaseSettings):
 
     # ns-rse 2026-11-06 : Set this to be a dataclass/BaseModel Neware as is done for Parameters which makes validating
     # values easy
-    neware: dict[str, Any] = Field(default=None, title="Neware data dictionary.")
+    neware: dict[str, Any] = Field(default=None, description="Neware data dictionary.")
     # Used to select the YAML source, not as an application setting.
     config_file: Path | None = Field(
-        default=DEFAULT_DATA_DICTIONARY, title="Path to the configuration file."
+        default=DEFAULT_DATA_DICTIONARY, description="Path to the configuration file."
     )
 
     @classmethod
@@ -539,31 +579,38 @@ class Dataset(BaseModel):
         validate_assignment=True,
         str_strip_whitespace=True,
     )
-    name: Path | str = Field(title="Filename data is derived from.")
-    df: pd.DataFrame = Field(title="Dataframe of battery charge cycle data.")
-    meta: dict = Field(default={}, title="Metadata on the battery charging cycle.")
+    name: Path | str = Field(description="Filename data is derived from.")
+    df: pd.DataFrame = Field(description="Dataframe of battery charge cycle data.")
+    meta: dict = Field(
+        default={}, description="Metadata on the battery charging cycle."
+    )
     electrode_type: str = Field(
-        default="Positive", title="Electrode type, either 'Positive' or 'Negative'."
+        default="Positive",
+        description="Electrode type, either 'Positive' or 'Negative'.",
     )
     labels_swapped: bool = Field(
-        default=False, title="Whether electrode labels have been swapped or not."
+        default=False, description="Whether electrode labels have been swapped or not."
     )
-    source_path: str | Path = Field(title="Path to the original file.")
+    source_path: str | Path = Field(description="Path to the original file.")
     source_sha256: str = Field(
-        default="", title="SHA256 checksum of the original file."
+        default="", description="SHA256 checksum of the original file."
     )
     active_loading_mg_cm2: float | None = Field(
-        default=None, title="Active loading in milligrams/cm^2."
+        default=None, description="Active loading in milligrams/cm^2."
     )
-    barcode: str | None = Field(default=None, title="Barcode derived from filename.")
-    blend: list[float] = Field(default=[80.0, 10.0, 10.0], title="Blend.")
+    barcode: str | None = Field(
+        default=None, description="Barcode derived from filename."
+    )
+    blend: list[float] = Field(default=[80.0, 10.0, 10.0], description="Blend.")
     charge_current_a_from_file: float | None = Field(
-        default=None, title="Charge current from file."
+        default=None, description="Charge current from file."
     )
-    charge_rate_c: float | None = Field(default=None, title="Charge rate current.")
-    composition: str | None = Field(default=None, title="Battery composition.")
+    charge_rate_c: float | None = Field(
+        default=None, description="Charge rate current."
+    )
+    composition: str | None = Field(default=None, description="Battery composition.")
     counter_electrode: CounterElectrode = Field(
-        default_factory=CounterElectrode, title="Counter electrode."
+        default_factory=CounterElectrode, description="Counter electrode."
     )
 
     # -- structure ---------------------------------------------------------
@@ -618,7 +665,6 @@ class Dataset(BaseModel):
             self.__dict__["_clean_cache"] = cached
         return cached
 
-    @property
     def _half_cycles(self) -> dict[tuple[int, str], pd.DataFrame]:
         """
         Build a dictionary of subsets of the `self.df` dataframe indexed by `cycle` and `step`.

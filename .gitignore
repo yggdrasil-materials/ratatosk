@@ -197,3 +197,6 @@ docs/markdown.md
 
 # Excel lockfiles
 .~*\#
+
+# locally rendered API docs
+docs/api2/

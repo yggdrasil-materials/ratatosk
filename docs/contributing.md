@@ -185,6 +185,9 @@ that commit history will be a little cleaner.
 <!-- markdownlint-disable -->
 [black]: https://black.readthedocs.io/en/stable/usage_and_configuration/the_basics.html
 [cc]: https://www.contributor-covenant.org/
+[direnv]: https://direnv.net/
+[gb]: https://git-scm.com/install/windows
+[gk]: https://gitkraken.com/
 [gh_fork]: https://docs.github.com/articles/fork-a-repo
 [git_hooks]: https://git-scm.com/book/en/v2/Customizing-Git-Git-Hooks
 [mypy]: https://mypy-lang.org/

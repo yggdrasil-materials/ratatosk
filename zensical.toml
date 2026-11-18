@@ -23,7 +23,6 @@ nav = [
   "glossary.md",
   { "Reference" = [
       "ref/index.md",
-      "api/index.md",
       "ref/classes.md",
       "ref/workflow.md",
     ],
@@ -135,3 +134,26 @@ pymdownx.tabbed.alternate_style = true
 pymdownx.tabbed.combine_header_slug = true
 pymdownx.tasklist.custom_checkbox = true
 pymdownx.tilde = {}
+
+[project.plugins.api-autonav]
+modules = ["src/ratatosk"]
+api_root_uri = "api2"
+nav_section_title = "API Reference"
+
+# [project.plugins.mkdocs-autoapi]
+# autoapi_dir = "src/ratatosk"
+# autoapi_root = "api2"
+# autoapi_add_nav_entry = true
+# autoapi_generate_api_docs = true
+# autoapi_keep_files = true
+
+[project.plugins.mkdocstrings.handlers.python]
+# inventories = ["https://docs.python.org/3/objects.inv"]
+# paths = ["src"]
+
+[project.plugins.mkdocstrings.handlers.python.options]
+extensions = [{ griffe_pydantic = { schema = true } }]
+filters =  ["!^clean$"]
+# docstring_style = "numpy"
+# inherited_members = true
+# show_source = false
