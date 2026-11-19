@@ -3745,13 +3745,13 @@ def termination_check(dataset, *, tol_mv=None) -> pd.DataFrame:
     special case. A constant-voltage hold still reaches the limit and still
     counts as finished.
     """
-    keys = sorted(dataset.half_cycle_keys())
+    keys = sorted(dataset._half_cycle_keys_fn())
     rows = []
     for k in keys:
         # ns-rse 2026-10-27 - Check what is returned to `hc` (presumably a subset of the dataframe that has been stored
         # in a dictionary, i.e. pd.DataFrame), seems convoluted to be messing around with things in such a manner just
         # to get a numpy array of data.
-        hc = dataset.half_cycle(*k)
+        hc = dataset._extract_cycle_step_fn(*k)
         v = pd.to_numeric(hc["Voltage"], errors="coerce").dropna().to_numpy()
         if v.size == 0:
             continue
@@ -3759,7 +3759,7 @@ def termination_check(dataset, *, tol_mv=None) -> pd.DataFrame:
             dict(
                 cycle=int(k[0]),
                 step=str(k[1]),
-                direction=float(dataset.step_direction(*k)),
+                direction=float(dataset._step_direction_fn(*k)),
                 v_end=float(v[-1]),
                 order=keys.index(k),
                 duration_s=_half_cycle_seconds(hc),

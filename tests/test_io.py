@@ -190,7 +190,7 @@ def test_read_xlsx(
 
 @pytest.mark.skipif(GITHUB_WIN, reason="SHA256 checksums differ under M$-Win")
 @pytest.mark.parametrize(
-    ("fixture_str", "path", "file_hash", "shape", "colnames"),
+    ("fixture_str", "path", "source_sha256", "shape", "colnames", "dataset_name"),
     [
         pytest.param(
             "neware_record_df",
@@ -225,6 +225,7 @@ def test_read_xlsx(
                 "Contact resistance(mΩ)",
                 "Module start-stop switch",
             ],
+            "neware_record",
             id="neware record.csv",
         )
     ],
@@ -232,15 +233,16 @@ def test_read_xlsx(
 def test_read_neware(
     fixture_str: str,
     path: str | Path,
-    file_hash: str,
+    source_sha256: str,
     shape: tuple[int, int],
     colnames: list[str],
+    dataset_name: str,
     request,
 ) -> None:
     """Test the `io.open_workbook()` function."""
     sheets = {"record": request.getfixturevalue(fixture_str)}
     dataset = io.read_neware(sheets=sheets, sheet="record", path=path)
-    assert dataset.source_sha256 == file_hash
-    assert dataset.name == "record"
-    assert dataset.frame.shape == shape
-    assert list(dataset.frame.columns) == colnames
+    assert dataset.source_sha256 == source_sha256
+    assert dataset.name == dataset_name
+    assert dataset.df.shape == shape
+    assert list(dataset.df.columns) == colnames

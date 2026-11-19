@@ -1828,7 +1828,7 @@ def voltage_window(
     window of 2.0472-4.2017, and the reference processed_dqdv.csv spans
     2.0472-4.2013.
     """
-    clean = dataset.clean
+    clean = dataset._clean_fn()
     v = pd.to_numeric(clean["Voltage"], errors="coerce")
     lo, hi = float(v.min()), float(v.max())
     trim = voltage_trim_mV / 1000.0
@@ -2055,8 +2055,8 @@ def half_cycle_report(dataset, cycle, step, params, *, window=None, voltage_trim
     """
     if window is None:
         window = voltage_window(dataset, voltage_trim_mV)
-    df = dataset.half_cycle(cycle, step)
-    direction = dataset.step_direction(cycle, step)
+    df = dataset._extract_cycle_step_fn(cycle, step)
+    direction = dataset._step_direction_fn(cycle, step)
     cap_col = (
         "Charge_Capacity" if str(step).lower().startswith("c") else "Discharge_Capacity"
     )
@@ -2065,7 +2065,7 @@ def half_cycle_report(dataset, cycle, step, params, *, window=None, voltage_trim
         cycle=int(cycle),
         step=str(step),
         direction=float(direction),
-        capacity=dataset.capacity(cycle, step),
+        capacity=dataset._capacity_fn(cycle, step),
         n_records_raw=len(df),
     )
     sig.reversals = reversals(df, direction, capacity_col=cap_col)

@@ -38,6 +38,10 @@ pc_pylint:
 pytest:
     pytest --cov=src --cov-branch --numprocesses=logical
 
+# Pytest last failed and exit on first
+pytest-last:
+    pytest --lf -x
+
 # Pytest with Matplotlib html report
 pytest_mpl_html_report:
     mkdir -p tmp/mpl

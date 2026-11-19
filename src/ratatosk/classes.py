@@ -1,8 +1,14 @@
 """Dataclass definitions."""
 
+from __future__ import annotations
+
+from functools import partial
 from importlib.resources import files
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
 
 import numpy as np
 
@@ -11,7 +17,7 @@ import pandas as pd
 import yaml
 
 # from loguru import logger
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, PrivateAttr
 from pydantic_settings import (
     BaseSettings,
     PydanticBaseSettingsSource,
@@ -22,6 +28,9 @@ import ratatosk
 
 DEFAULT_CONFIG = files(ratatosk) / "default_config.yaml"
 DEFAULT_DATA_DICTIONARY = files(ratatosk) / "default_dictionary.yaml"
+
+
+# pylint: disable=protected-access
 
 
 def load_default_yaml(
@@ -613,229 +622,246 @@ class Dataset(BaseModel):
         default_factory=CounterElectrode, description="Counter electrode."
     )
 
-    # -- structure ---------------------------------------------------------
+    # Add cleaning functions as private attributes
+    _clean_fn: Callable = PrivateAttr()
+    _half_cycles_fn: Callable = PrivateAttr()
+    _extract_cycle_step_fn: Callable = PrivateAttr()
+    _half_cycle_keys_fn: Callable = PrivateAttr()
+    _step_direction_fn: Callable = PrivateAttr()
+    _capacity_fn: Callable = PrivateAttr()
+    _record_spacing_mv_fn: Callable = PrivateAttr()
 
-    # 1.8.7 Module 1 drops rows with a missing Voltage, Cycle, Step or dQ/dV
-    # BEFORE anything else, and every half-cycle it processes comes from that
-    # cleaned frame. Reproducing it matters for more than row counts: where
-    # several records share a voltage, `sort_values` breaks the tie by input
-    # order, so a frame containing extra rows sorts its duplicates differently
-    # and the smoothed curve diverges. On the P3 cells 15 of 40 half-cycles
-    # differed for exactly this reason until the dropna was matched.
-    _REQUIRED = ("Voltage", "Cycle", "Step", "dQ/dV")
+    def model_post_init(self, context, /) -> None:  # noqa: ARG002
+        self._clean_fn = partial(clean, self)
+        self._half_cycles_fn = partial(half_cycles, self)
+        self._extract_cycle_step_fn = partial(extract_cycle_step, self)
+        self._half_cycle_keys_fn = partial(half_cycle_keys, self)
+        self._step_direction_fn = partial(step_direction, self)
+        self._capacity_fn = partial(capacity, self)
+        self._record_spacing_mv_fn = partial(record_spacing_mv, self)
 
-    # BOTH OF THESE ARE CACHED, and the cache is the difference between a
-    # run you wait two minutes for and one you do not.
-    #
-    # `half_cycle` used to boolean-mask the WHOLE frame on every call:
-    # `f[(f["Cycle"] == cycle) & (f["Step"] == step)]`, 82,337 rows scanned
-    # to return 200 of them. Under pandas 3 the `Step == "Charge"` half of
-    # that is a string comparison that null-checks the entire column, and it
-    # dominates: 10.2 ms per call, with `_isna_string_dtype` alone taking
-    # 5.4 s of a 13.4 s `termination_check`.
-    #
-    # Cells 4 and 5 make 3,444 such calls per dataset — 42 s, or 126 s for a
-    # triplicate. ONE `groupby(["Cycle", "Step"])` produces all 440 groups in
-    # 0.03 s, which is 168x faster than 440 masks, and every later call is a
-    # dict lookup.
-    #
-    # Safe because `frame` is never re-sorted (see the class docstring) and
-    # nothing mutates a half-cycle in place: `orient_dqdv` copies before
-    # writing and `strip_cv_hold` only slices. `replace()` builds a NEW
-    # Dataset, so a modified frame gets a fresh cache rather than a stale one.
-    # The groups preserve the frame's own row order, so the stable-sort
-    # tie-breaking that the port fidelity depends on is unchanged.
+    _required_cols = ("Voltage", "Cycle", "Step", "dQ/dV")
 
-    @property
-    def clean(self) -> pd.DataFrame:
-        """
-        Return a subset of the dataframe.
 
-        Returns
-        -------
-        pd.DataFrame
-            Subset of the required dataframes.
-        """
-        cached = self.__dict__.get("_clean_cache")
-        if cached is None:
-            # ns-rse 2026-11-06 : Switch this to use the required/numeric columns from the default_dictionary.yaml
-            # (stored in FileStructures class rather than hard coded value).
-            cols = [c for c in self._REQUIRED if c in self.df.columns]  # pylint: disable=no-member
-            cached = self.df.dropna(subset=cols)  # pylint: disable=no-member
-            self.__dict__["_clean_cache"] = cached
-        return cached
+def clean(ds: Dataset) -> pd.DataFrame:
+    """
+    Return rows that have values for the required columns.
 
-    def _half_cycles(self) -> dict[tuple[int, str], pd.DataFrame]:
-        """
-        Build a dictionary of subsets of the `self.df` dataframe indexed by `cycle` and `step`.
+    Parameters
+    ----------
+    ds : Dataset
+        Dataset whose dataframe will be filtered.
 
-        Returns
-        -------
-        dict[tuple[int, str], pd.DataFrame]
-            Dictionary takes the form `{(cycle, step): pd.DataFrame}`.
-        """
-        cached = self.__dict__.get("_half_cycle_cache")
-        if cached is None:
-            f = self.clean
-            if not {"Cycle", "Step"} <= set(f.columns):
-                cached = {}
-            else:
-                cached = {
-                    (int(c), str(s)): d
-                    for (c, s), d in f.groupby(["Cycle", "Step"], sort=True)
-                }
-            self.__dict__["_half_cycle_cache"] = cached
-        return cached
+    Returns
+    -------
+    pandas.DataFrame
+        Rows from `ds.df` with no missing values in the required columns
+        that are present in the dataframe. The result is cached on `ds`.
+    """
+    cached = ds.__dict__.get("_clean_cache")
+    if cached is None:
+        cols = [c for c in ds._required_cols if c in ds.df.columns]
+        cached = ds.df.dropna(subset=cols)
+        ds.__dict__["_clean_cache"] = cached
+    return cached
 
-    def half_cycle_keys(self) -> list[tuple[int, str]]:
-        """
-        Extract keys from half cycles.
 
-        Returns
-        -------
-        list[tuple[int, str]]
-            `(cycle, step)` pairs, in cycle order, Charge before Discharge.
-        """
-        return list(self._half_cycles)
+def half_cycles(ds: Dataset) -> dict[tuple[int, str], pd.DataFrame]:
+    """
+    Return half-cycle dataframes keyed by cycle and step.
 
-    def half_cycle(self, cycle, step) -> pd.DataFrame:
-        """
-        Extract a half-cycle (unique `cycle`/`step` combination).
+    Parameters
+    ----------
+    ds : Dataset
+        Dataset to group by cycle and step.
 
-        Parameters
-        ----------
-        cycle : int
-            Cycle to extract.
-        step : str
-            Step to extract.
-
-        Returns
-        -------
-        pd.DataFrame
-            Dataframe corresponding to the `cycle`/`step` requested.
-        """
-        # An absent key returns an EMPTY FRAME WITH THE RIGHT COLUMNS, which
-        # is what the boolean mask returned and what every caller's
-        # `len(df) < n` and `col in df.columns` tests expect.
-        return self._half_cycles.get((int(cycle), str(step)), self.clean.iloc[:0])
-
-    # -- the part that matters ---------------------------------------------
-
-    def step_direction(self, cycle: int, step: str) -> float:
-        """
-        +1 if the voltage rises through this half-cycle, -1 if it falls.
-
-        MEASURED, never inferred from the label. Falls back to the label only
-        when the net travel is too small to read (a pure constant-voltage
-        step), and says so by returning the label's implication rather than
-        pretending to know.
-
-        Parameters
-        ----------
-        cycle : int
-            Cycle to extract step-direction for.
-        step : str
-            Step to extract the step-direction for.
-
-        Returns
-        -------
-        float
-            Voltage for the given cycle/step.
-        """
-        v = pd.to_numeric(
-            self.half_cycle(cycle, step)["Voltage"], errors="coerce"
-        ).to_numpy()
-        v = v[np.isfinite(v)]
-        if v.size >= 2:
-            net = float(v[-1] - v[0])
-            if abs(net) > 1e-4:  # one voltage LSB
-                return 1.0 if net > 0 else -1.0
-        # The label fallback must respect the swap. On a negative electrode
-        # the half-cycle LABELLED Charge is the one where the voltage falls,
-        # so reading the label naively returned the wrong sign — and this
-        # branch fires precisely on a pure constant-voltage hold, the one
-        # place the measurement cannot correct it.
-        implied = 1.0 if str(step).lower().startswith("c") else -1.0
-        return -implied if self.labels_swapped else implied
-
-    def capacity(self, cycle: int, step: str) -> float:
-        """
-        Charge passed in this half-cycle, from the cycler's own counter.
-
-        The counter, not the integral of dQ/dV — those two are compared by
-        `quality.integral_fidelity`, and using one to define the other would
-        make that comparison meaningless.
-
-        Parameters
-        ----------
-        cycle : int
-            Cycle to extract step-direction for.
-        step : str
-            Step to extract the step-direction for.
-
-        Returns
-        -------
-        float
-            Charge passed in the half-cycle for the given cycle/step.
-        """
-        col = (
-            "Charge_Capacity"
-            if str(step).lower().startswith("c")
-            else "Discharge_Capacity"
-        )
-        d = self.half_cycle(cycle, step)
-        if col not in d.columns:
-            return float("nan")
-        q = pd.to_numeric(d[col], errors="coerce").to_numpy()
-        q = q[np.isfinite(q)]
-        if q.size < 2:
-            return float("nan")
-        return float(np.nanmax(q) - np.nanmin(q))
-
-    def record_spacing_mv(self, step: str | None = None) -> dict[str, float]:
-        """
-        Median and minimum non-zero voltage step between consecutive records.
-
-        Reported because the rebinning decision should be keyed to this and is
-        not: 1.8.x keys it to the profile class, so the P3 exports get no
-        rebinning at all despite 4% of their consecutive records sitting at an
-        identical voltage. Measured here, acted on in 2.0.
-
-        Parameters
-        ----------
-        step : str, optional
-            Step to extract data for.
-
-        Returns
-        -------
-        dict[str, float]
-            Dictionary of the `median_mV`, `min_mV` and `duplicate_fraction` for the given step.
-        """
-        dv, zeros, total = [], 0, 0
-        for cyc, st in self.half_cycle_keys():
-            if step is not None and st != step:
-                continue
-            v = pd.to_numeric(
-                self.half_cycle(cyc, st)["Voltage"], errors="coerce"
-            ).to_numpy()
-            v = v[np.isfinite(v)]
-            if v.size < 50:
-                continue
-            d = np.abs(np.diff(v))
-            zeros += int((d == 0).sum())
-            total += d.size
-            nz = d[d > 0]
-            if nz.size:
-                dv.append(nz)
-        if not dv:
-            return {
-                "median_mV": float("nan"),
-                "min_mV": float("nan"),
-                "duplicate_fraction": float("nan"),
+    Returns
+    -------
+    dict[tuple[int, str], pandas.DataFrame]
+        Mapping from `(cycle, step)` pairs to dataframes. Each dataframe
+        preserves the row order from the cleaned source dataframe. The
+        mapping is cached on `ds`.
+    """
+    cached = ds.__dict__.get("_half_cycle_cache")
+    if cached is None:
+        f = ds._clean_fn()
+        if not {"Cycle", "Step"} <= set(f.columns):
+            cached = {}
+        else:
+            cached = {
+                (int(c), str(s)): d
+                for (c, s), d in f.groupby(["Cycle", "Step"], sort=True)
             }
-        allnz = np.concatenate(dv) * 1000.0
+        ds.__dict__["_half_cycle_cache"] = cached
+    return cached
+
+
+def extract_cycle_step(ds: Dataset, cycle: int, step: str) -> pd.DataFrame:
+    """
+    Return the data for one cycle and step.
+
+    Parameters
+    ----------
+    ds : Dataset
+        Dataset to retrieve data from.
+    cycle : int
+        Cycle number.
+    step : str
+        Step label, such as `"Charge"` or `"Discharge"`.
+
+    Returns
+    -------
+    pandas.DataFrame
+        Dataframe for the requested cycle and step. If the pair is absent,
+        returns an empty dataframe with the cleaned dataframe's columns.
+    """
+    return ds._half_cycles_fn().get(
+        (int(cycle), str(step)),
+        ds._clean_fn().iloc[:0],
+    )
+
+
+def half_cycle_keys(ds: Dataset) -> list[tuple[int, str]]:
+    """
+    Return the available cycle and step pairs.
+
+    Parameters
+    ----------
+    ds : Dataset
+        Dataset to inspect.
+
+    Returns
+    -------
+    list[tuple[int, str]]
+        Available `(cycle, step)` pairs in the ordering of the cached
+        half-cycle mapping.
+    """
+    return list(ds._half_cycles_fn())
+
+
+def step_direction(ds: Dataset, cycle: int, step: str) -> float:
+    """
+    Determine whether voltage rises or falls during a half-cycle.
+
+    The direction is measured from the first and last finite voltage values.
+    If the net change is too small to resolve, direction is inferred from the
+    step label and adjusted when electrode labels have been swapped.
+
+    Parameters
+    ----------
+    ds : Dataset
+        Dataset containing the half-cycle.
+    cycle : int
+        Cycle number.
+    step : str
+        Step label.
+
+    Returns
+    -------
+    float
+        `1.0` if voltage rises or is inferred to rise, or `-1.0` if it
+        falls or is inferred to fall.
+    """
+    v = pd.to_numeric(
+        ds._extract_cycle_step_fn(cycle, step)["Voltage"], errors="coerce"
+    ).to_numpy()
+    v = v[np.isfinite(v)]
+
+    if v.size >= 2:
+        net = float(v[-1] - v[0])
+        if abs(net) > 1e-4:
+            return 1.0 if net > 0 else -1.0
+
+    implied = 1.0 if str(step).lower().startswith("c") else -1.0
+    return -implied if ds.labels_swapped else implied
+
+
+def capacity(ds: Dataset, cycle: int, step: str) -> float:
+    """
+    Calculate charge passed during a half-cycle from the cycler's counter.
+
+    Parameters
+    ----------
+    ds : Dataset
+        Dataset containing the half-cycle.
+    cycle : int
+        Cycle number.
+    step : str
+        Step label. Labels beginning with `"c"` use the charge-capacity
+        column; other labels use the discharge-capacity column.
+
+    Returns
+    -------
+    float
+        Difference between the maximum and minimum finite capacity values,
+        or `nan` if the required column is absent or fewer than two finite
+        values are available.
+    """
+    col = (
+        "Charge_Capacity" if str(step).lower().startswith("c") else "Discharge_Capacity"
+    )
+    d = ds._extract_cycle_step_fn(cycle, step)
+    if col not in d.columns:
+        return float("nan")
+
+    q = pd.to_numeric(d[col], errors="coerce").to_numpy()
+    q = q[np.isfinite(q)]
+    return float(np.nanmax(q) - np.nanmin(q)) if q.size >= 2 else float("nan")
+
+
+def record_spacing_mv(ds: Dataset, step: str | None = None) -> dict[str, float]:
+    """
+    Summarize consecutive voltage-record spacing.
+
+    Only half-cycles with at least 50 finite voltage records are included.
+    Duplicate records are counted where consecutive voltages are identical;
+    spacing statistics use only non-zero absolute voltage differences.
+
+    Parameters
+    ----------
+    ds : Dataset
+        Dataset to analyze.
+    step : str or None, optional
+        If provided, include only half-cycles with this step label.
+        By default, all steps are included.
+
+    Returns
+    -------
+    dict[str, float]
+        Dictionary containing `"median_mV"`, `"min_mV"`, and
+        `"duplicate_fraction"`. If no eligible non-zero voltage
+        differences are found, the values are `nan`.
+    """
+    diff_voltage, zeros, total = [], 0, 0
+
+    for cycle, _step in ds._half_cycle_keys_fn():
+        if step is not None and _step != step:
+            continue
+
+        voltage = pd.to_numeric(
+            ds._extract_cycle_step_fn(cycle, _step)["Voltage"], errors="coerce"
+        ).to_numpy()
+        voltage = voltage[np.isfinite(voltage)]
+        if voltage.size < 50:
+            continue
+
+        voltage_difference = np.abs(np.diff(voltage))
+        zeros += int((voltage_difference == 0).sum())
+        total += voltage_difference.size
+        voltage_non_zero = voltage_difference[voltage_difference > 0]
+        if voltage_non_zero.size:
+            diff_voltage.append(voltage_non_zero)
+
+    if not diff_voltage:
         return {
-            "median_mV": float(np.median(allnz)),
-            "min_mV": float(allnz.min()),
-            "duplicate_fraction": (zeros / total) if total else float("nan"),
+            "median_mV": float("nan"),
+            "min_mV": float("nan"),
+            "duplicate_fraction": float("nan"),
         }
+
+    all_non_zero = np.concatenate(diff_voltage) * 1000.0
+    return {
+        "median_mV": float(np.median(all_non_zero)),
+        "min_mV": float(all_non_zero.min()),
+        "duplicate_fraction": zeros / total if total else float("nan"),
+    }
