@@ -2575,15 +2575,14 @@ wheels = [
 
 [[package]]
 name = "pytest-loguru"
-version = "0.4.2"
+version = "0.4.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "loguru" },
-    { name = "pytest" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/26/83/824ffbe077f06cff80a314ade8d0dff03864702a50275ad58e88a9cbaee9/pytest_loguru-0.4.2.tar.gz", hash = "sha256:ad365b4149a99e6cc26cde01d225e776617bffbce3af3fc6d90fdb9fb34c9302", size = 62290, upload-time = "2026-11-11T19:38:07.175Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/79/5d/022db15ea1bcf903ae502b874ebe40616072e41a2f4cc6f97aec42480d06/pytest_loguru-0.4.1.tar.gz", hash = "sha256:2248a2bdd4d3b396b06f5513c7208280b67d4dab27555aa65c310a82c2942dbe", size = 60215, upload-time = "2026-05-16T21:51:21.49Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/4a/41/083ae640f6942505c7c4093a2317faeedbe7de1d2558e9932a54aa40044a/pytest_loguru-0.4.2-py3-none-any.whl", hash = "sha256:282bba4c27c72e9cdea0680fb455642919649bf7f3a110723275cbfe3c40a44b", size = 5841, upload-time = "2026-11-11T19:38:06.336Z" },
+    { url = "https://files.pythonhosted.org/packages/ac/b8/8d0202e089dbfcab7592d2d26230c31cc1033e5d99326fd78e0902ff9892/pytest_loguru-0.4.1-py3-none-any.whl", hash = "sha256:57e8f4bf3d090c17bb652843ddf9c295a18200f4e2a99f78a5c4c9b605347405", size = 4649, upload-time = "2026-05-16T21:51:20.537Z" },
 ]
 
 [[package]]
@@ -2961,7 +2960,7 @@ dev = [
     { name = "pylint", specifier = ">=4.0" },
     { name = "pytest", specifier = ">=9.1" },
     { name = "pytest-cov", specifier = ">=7" },
-    { name = "pytest-loguru", specifier = ">=0.4" },
+    { name = "pytest-loguru", specifier = "==0.4.1" },
     { name = "pytest-mpl", specifier = ">=0.19" },
     { name = "pytest-testmon", specifier = ">=2.2" },
     { name = "pytest-xdist", specifier = ">=3.8" },
@@ -2983,7 +2982,7 @@ notebooks = [
 tests = [
     { name = "pytest", specifier = ">=9.1" },
     { name = "pytest-cov", specifier = ">=7" },
-    { name = "pytest-loguru", specifier = ">=0.4" },
+    { name = "pytest-loguru", specifier = "==0.4.1" },
     { name = "pytest-mpl", specifier = ">=0.19" },
     { name = "pytest-testmon", specifier = ">=2.2" },
     { name = "pytest-xdist", specifier = ">=3.8" },
