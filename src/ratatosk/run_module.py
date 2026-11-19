@@ -1,4 +1,4 @@
-"""Run analysis in parallel."""
+"""Process multiple files parallel."""
 
 import sys
 from datetime import UTC, datetime
