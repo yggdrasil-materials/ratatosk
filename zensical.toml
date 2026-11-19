@@ -23,7 +23,6 @@ nav = [
   "glossary.md",
   { "Reference" = [
       "ref/index.md",
-      "api/index.md",
       "ref/classes.md",
       "ref/workflow.md",
     ],
@@ -135,3 +134,20 @@ pymdownx.tabbed.alternate_style = true
 pymdownx.tabbed.combine_header_slug = true
 pymdownx.tasklist.custom_checkbox = true
 pymdownx.tilde = {}
+
+[project.plugins.api-autonav]
+modules = ["src/ratatosk"]
+api_root_uri = "api2"
+nav_section_title = "API Reference"
+
+[project.plugins.mkdocstrings.handlers.python]
+# inventories = ["https://docs.python.org/3/objects.inv"]
+# paths = ["src"]
+
+[project.plugins.mkdocstrings.handlers.python.options]
+extensions = [{ griffe_pydantic = { schema = true } }]
+# ns-rse 2026-11-19 : Exclude the Dataset class from API docs generation, the various methods which are not part of the
+# Pydantic Model cause errors with griffe-pydantic which works out the docstrings, frustrating as this is the key
+# (data)class, tried using a filter which excluded private methods but it didn't work.
+# filters =  ["!^_"]
+filters =  ["!^Dataset$"]

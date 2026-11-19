@@ -19,6 +19,6 @@ ignores:
   - ".venv/"
   - ".github/CONTRIBUTING.md"
   - "docs/markdown.md"
-  - "docs/api/*.md"
+  - "docs/api2/"
 
 fix: true

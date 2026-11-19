@@ -1,4 +1,4 @@
-"""Run analysis in parallel."""
+"""Process multiple files parallel."""
 
 import sys
 from datetime import UTC, datetime
@@ -185,7 +185,7 @@ def analysis(
     ###############################################################################
     signal_reports = {}
     window = signal.voltage_window(dataset)
-    for cycle_step in dataset.half_cycle_keys():
+    for cycle_step in dataset._half_cycle_keys_fn():
         signal_reports[cycle_step] = signal.half_cycle_report(
             dataset=dataset,
             cycle=cycle_step[0],
@@ -211,7 +211,9 @@ def analysis(
             if cycle_step[1].lower().startswith("c")
             else "Discharce_Capacity"
         )
-        half_cycle_df = dataset.half_cycle(cycle=cycle_step[0], step=cycle_step[1])
+        half_cycle_df = dataset._extract_cycle_step_fn(
+            cycle=cycle_step[0], step=cycle_step[1]
+        )
         if capacity not in half_cycle_df.columns:
             continue
         voltage_reconstruction.append(

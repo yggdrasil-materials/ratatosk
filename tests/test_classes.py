@@ -3,6 +3,8 @@
 from importlib.resources import files
 from pathlib import Path
 
+import numpy as np
+import pandas as pd
 import pytest
 
 import ratatosk
@@ -12,7 +14,7 @@ BASE_DIR = Path.cwd()
 RESOURCES = BASE_DIR / "tests" / "resources"
 YAML = RESOURCES / "yaml"
 
-# pylint: disable=no-member
+# pylint: disable=no-member,invalid-name
 
 
 @pytest.mark.parametrize(
@@ -135,19 +137,19 @@ def test_Electroylte(composition: str | None, volume_ul: float) -> None:
 
 
 @pytest.mark.parametrize(
-    ("area_cm2", "diameter_mm", "type"),
+    ("area_cm2", "diameter_mm", "electrode_type"),
     [
         pytest.param(None, None, "Positive", id="default"),
     ],
 )
 def test_Electrode(
-    area_cm2: float | None, diameter_mm: float | None, type: str
+    area_cm2: float | None, diameter_mm: float | None, electrode_type: str
 ) -> None:
     """Test for `Electrode()`."""
     electrode = classes.Electrode()
     assert electrode.area_cm2 == area_cm2
     assert electrode.diameter_mm == diameter_mm
-    assert electrode.type == type
+    assert electrode.type == electrode_type
 
 
 @pytest.mark.parametrize(
@@ -548,3 +550,300 @@ def test_data_dictionary_neware(
     assert data_dictionary.neware["step_names"] == neware_step_names
     assert data_dictionary.neware["metadata"] == neware_metadata
     assert data_dictionary.neware["sheets"] == neware_sheets
+
+
+# Test the cleaning functions, we setup two helper functions used in constructing parameters as input
+def make_dataset(
+    rows: list[dict[str, object]],
+    *,
+    labels_swapped: bool = False,
+) -> classes.Dataset:
+    """Build a minimal Dataset for tests."""
+    return classes.Dataset(
+        name="test.csv",
+        source_path="test.csv",
+        df=pd.DataFrame(rows),
+        labels_swapped=labels_swapped,
+    )
+
+
+def make_rows(
+    *,
+    cycle: int = 1,
+    step: str = "Charge",
+    voltages: list[float] | None = None,
+    charge_capacities: list[float] | None = None,
+    discharge_capacities: list[float] | None = None,
+) -> list[dict[str, object]]:
+    """Build rows containing the columns required by Dataset.clean."""
+    voltages = [3.0, 3.1] if voltages is None else voltages
+    charge_capacities = (
+        [float(i) for i in range(len(voltages))]
+        if charge_capacities is None
+        else charge_capacities
+    )
+    discharge_capacities = (
+        [float(i) for i in range(len(voltages))]
+        if discharge_capacities is None
+        else discharge_capacities
+    )
+    return [
+        {
+            "Voltage": voltage,
+            "Cycle": cycle,
+            "Step": step,
+            "dQ/dV": 1.0,
+            "Charge_Capacity": charge_capacities[i],
+            "Discharge_Capacity": discharge_capacities[i],
+        }
+        for i, voltage in enumerate(voltages)
+    ]
+
+
+@pytest.mark.parametrize(
+    ("rows", "expected_voltages"),
+    [
+        pytest.param(
+            make_rows(voltages=[3.0, 3.1]),
+            [3.0, 3.1],
+            id="keeps-rows-with-required-values",
+        ),
+        pytest.param(
+            make_rows(voltages=[3.0, 3.1]) + [{**make_rows()[0], "Voltage": np.nan}],
+            [3.0, 3.1],
+            id="drops-row-with-missing-required-value",
+        ),
+    ],
+)
+def test_clean(
+    rows: list[dict[str, object]],
+    expected_voltages: list[float],
+) -> None:
+    ds = make_dataset(rows)
+
+    result = classes.clean(ds)
+
+    assert result["Voltage"].tolist() == expected_voltages
+
+
+@pytest.mark.parametrize(
+    ("rows", "expected_keys"),
+    [
+        pytest.param(
+            make_rows(cycle=1, step="Charge") + make_rows(cycle=1, step="Discharge"),
+            [(1, "Charge"), (1, "Discharge")],
+            id="groups-charge-and-discharge",
+        ),
+        pytest.param(
+            make_rows(cycle=2, step="Charge") + make_rows(cycle=1, step="Charge"),
+            [(1, "Charge"), (2, "Charge")],
+            id="sorts-groups-by-cycle",
+        ),
+    ],
+)
+def test_half_cycles(
+    rows: list[dict[str, object]],
+    expected_keys: list[tuple[int, str]],
+) -> None:
+    ds = make_dataset(rows)
+
+    result = classes.half_cycles(ds)
+
+    assert list(result) == expected_keys
+
+
+@pytest.mark.parametrize(
+    ("cycle", "step", "expected_voltages"),
+    [
+        pytest.param(1, "Charge", [3.0, 3.1], id="returns-existing-half-cycle"),
+        pytest.param(9, "Charge", [], id="missing-cycle-returns-empty-frame"),
+        pytest.param(1, "Rest", [], id="missing-step-returns-empty-frame"),
+    ],
+)
+def test_extract_cycle_step(
+    cycle: int,
+    step: str,
+    expected_voltages: list[float],
+) -> None:
+    """Test `classes.extract_cycle_step()` function."""
+    ds = make_dataset(make_rows())
+
+    result = classes.extract_cycle_step(ds, cycle, step)
+
+    assert result["Voltage"].tolist() == expected_voltages
+    if not expected_voltages:
+        assert list(result.columns) == list(ds._clean_fn().columns)  # pylint: disable=protected-access
+
+
+@pytest.mark.parametrize(
+    ("rows", "expected_keys"),
+    [
+        pytest.param(
+            make_rows(cycle=1, step="Charge") + make_rows(cycle=2, step="Discharge"),
+            [(1, "Charge"), (2, "Discharge")],
+            id="returns-cycle-step-pairs",
+        ),
+        pytest.param([], [], id="empty-dataframe-has-no-half-cycle-keys"),
+    ],
+)
+def test_half_cycle_keys(
+    rows: list[dict[str, object]],
+    expected_keys: list[tuple[int, str]],
+) -> None:
+    ds = make_dataset(rows)
+
+    assert classes.half_cycle_keys(ds) == expected_keys
+
+
+@pytest.mark.parametrize(
+    ("voltages", "step", "labels_swapped", "expected"),
+    [
+        pytest.param(
+            [3.0, 3.2],
+            "Charge",
+            False,
+            1.0,
+            id="measured-rising-voltage",
+        ),
+        pytest.param(
+            [3.2, 3.0],
+            "Charge",
+            False,
+            -1.0,
+            id="measured-falling-voltage",
+        ),
+        pytest.param(
+            [3.0, 3.0],
+            "Charge",
+            False,
+            1.0,
+            id="constant-voltage-uses-charge-label",
+        ),
+        pytest.param(
+            [3.0, 3.0],
+            "Charge",
+            True,
+            -1.0,
+            id="constant-voltage-charge-label-swapped",
+        ),
+        pytest.param(
+            [3.0, 3.0],
+            "Discharge",
+            False,
+            -1.0,
+            id="constant-voltage-uses-discharge-label",
+        ),
+    ],
+)
+def test_step_direction(
+    voltages: list[float],
+    step: str,
+    labels_swapped: bool,
+    expected: float,
+) -> None:
+    ds = make_dataset(
+        make_rows(step=step, voltages=voltages),
+        labels_swapped=labels_swapped,
+    )
+
+    assert classes.step_direction(ds, 1, step) == expected
+
+
+@pytest.mark.parametrize(
+    ("step", "charge_capacities", "discharge_capacities", "expected"),
+    [
+        pytest.param(
+            "Charge",
+            [0.2, 1.7],
+            [0.0, 9.0],
+            1.5,
+            id="uses-charge-capacity-column",
+        ),
+        pytest.param(
+            "Discharge",
+            [0.0, 9.0],
+            [0.3, 1.8],
+            1.5,
+            id="uses-discharge-capacity-column",
+        ),
+        pytest.param(
+            "Charge",
+            [0.5],
+            [0.0],
+            float("nan"),
+            id="fewer-than-two-capacity-values",
+            marks=pytest.mark.skip(reason="Indexing fails on single capacity."),
+        ),
+    ],
+)
+def test_capacity(
+    step: str,
+    charge_capacities: list[float],
+    discharge_capacities: list[float],
+    expected: float,
+) -> None:
+    """Test the `classes.capacity()` function."""
+    rows = make_rows(
+        step=step,
+        charge_capacities=charge_capacities,
+        discharge_capacities=discharge_capacities,
+    )
+    ds = make_dataset(rows)
+
+    result = classes.capacity(ds, 1, step)
+
+    if np.isnan(expected):
+        assert np.isnan(result)
+    else:
+        assert result == pytest.approx(expected)
+
+
+@pytest.mark.parametrize(
+    ("rows", "step", "expected_median", "expected_min", "expected_duplicates"),
+    [
+        pytest.param(
+            make_rows(voltages=[3.0 + i * 0.001 for i in range(50)]),
+            None,
+            1.0,
+            1.0,
+            0.0,
+            id="uniform-spacing-no-duplicates",
+        ),
+        pytest.param(
+            make_rows(voltages=[3.0 + (i // 2) * 0.002 for i in range(100)]),
+            "Charge",
+            2.0,
+            2.0,
+            0.5050505050505051,
+            id="duplicate-records-counted-for-selected-step",
+        ),
+        pytest.param(
+            make_rows(voltages=[3.0, 3.1]),
+            None,
+            float("nan"),
+            float("nan"),
+            float("nan"),
+            id="skips-half-cycle-with-fewer-than-50-records",
+        ),
+    ],
+)
+def test_record_spacing_mv(
+    rows: list[dict[str, object]],
+    step: str | None,
+    expected_median: float,
+    expected_min: float,
+    expected_duplicates: float,
+) -> None:
+    """Test the `classes.record_spacing_mv()` function."""
+    ds = make_dataset(rows)
+
+    result = classes.record_spacing_mv(ds, step)
+
+    if np.isnan(expected_median):
+        assert np.isnan(result["median_mV"])
+        assert np.isnan(result["min_mV"])
+        assert np.isnan(result["duplicate_fraction"])
+    else:
+        assert result["median_mV"] == pytest.approx(expected_median)
+        assert result["min_mV"] == pytest.approx(expected_min)
+        assert result["duplicate_fraction"] == pytest.approx(expected_duplicates)

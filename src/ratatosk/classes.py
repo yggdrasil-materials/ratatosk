@@ -1,8 +1,14 @@
 """Dataclass definitions."""
 
+from __future__ import annotations
+
+from functools import partial
 from importlib.resources import files
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
 
 import numpy as np
 
@@ -11,7 +17,7 @@ import pandas as pd
 import yaml
 
 # from loguru import logger
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, PrivateAttr
 from pydantic_settings import (
     BaseSettings,
     PydanticBaseSettingsSource,
@@ -22,6 +28,9 @@ import ratatosk
 
 DEFAULT_CONFIG = files(ratatosk) / "default_config.yaml"
 DEFAULT_DATA_DICTIONARY = files(ratatosk) / "default_dictionary.yaml"
+
+
+# pylint: disable=protected-access
 
 
 def load_default_yaml(
@@ -111,21 +120,25 @@ class TerminalTrim(BaseModel):
     """A class for type-checking the `terminal_trim` options."""
 
     model_config = ConfigDict(extra="forbid")
-    run: bool = Field(default=True, title="Whether to trim half-cycles.")
-    fixed_mv: float = Field(default=75.0, title="Fixed mV to trim by.")
-    factor: float = Field(default=1.4, title="???")
-    max_fraction: float = Field(default=0.1, title="???")
-    band_mv: float = Field(default=20.0, title="???")
-    interior: tuple[float, float] = Field(default=(0.2, 0.8), title="???")
+    run: bool = Field(default=True, description="Whether to trim half-cycles.")
+    fixed_mv: float = Field(default=75.0, description="Fixed mV to trim by.")
+    factor: float = Field(default=1.4, description="???")
+    max_fraction: float = Field(default=0.1, description="???")
+    band_mv: float = Field(default=20.0, description="???")
+    interior: tuple[float, float] = Field(default=(0.2, 0.8), description="???")
 
 
 class Termination(BaseModel):
     """Class for type-checking the `termination` options."""
 
     model_config = ConfigDict(extra="forbid")
-    tol_mv: float = Field(default=20.0, title="Tolerance for termination in mV.")
-    tol_spreads: float = Field(default=5.0, title="Tolerance spread for termination.")
-    reference_n: int = Field(default=10, title="Reference number for termination.")
+    tol_mv: float = Field(default=20.0, description="Tolerance for termination in mV.")
+    tol_spreads: float = Field(
+        default=5.0, description="Tolerance spread for termination."
+    )
+    reference_n: int = Field(
+        default=10, description="Reference number for termination."
+    )
 
 
 class DqDv(BaseModel):
@@ -134,11 +147,11 @@ class DqDv(BaseModel):
     model_config = ConfigDict(extra="forbid")
     computation: str = Field(
         default="histogram",
-        title="Differential method, valid values are 'histogram' or 'derivative'",
+        description="Differential method, valid values are 'histogram' or 'derivative'",
     )
     bin_mv: float | None = Field(
         default=None,
-        title="Voltage bin width for the histogram path in mV. Determines the resolution of the curve.",
+        description="Voltage bin width for the histogram path in mV. Determines the resolution of the curve.",
     )
 
 
@@ -149,29 +162,32 @@ class Figure(BaseModel):
     # ns-rse 2026-10-29 Duplication of theme, choose one and use it
     colour_palette: str = Field(
         default="viridis_r",
-        title="Colour palette to use when plotting (default 'viridis_r') should match 'theme'.",
+        description="Colour palette to use when plotting (default 'viridis_r') should match 'theme'.",
     )
     file_format: str = Field(
-        default="png", title="Default format for figure output (default is 'png')."
+        default="png",
+        description="Default format for figure output (default is 'png').",
     )
 
     height_in: float = Field(
         default=5.0,
-        title="Figure height in inches applied to every figure produced.",
+        description="Figure height in inches applied to every figure produced.",
     )
     histogram_smooth_bins: str | float | None = Field(
-        default="auto", title="Histogram smoothing of bins, may be 'auto' or a float."
+        default="auto",
+        description="Histogram smoothing of bins, may be 'auto' or a float.",
     )
     histogram_bin_mv: str | float | None = Field(
-        default="auto", title="Histogram bings in mV, may be 'auto' or a float value."
+        default="auto",
+        description="Histogram bings in mV, may be 'auto' or a float value.",
     )
     theme: str = Field(
         default="viridis_r",
-        title="Theme to plot figures with.",
+        description="Theme to plot figures with.",
     )
     width_in: float = Field(
         default=6.73,
-        title="Figure width in inches applied to every figure produced.",
+        description="Figure width in inches applied to every figure produced.",
     )
 
 
@@ -179,8 +195,10 @@ class DeadCell(BaseModel):
     """Class for type-checking the `DeadCell` options."""
 
     model_config = ConfigDict(extra="forbid")
-    capacity_fraction: float = Field(default=0.02, title="Dead cell capacity fraction.")
-    run: int = Field(default=3, title="Runs to signify a dead cell.")
+    capacity_fraction: float = Field(
+        default=0.02, description="Dead cell capacity fraction."
+    )
+    run: int = Field(default=3, description="Runs to signify a dead cell.")
 
 
 class TheoreticalCapacity(BaseModel):
@@ -188,11 +206,15 @@ class TheoreticalCapacity(BaseModel):
 
     model_config = ConfigDict(extra="forbid")
     library_formula: str | None = Field(
-        default=None, title="Theoretical capacity library formula."
+        default=None, description="Theoretical capacity library formula."
     )
-    mah: float | None = Field(default=None, title="Theoretical capacity in mAh.")
-    mah_g: float | None = Field(default=None, title="Theoretical capacity in mAh/g.")
-    source: str | None = Field(default=None, title="Source of theoretical capacity.")
+    mah: float | None = Field(default=None, description="Theoretical capacity in mAh.")
+    mah_g: float | None = Field(
+        default=None, description="Theoretical capacity in mAh/g."
+    )
+    source: str | None = Field(
+        default=None, description="Source of theoretical capacity."
+    )
 
 
 class TheoreticalCharge(BaseModel):
@@ -200,10 +222,10 @@ class TheoreticalCharge(BaseModel):
 
     model_config = ConfigDict(extra="forbid")
     current_ma: float | None = Field(
-        default=None, title="Theoretical charge current in mA."
+        default=None, description="Theoretical charge current in mA."
     )
     rate_mah_g: float | None = Field(
-        default=None, title="Theoretical charge rate in mAh/g."
+        default=None, description="Theoretical charge rate in mAh/g."
     )
 
 
@@ -212,25 +234,27 @@ class Voltage(BaseModel):
 
     model_config = ConfigDict(extra="forbid")
     limit_lower_v_from_file: float | None = Field(
-        default=None, title="Lower voltage limit from data."
+        default=None, description="Lower voltage limit from data."
     )
     limit_upper_v_from_file: float | None = Field(
-        default=None, title="Upper voltage limit from data."
+        default=None, description="Upper voltage limit from data."
     )
-    lower_v: float | None = Field(default=None, title="Lower voltage.")
-    upper_v: float | None = Field(default=None, title="Upper voltage.")
-    window_source: str = Field(default="measured from data", title="Source of voltages")
+    lower_v: float | None = Field(default=None, description="Lower voltage.")
+    upper_v: float | None = Field(default=None, description="Upper voltage.")
+    window_source: str = Field(
+        default="measured from data", description="Source of voltages"
+    )
 
 
 class Spike(BaseModel):
     """Class for type-checking the `Spike` options."""
 
     model_config = ConfigDict(extra="forbid")
-    removal: str | None = Field(default="auto", title="Method of spike removal.")
+    removal: str | None = Field(default="auto", description="Method of spike removal.")
     threshold_multiplier: str | float | None = Field(
-        default="auto", title="Threshold multiplier for spike removal."
+        default="auto", description="Threshold multiplier for spike removal."
     )
-    window_size: int = Field(default=5, title="Window size.")
+    window_size: int = Field(default=5, description="Window size.")
 
 
 class Peak(BaseModel):
@@ -238,28 +262,33 @@ class Peak(BaseModel):
 
     model_config = ConfigDict(extra="forbid")
     min_distance_mv: str | float | None = Field(
-        default="auto", title="Minimum distance in mV."
+        default="auto", description="Minimum distance in mV."
     )
-    min_width_mvv: int = Field(default=5, title="Minimum width in mV.")
-    prominence_fraction: float = Field(default=0.05, title="Prominence fraction.")
+    min_width_mvv: int = Field(default=5, description="Minimum width in mV.")
+    prominence_fraction: float = Field(default=0.05, description="Prominence fraction.")
 
 
 class Electrolyte(BaseModel):
     """Class for type-checking the `Electrolyte` options."""
 
     model_config = ConfigDict(extra="forbid")
-    composition: str | None = Field(default=None, title="Electrolyte composition.")
-    volume_ul: float = Field(default=100.0, title="Volume in uL.")
+    composition: str | None = Field(
+        default=None, description="Electrolyte composition."
+    )
+    volume_ul: float = Field(default=100.0, description="Volume in uL.")
 
 
 class Electrode(BaseModel):
     """Class for type-checking the `Electrode` options."""
 
     model_config = ConfigDict(extra="forbid")
-    area_cm2: float | None = Field(default=None, title="Electrode area in cm2.")
-    diameter_mm: float | None = Field(default=None, title="Electrode diameter in mm.")
+    area_cm2: float | None = Field(default=None, description="Electrode area in cm2.")
+    diameter_mm: float | None = Field(
+        default=None, description="Electrode diameter in mm."
+    )
     type: str | None = Field(
-        default="Positive", title="Electrode type (either 'Positive' or 'Negative')."
+        default="Positive",
+        description="Electrode type (either 'Positive' or 'Negative').",
     )
 
 
@@ -267,14 +296,17 @@ class CounterElectrode(BaseModel):
     """Class for type-checking the `CounterElectrode` options."""
 
     model_config = ConfigDict(extra="forbid")
-    mass_mg: float | None = Field(default=None, title="Mass in mg.")
+    mass_mg: float | None = Field(default=None, description="Mass in mg.")
     measured: bool | None = Field(
-        default=None, title="Whether the Counter Electrode features were measured."
+        default=None,
+        description="Whether the Counter Electrode features were measured.",
     )
-    metal: str | None = Field(default=None, title="Metal type of counter electrode.")
+    metal: str | None = Field(
+        default=None, description="Metal type of counter electrode."
+    )
     metal_source: str | None = Field(
         default="assumed",
-        title="Source of metal type of counter electrode (default is 'assumed').",
+        description="Source of metal type of counter electrode (default is 'assumed').",
     )
 
 
@@ -282,12 +314,12 @@ class Active(BaseModel):
     """Class for type-checking the `Active` options."""
 
     model_config = ConfigDict(extra="forbid")
-    fraction: float = Field(default=0.8, title="Active fraction")
+    fraction: float = Field(default=0.8, description="Active fraction")
     loading_mg_cm2: float | None = Field(
-        default=None, title="Active loading in mg/cm2."
+        default=None, description="Active loading in mg/cm2."
     )
     material_mass_mg: float | None = Field(
-        default=None, title="Active material mass in mg."
+        default=None, description="Active material mass in mg."
     )
 
 
@@ -296,127 +328,144 @@ class Parameters(BaseSettings):
 
     # Attributes are listed alphabetically to facilitate discovery, please maintain this when adding new attributes.
     active: Active = Field(
-        default_factory=Active, title="Active configuration options."
+        default_factory=Active, description="Active configuration options."
     )
 
-    anode_labels_swapped: bool = Field(default=False, title="Anode labels swapped.")
+    anode_labels_swapped: bool = Field(
+        default=False, description="Anode labels swapped."
+    )
 
-    base_dir: Path = Field(default=Path("./"), title="Base directory.")
+    base_dir: Path = Field(default=Path("./"), description="Base directory.")
     barcode: str | None = Field(
-        default=None, title="Barcode (typically mirrors the filename)."
+        default=None, description="Barcode (typically mirrors the filename)."
     )
 
-    battery_chemistry: str | None = Field(default=None, title="Battery chemistry.")
-    blend: list[float] = Field(default=[80.0, 10.0, 10.0], title="Blend.")
-    cell_id: str | None = Field(default=None, title="Cell ID.")
+    battery_chemistry: str | None = Field(
+        default=None, description="Battery chemistry."
+    )
+    blend: list[float] = Field(default=[80.0, 10.0, 10.0], description="Blend.")
+    cell_id: str | None = Field(default=None, description="Cell ID.")
     charge_current_a_from_file: float | None = Field(
-        default=None, title="Charge current A from file."
+        default=None, description="Charge current A from file."
     )
-    charge_rate_c: float | None = Field(default=None, title="Charge rate current.")
+    charge_rate_c: float | None = Field(
+        default=None, description="Charge rate current."
+    )
 
-    composition: str | None = Field(default=None, title="Composition.")
+    composition: str | None = Field(default=None, description="Composition.")
     counter_electrode: CounterElectrode = Field(
         default_factory=CounterElectrode,
-        title="Counter electrode configuration options.",
+        description="Counter electrode configuration options.",
     )
-    cores: int = Field(default=2, title="Cores to run optimisation on in parallel.")
+    cores: int = Field(
+        default=2, description="Cores to run optimisation on in parallel."
+    )
     cycling_verbose: bool = Field(
-        default=True, title="How much of the cycling is reported."
+        default=True, description="How much of the cycling is reported."
     )
     dead_cell: DeadCell = Field(
-        default_factory=DeadCell, title="Dead cell configuration options."
+        default_factory=DeadCell, description="Dead cell configuration options."
     )
     discharge_current_a_from_file: float | None = Field(
-        default=None, title="Discharge current A from file."
+        default=None, description="Discharge current A from file."
     )
-    dqdv: DqDv = Field(default_factory=DqDv, title="dq/dv configuration options.")
+    dqdv: DqDv = Field(default_factory=DqDv, description="dq/dv configuration options.")
     file_ext: str = Field(
-        default="xlsx", title="File extension of battery monitoring results."
+        default="xlsx", description="File extension of battery monitoring results."
     )
-    edge_exclusion_mv: float | None = Field(default=50, title="Edge exclusion in mV.")
+    edge_exclusion_mv: float | None = Field(
+        default=50, description="Edge exclusion in mV."
+    )
 
     electrode: Electrode = Field(
-        default_factory=Electrode, title="Electrode attributes."
+        default_factory=Electrode, description="Electrode attributes."
     )
     electrolyte: Electrolyte = Field(
-        default_factory=Electrolyte, title="Electrolyte composition."
+        default_factory=Electrolyte, description="Electrolyte composition."
     )
     fit_unresolved: bool = Field(
         default=True,
-        title="Fit a dataset whose reference cycle says its peaks are not resolvable.",
+        description="Fit a dataset whose reference cycle says its peaks are not resolvable.",
     )
-    figure: Figure = Field(default_factory=Figure, title="Figure plotting options.")
+    figure: Figure = Field(
+        default_factory=Figure, description="Figure plotting options."
+    )
     key_cycles: list[int] = Field(
-        default=[1, 5, 10, 20, 30, 40, 50], title="Key cycles to summarise and plot."
+        default=[1, 5, 10, 20, 30, 40, 50],
+        description="Key cycles to summarise and plot.",
     )
-    log_level: str = Field(default="info", title="Log level")
+    log_level: str = Field(default="info", description="Log level")
     output_dir: Path = Field(
         default=Path("./output/"),
-        title="Path to save the output to, default is './output/'.",
+        description="Path to save the output to, default is './output/'.",
     )
     max_cycle: int | None = Field(
         default=None,
-        title="Cap the analysis at the given cycle, default is 'None' which includes all cycles.",
+        description="Cap the analysis at the given cycle, default is 'None' which includes all cycles.",
     )
-    peak: Peak = Field(default_factory=Peak, title="Peak fitting options.")
-    polyorder: int = Field(default=3, title="Polyorder.")
+    peak: Peak = Field(default_factory=Peak, description="Peak fitting options.")
+    polyorder: int = Field(default=3, description="Polyorder.")
     power_energy_analysis: bool = Field(
-        default=True, title="Whether to run power energy analysis."
+        default=True, description="Whether to run power energy analysis."
     )
     qc_cycle: int = Field(
         default=3,
-        title="Which cycle the preprocessing quality control figure shows raw against.",
+        description="Which cycle the preprocessing quality control figure shows raw against.",
     )
     rebin_width_mv: str | int | None = Field(
-        default="auto", title="Rebin width, either 'auto' or an integer."
+        default="auto", description="Rebin width, either 'auto' or an integer."
     )
-    reference_cycle: int = Field(default=2, title="Reference cycle.")
+    reference_cycle: int = Field(default=2, description="Reference cycle.")
     run_peak_fitting: bool = Field(
-        default=True, title="Whether to fit the dQ/dV peaks."
+        default=True, description="Whether to fit the dQ/dV peaks."
     )
     second_smooth_window: str | int | None = Field(
         default="auto",
-        title="Second order smoothing window, either 'auto' or an integer.",
+        description="Second order smoothing window, either 'auto' or an integer.",
     )
-    separator_type: str | None = Field(default=None, title="Separator type.")
+    separator_type: str | None = Field(default=None, description="Separator type.")
     shoulder_detection: bool = Field(
-        default=True, title="Whether to enable shoulder detection."
+        default=True, description="Whether to enable shoulder detection."
     )
     smoothing_window: str | int | None = Field(
-        default="auto", title="Smoothing window, either 'auto' or an integer."
+        default="auto", description="Smoothing window, either 'auto' or an integer."
     )
-    spike: Spike = Field(default_factory=Spike, title="Spike configuration options.")
+    spike: Spike = Field(
+        default_factory=Spike, description="Spike configuration options."
+    )
     stop_fitting_at_death: bool = Field(
-        default=True, title="Stop fitting once the cell has stopped delivering charge."
+        default=True,
+        description="Stop fitting once the cell has stopped delivering charge.",
     )
     terminal_trim: TerminalTrim = Field(
-        default_factory=TerminalTrim, title="Terminal trimming configuration options."
+        default_factory=TerminalTrim,
+        description="Terminal trimming configuration options.",
     )
     termination: Termination = Field(
-        default_factory=Termination, title="Termination configuration options."
+        default_factory=Termination, description="Termination configuration options."
     )
-    test_start_date: str | None = Field(default=None, title="Test start date")
+    test_start_date: str | None = Field(default=None, description="Test start date")
 
     theoretical_capacity: TheoreticalCapacity = Field(
         default_factory=TheoreticalCapacity,
-        title="Theoretical capacity configuration options.",
+        description="Theoretical capacity configuration options.",
     )
     theoretical_charge: TheoreticalCharge = Field(
         default_factory=TheoreticalCharge,
-        title="Theoretical charge configuration options.",
+        description="Theoretical charge configuration options.",
     )
     total_electrode_coating_mg: float | None = Field(
-        default=None, title="Total electrode coating in mg"
+        default=None, description="Total electrode coating in mg"
     )
     total_loading_mg_cm2: float | None = Field(
-        default=None, title="Total loading in mg/cm2"
+        default=None, description="Total loading in mg/cm2"
     )
 
     tracking_tolerance_mv: float = Field(
-        default=80.0, title="Tracking tolerance in mV."
+        default=80.0, description="Tracking tolerance in mV."
     )
     voltage: Voltage = Field(
-        default_factory=Voltage, title="Voltage configuration options."
+        default_factory=Voltage, description="Voltage configuration options."
     )
 
     # Used to select the YAML source, not as an application setting.
@@ -472,10 +521,10 @@ class FileStructures(BaseSettings):
 
     # ns-rse 2026-11-06 : Set this to be a dataclass/BaseModel Neware as is done for Parameters which makes validating
     # values easy
-    neware: dict[str, Any] = Field(default=None, title="Neware data dictionary.")
+    neware: dict[str, Any] = Field(default=None, description="Neware data dictionary.")
     # Used to select the YAML source, not as an application setting.
     config_file: Path | None = Field(
-        default=DEFAULT_DATA_DICTIONARY, title="Path to the configuration file."
+        default=DEFAULT_DATA_DICTIONARY, description="Path to the configuration file."
     )
 
     @classmethod
@@ -539,257 +588,280 @@ class Dataset(BaseModel):
         validate_assignment=True,
         str_strip_whitespace=True,
     )
-    name: Path | str = Field(title="Filename data is derived from.")
-    df: pd.DataFrame = Field(title="Dataframe of battery charge cycle data.")
-    meta: dict = Field(default={}, title="Metadata on the battery charging cycle.")
+    name: Path | str = Field(description="Filename data is derived from.")
+    df: pd.DataFrame = Field(description="Dataframe of battery charge cycle data.")
+    meta: dict = Field(
+        default={}, description="Metadata on the battery charging cycle."
+    )
     electrode_type: str = Field(
-        default="Positive", title="Electrode type, either 'Positive' or 'Negative'."
+        default="Positive",
+        description="Electrode type, either 'Positive' or 'Negative'.",
     )
     labels_swapped: bool = Field(
-        default=False, title="Whether electrode labels have been swapped or not."
+        default=False, description="Whether electrode labels have been swapped or not."
     )
-    source_path: str | Path = Field(title="Path to the original file.")
+    source_path: str | Path = Field(description="Path to the original file.")
     source_sha256: str = Field(
-        default="", title="SHA256 checksum of the original file."
+        default="", description="SHA256 checksum of the original file."
     )
     active_loading_mg_cm2: float | None = Field(
-        default=None, title="Active loading in milligrams/cm^2."
+        default=None, description="Active loading in milligrams/cm^2."
     )
-    barcode: str | None = Field(default=None, title="Barcode derived from filename.")
-    blend: list[float] = Field(default=[80.0, 10.0, 10.0], title="Blend.")
+    barcode: str | None = Field(
+        default=None, description="Barcode derived from filename."
+    )
+    blend: list[float] = Field(default=[80.0, 10.0, 10.0], description="Blend.")
     charge_current_a_from_file: float | None = Field(
-        default=None, title="Charge current from file."
+        default=None, description="Charge current from file."
     )
-    charge_rate_c: float | None = Field(default=None, title="Charge rate current.")
-    composition: str | None = Field(default=None, title="Battery composition.")
+    charge_rate_c: float | None = Field(
+        default=None, description="Charge rate current."
+    )
+    composition: str | None = Field(default=None, description="Battery composition.")
     counter_electrode: CounterElectrode = Field(
-        default_factory=CounterElectrode, title="Counter electrode."
+        default_factory=CounterElectrode, description="Counter electrode."
     )
 
-    # -- structure ---------------------------------------------------------
+    # Add cleaning functions as private attributes
+    _clean_fn: Callable = PrivateAttr()
+    _half_cycles_fn: Callable = PrivateAttr()
+    _extract_cycle_step_fn: Callable = PrivateAttr()
+    _half_cycle_keys_fn: Callable = PrivateAttr()
+    _step_direction_fn: Callable = PrivateAttr()
+    _capacity_fn: Callable = PrivateAttr()
+    _record_spacing_mv_fn: Callable = PrivateAttr()
 
-    # 1.8.7 Module 1 drops rows with a missing Voltage, Cycle, Step or dQ/dV
-    # BEFORE anything else, and every half-cycle it processes comes from that
-    # cleaned frame. Reproducing it matters for more than row counts: where
-    # several records share a voltage, `sort_values` breaks the tie by input
-    # order, so a frame containing extra rows sorts its duplicates differently
-    # and the smoothed curve diverges. On the P3 cells 15 of 40 half-cycles
-    # differed for exactly this reason until the dropna was matched.
-    _REQUIRED = ("Voltage", "Cycle", "Step", "dQ/dV")
+    def model_post_init(self, context, /) -> None:  # noqa: ARG002
+        self._clean_fn = partial(clean, self)
+        self._half_cycles_fn = partial(half_cycles, self)
+        self._extract_cycle_step_fn = partial(extract_cycle_step, self)
+        self._half_cycle_keys_fn = partial(half_cycle_keys, self)
+        self._step_direction_fn = partial(step_direction, self)
+        self._capacity_fn = partial(capacity, self)
+        self._record_spacing_mv_fn = partial(record_spacing_mv, self)
 
-    # BOTH OF THESE ARE CACHED, and the cache is the difference between a
-    # run you wait two minutes for and one you do not.
-    #
-    # `half_cycle` used to boolean-mask the WHOLE frame on every call:
-    # `f[(f["Cycle"] == cycle) & (f["Step"] == step)]`, 82,337 rows scanned
-    # to return 200 of them. Under pandas 3 the `Step == "Charge"` half of
-    # that is a string comparison that null-checks the entire column, and it
-    # dominates: 10.2 ms per call, with `_isna_string_dtype` alone taking
-    # 5.4 s of a 13.4 s `termination_check`.
-    #
-    # Cells 4 and 5 make 3,444 such calls per dataset — 42 s, or 126 s for a
-    # triplicate. ONE `groupby(["Cycle", "Step"])` produces all 440 groups in
-    # 0.03 s, which is 168x faster than 440 masks, and every later call is a
-    # dict lookup.
-    #
-    # Safe because `frame` is never re-sorted (see the class docstring) and
-    # nothing mutates a half-cycle in place: `orient_dqdv` copies before
-    # writing and `strip_cv_hold` only slices. `replace()` builds a NEW
-    # Dataset, so a modified frame gets a fresh cache rather than a stale one.
-    # The groups preserve the frame's own row order, so the stable-sort
-    # tie-breaking that the port fidelity depends on is unchanged.
+    _required_cols = ("Voltage", "Cycle", "Step", "dQ/dV")
 
-    @property
-    def clean(self) -> pd.DataFrame:
-        """
-        Return a subset of the dataframe.
 
-        Returns
-        -------
-        pd.DataFrame
-            Subset of the required dataframes.
-        """
-        cached = self.__dict__.get("_clean_cache")
-        if cached is None:
-            # ns-rse 2026-11-06 : Switch this to use the required/numeric columns from the default_dictionary.yaml
-            # (stored in FileStructures class rather than hard coded value).
-            cols = [c for c in self._REQUIRED if c in self.df.columns]  # pylint: disable=no-member
-            cached = self.df.dropna(subset=cols)  # pylint: disable=no-member
-            self.__dict__["_clean_cache"] = cached
-        return cached
+def clean(ds: Dataset) -> pd.DataFrame:
+    """
+    Return rows that have values for the required columns.
 
-    @property
-    def _half_cycles(self) -> dict[tuple[int, str], pd.DataFrame]:
-        """
-        Build a dictionary of subsets of the `self.df` dataframe indexed by `cycle` and `step`.
+    Parameters
+    ----------
+    ds : Dataset
+        Dataset whose dataframe will be filtered.
 
-        Returns
-        -------
-        dict[tuple[int, str], pd.DataFrame]
-            Dictionary takes the form `{(cycle, step): pd.DataFrame}`.
-        """
-        cached = self.__dict__.get("_half_cycle_cache")
-        if cached is None:
-            f = self.clean
-            if not {"Cycle", "Step"} <= set(f.columns):
-                cached = {}
-            else:
-                cached = {
-                    (int(c), str(s)): d
-                    for (c, s), d in f.groupby(["Cycle", "Step"], sort=True)
-                }
-            self.__dict__["_half_cycle_cache"] = cached
-        return cached
+    Returns
+    -------
+    pandas.DataFrame
+        Rows from `ds.df` with no missing values in the required columns
+        that are present in the dataframe. The result is cached on `ds`.
+    """
+    cached = ds.__dict__.get("_clean_cache")
+    if cached is None:
+        cols = [c for c in ds._required_cols if c in ds.df.columns]
+        cached = ds.df.dropna(subset=cols)
+        ds.__dict__["_clean_cache"] = cached
+    return cached
 
-    def half_cycle_keys(self) -> list[tuple[int, str]]:
-        """
-        Extract keys from half cycles.
 
-        Returns
-        -------
-        list[tuple[int, str]]
-            `(cycle, step)` pairs, in cycle order, Charge before Discharge.
-        """
-        return list(self._half_cycles)
+def half_cycles(ds: Dataset) -> dict[tuple[int, str], pd.DataFrame]:
+    """
+    Return half-cycle dataframes keyed by cycle and step.
 
-    def half_cycle(self, cycle, step) -> pd.DataFrame:
-        """
-        Extract a half-cycle (unique `cycle`/`step` combination).
+    Parameters
+    ----------
+    ds : Dataset
+        Dataset to group by cycle and step.
 
-        Parameters
-        ----------
-        cycle : int
-            Cycle to extract.
-        step : str
-            Step to extract.
-
-        Returns
-        -------
-        pd.DataFrame
-            Dataframe corresponding to the `cycle`/`step` requested.
-        """
-        # An absent key returns an EMPTY FRAME WITH THE RIGHT COLUMNS, which
-        # is what the boolean mask returned and what every caller's
-        # `len(df) < n` and `col in df.columns` tests expect.
-        return self._half_cycles.get((int(cycle), str(step)), self.clean.iloc[:0])
-
-    # -- the part that matters ---------------------------------------------
-
-    def step_direction(self, cycle: int, step: str) -> float:
-        """
-        +1 if the voltage rises through this half-cycle, -1 if it falls.
-
-        MEASURED, never inferred from the label. Falls back to the label only
-        when the net travel is too small to read (a pure constant-voltage
-        step), and says so by returning the label's implication rather than
-        pretending to know.
-
-        Parameters
-        ----------
-        cycle : int
-            Cycle to extract step-direction for.
-        step : str
-            Step to extract the step-direction for.
-
-        Returns
-        -------
-        float
-            Voltage for the given cycle/step.
-        """
-        v = pd.to_numeric(
-            self.half_cycle(cycle, step)["Voltage"], errors="coerce"
-        ).to_numpy()
-        v = v[np.isfinite(v)]
-        if v.size >= 2:
-            net = float(v[-1] - v[0])
-            if abs(net) > 1e-4:  # one voltage LSB
-                return 1.0 if net > 0 else -1.0
-        # The label fallback must respect the swap. On a negative electrode
-        # the half-cycle LABELLED Charge is the one where the voltage falls,
-        # so reading the label naively returned the wrong sign — and this
-        # branch fires precisely on a pure constant-voltage hold, the one
-        # place the measurement cannot correct it.
-        implied = 1.0 if str(step).lower().startswith("c") else -1.0
-        return -implied if self.labels_swapped else implied
-
-    def capacity(self, cycle: int, step: str) -> float:
-        """
-        Charge passed in this half-cycle, from the cycler's own counter.
-
-        The counter, not the integral of dQ/dV — those two are compared by
-        `quality.integral_fidelity`, and using one to define the other would
-        make that comparison meaningless.
-
-        Parameters
-        ----------
-        cycle : int
-            Cycle to extract step-direction for.
-        step : str
-            Step to extract the step-direction for.
-
-        Returns
-        -------
-        float
-            Charge passed in the half-cycle for the given cycle/step.
-        """
-        col = (
-            "Charge_Capacity"
-            if str(step).lower().startswith("c")
-            else "Discharge_Capacity"
-        )
-        d = self.half_cycle(cycle, step)
-        if col not in d.columns:
-            return float("nan")
-        q = pd.to_numeric(d[col], errors="coerce").to_numpy()
-        q = q[np.isfinite(q)]
-        if q.size < 2:
-            return float("nan")
-        return float(np.nanmax(q) - np.nanmin(q))
-
-    def record_spacing_mv(self, step: str | None = None) -> dict[str, float]:
-        """
-        Median and minimum non-zero voltage step between consecutive records.
-
-        Reported because the rebinning decision should be keyed to this and is
-        not: 1.8.x keys it to the profile class, so the P3 exports get no
-        rebinning at all despite 4% of their consecutive records sitting at an
-        identical voltage. Measured here, acted on in 2.0.
-
-        Parameters
-        ----------
-        step : str, optional
-            Step to extract data for.
-
-        Returns
-        -------
-        dict[str, float]
-            Dictionary of the `median_mV`, `min_mV` and `duplicate_fraction` for the given step.
-        """
-        dv, zeros, total = [], 0, 0
-        for cyc, st in self.half_cycle_keys():
-            if step is not None and st != step:
-                continue
-            v = pd.to_numeric(
-                self.half_cycle(cyc, st)["Voltage"], errors="coerce"
-            ).to_numpy()
-            v = v[np.isfinite(v)]
-            if v.size < 50:
-                continue
-            d = np.abs(np.diff(v))
-            zeros += int((d == 0).sum())
-            total += d.size
-            nz = d[d > 0]
-            if nz.size:
-                dv.append(nz)
-        if not dv:
-            return {
-                "median_mV": float("nan"),
-                "min_mV": float("nan"),
-                "duplicate_fraction": float("nan"),
+    Returns
+    -------
+    dict[tuple[int, str], pandas.DataFrame]
+        Mapping from `(cycle, step)` pairs to dataframes. Each dataframe
+        preserves the row order from the cleaned source dataframe. The
+        mapping is cached on `ds`.
+    """
+    cached = ds.__dict__.get("_half_cycle_cache")
+    if cached is None:
+        f = ds._clean_fn()
+        if not {"Cycle", "Step"} <= set(f.columns):
+            cached = {}
+        else:
+            cached = {
+                (int(c), str(s)): d
+                for (c, s), d in f.groupby(["Cycle", "Step"], sort=True)
             }
-        allnz = np.concatenate(dv) * 1000.0
+        ds.__dict__["_half_cycle_cache"] = cached
+    return cached
+
+
+def extract_cycle_step(ds: Dataset, cycle: int, step: str) -> pd.DataFrame:
+    """
+    Return the data for one cycle and step.
+
+    Parameters
+    ----------
+    ds : Dataset
+        Dataset to retrieve data from.
+    cycle : int
+        Cycle number.
+    step : str
+        Step label, such as `"Charge"` or `"Discharge"`.
+
+    Returns
+    -------
+    pandas.DataFrame
+        Dataframe for the requested cycle and step. If the pair is absent,
+        returns an empty dataframe with the cleaned dataframe's columns.
+    """
+    return ds._half_cycles_fn().get(
+        (int(cycle), str(step)),
+        ds._clean_fn().iloc[:0],
+    )
+
+
+def half_cycle_keys(ds: Dataset) -> list[tuple[int, str]]:
+    """
+    Return the available cycle and step pairs.
+
+    Parameters
+    ----------
+    ds : Dataset
+        Dataset to inspect.
+
+    Returns
+    -------
+    list[tuple[int, str]]
+        Available `(cycle, step)` pairs in the ordering of the cached
+        half-cycle mapping.
+    """
+    return list(ds._half_cycles_fn())
+
+
+def step_direction(ds: Dataset, cycle: int, step: str) -> float:
+    """
+    Determine whether voltage rises or falls during a half-cycle.
+
+    The direction is measured from the first and last finite voltage values.
+    If the net change is too small to resolve, direction is inferred from the
+    step label and adjusted when electrode labels have been swapped.
+
+    Parameters
+    ----------
+    ds : Dataset
+        Dataset containing the half-cycle.
+    cycle : int
+        Cycle number.
+    step : str
+        Step label.
+
+    Returns
+    -------
+    float
+        `1.0` if voltage rises or is inferred to rise, or `-1.0` if it
+        falls or is inferred to fall.
+    """
+    v = pd.to_numeric(
+        ds._extract_cycle_step_fn(cycle, step)["Voltage"], errors="coerce"
+    ).to_numpy()
+    v = v[np.isfinite(v)]
+
+    if v.size >= 2:
+        net = float(v[-1] - v[0])
+        if abs(net) > 1e-4:
+            return 1.0 if net > 0 else -1.0
+
+    implied = 1.0 if str(step).lower().startswith("c") else -1.0
+    return -implied if ds.labels_swapped else implied
+
+
+def capacity(ds: Dataset, cycle: int, step: str) -> float:
+    """
+    Calculate charge passed during a half-cycle from the cycler's counter.
+
+    Parameters
+    ----------
+    ds : Dataset
+        Dataset containing the half-cycle.
+    cycle : int
+        Cycle number.
+    step : str
+        Step label. Labels beginning with `"c"` use the charge-capacity
+        column; other labels use the discharge-capacity column.
+
+    Returns
+    -------
+    float
+        Difference between the maximum and minimum finite capacity values,
+        or `nan` if the required column is absent or fewer than two finite
+        values are available.
+    """
+    col = (
+        "Charge_Capacity" if str(step).lower().startswith("c") else "Discharge_Capacity"
+    )
+    d = ds._extract_cycle_step_fn(cycle, step)
+    if col not in d.columns:
+        return float("nan")
+
+    q = pd.to_numeric(d[col], errors="coerce").to_numpy()
+    q = q[np.isfinite(q)]
+    return float(np.nanmax(q) - np.nanmin(q)) if q.size >= 2 else float("nan")
+
+
+def record_spacing_mv(ds: Dataset, step: str | None = None) -> dict[str, float]:
+    """
+    Summarize consecutive voltage-record spacing.
+
+    Only half-cycles with at least 50 finite voltage records are included.
+    Duplicate records are counted where consecutive voltages are identical;
+    spacing statistics use only non-zero absolute voltage differences.
+
+    Parameters
+    ----------
+    ds : Dataset
+        Dataset to analyze.
+    step : str or None, optional
+        If provided, include only half-cycles with this step label.
+        By default, all steps are included.
+
+    Returns
+    -------
+    dict[str, float]
+        Dictionary containing `"median_mV"`, `"min_mV"`, and
+        `"duplicate_fraction"`. If no eligible non-zero voltage
+        differences are found, the values are `nan`.
+    """
+    diff_voltage, zeros, total = [], 0, 0
+
+    for cycle, _step in ds._half_cycle_keys_fn():
+        if step is not None and _step != step:
+            continue
+
+        voltage = pd.to_numeric(
+            ds._extract_cycle_step_fn(cycle, _step)["Voltage"], errors="coerce"
+        ).to_numpy()
+        voltage = voltage[np.isfinite(voltage)]
+        if voltage.size < 50:
+            continue
+
+        voltage_difference = np.abs(np.diff(voltage))
+        zeros += int((voltage_difference == 0).sum())
+        total += voltage_difference.size
+        voltage_non_zero = voltage_difference[voltage_difference > 0]
+        if voltage_non_zero.size:
+            diff_voltage.append(voltage_non_zero)
+
+    if not diff_voltage:
         return {
-            "median_mV": float(np.median(allnz)),
-            "min_mV": float(allnz.min()),
-            "duplicate_fraction": (zeros / total) if total else float("nan"),
+            "median_mV": float("nan"),
+            "min_mV": float("nan"),
+            "duplicate_fraction": float("nan"),
         }
+
+    all_non_zero = np.concatenate(diff_voltage) * 1000.0
+    return {
+        "median_mV": float(np.median(all_non_zero)),
+        "min_mV": float(all_non_zero.min()),
+        "duplicate_fraction": zeros / total if total else float("nan"),
+    }

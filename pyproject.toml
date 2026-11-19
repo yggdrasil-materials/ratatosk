@@ -1,3 +1,4 @@
+
 [build-system]
 requires = ["hatchling", "uv-dynamic-versioning"]
 build-backend = "hatchling.build"
@@ -57,12 +58,14 @@ Changelog = "https://github.com/yggdrasil-materials/ratatosk/releases"
 
 [dependency-groups]
 docs = [
+  "griffe-pydantic>=1.3.2",
+  "mkdocstrings-python>=2.0.9",
   "zensical>=0.0.63",
 ]
 tests = [
   "pytest >=9.1",
   "pytest-cov >=7",
-  "pytest-loguru>=0.4",
+  "pytest-loguru==0.4.1",
   "pytest-mpl>=0.19",
   "pytest-testmon>=2.2",
   "pytest-xdist>=3.8",
