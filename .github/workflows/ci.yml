@@ -73,7 +73,7 @@ jobs:
       - uses: astral-sh/setup-uv@v10.3.3
 
       - name: Install package
-        run: uv sync
+        run: uv sync --frozen
 
       - name: Test package
         run: >-
